@@ -278,7 +278,6 @@ async def test_services_catalog_returns_github_and_demo(client) -> None:
     body = response.json()
     assert [item["id"] for item in body] == ["demo-tracker", "github"]
 
-
 async def test_github_entry_carries_vcs_kind_and_six_capabilities(client) -> None:
     body = (await client.get("/api/v1/services")).json()
     github = next(item for item in body if item["id"] == "github")
@@ -297,9 +296,13 @@ async def test_demo_tracker_entry_is_marked_unavailable(client) -> None:
 
 
 async def test_catalog_order_is_deterministic(client) -> None:
-    first = (await client.get("/api/v1/services")).json()
-    second = (await client.get("/api/v1/services")).json()
-    assert first == second
+    first = await client.get("/api/v1/services")
+    second = await client.get("/api/v1/services")
+    # Assert on the status too: without it this test PASSES during RED, because two
+    # identical 404 bodies compare equal — it would prove nothing about ordering.
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json() == second.json()
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -317,8 +320,11 @@ Run, in this order:
 ```bash
 cd backend
 UV_CACHE_DIR=<repo>/.uv-cache uv run python scripts/export_contract.py
-npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false --bannerComment "/* AUTO-GENERATED from backend/contract/schema.json - do not edit. Regenerate: see backend/README.md */"
+npm_config_cache=<repo>/.npm-cache npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false --bannerComment "/* AUTO-GENERATED from backend/contract/schema.json - do not edit. Regenerate: see backend/README.md */"
 ```
+
+**Both prefixes are required in this sandbox.** `uv` cannot reach `~/.cache/uv`, and `npx` fails with `EACCES … /home/kuba/.npm/_cacache` because that cache is root-owned and outside the sandbox. `.gitignore:23` already provides for `.npm-cache/` with the comment "sandbox nie ma dostępu do ~/.npm". The generator output is byte-identical with the cache redirected (verified by running it twice and comparing sha256), so the committed artifact is what the plain command would produce.
+
 Expected: `contract/schema.json` gains `$defs.ServiceRead` and `$defs.ServiceKind`; `frontend/src/types/api.ts` gains `export interface ServiceRead` and the `ServiceKind` union.
 
 - [ ] **Step 5: Run tests and confirm the contract guard passes**
