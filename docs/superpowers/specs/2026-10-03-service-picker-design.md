@@ -37,7 +37,7 @@ Rejestrujemy **jedną realną usługę (GitHub)** oraz **jedną jawnie oznaczon�
 | „GitHub” zaszyty w trzech tekstach UI | `index.html:7`, `TopBar.tsx:12`, `Sidebar.tsx:28` — dwa z nich stają się dynamiczne, tytuł dokumentu zostaje (§5.7) |
 | Klucze zapytań nie mają wymiaru usługi | `['leases']`, `['dashboard']`, `['graph']`, `['audit']`, `['appeals']`, `['clock']` |
 | Bramki jakości: frontend zielony przed zmianą | typecheck 0 błędów, lint 0, **205 testów / 23 pliki**, build OK |
-| Bramki jakości: backend **nie jest w pełni zielony** przed zmianą | `uv run pytest -q` → **398 passed, 2 failed**. Oba błędy są wcześniejsze i niezwiązane z tym zadaniem (§2.1) |
+| Bramki jakości: backend **nie jest w pełni zielony** przed zmianą | Po rebase na `frontend-integration` `uv run pytest -q` → **417 passed, 3 failed**. Wszystkie trzy błędy są wcześniejsze i niezwiązane z tym zadaniem (§2.1). Liczby „398/2” z pierwotnej wersji tego dokumentu są **nieaktualne** — patrz §2.1 |
 
 > **Uwaga środowiskowa (worktree agenta):** `uv` nie ma dostępu do `~/.cache/uv` w sandboxie. Testy backendu uruchamiamy z `UV_CACHE_DIR=<repo>/.uv-cache`, katalog już istnieje w repozytorium i jest ignorowany przez git. Bez tego `uv run` kończy się `Failed to initialize cache`.
 
@@ -49,12 +49,14 @@ Rejestrujemy **jedną realną usługę (GitHub)** oraz **jedną jawnie oznaczon�
 
 ### 2.1 Wcześniejsze błędy backendu (nie należą do tego zadania)
 
-`uv run pytest -q` daje **398 passed, 2 failed** już na bazowym commicie `b6b6124`, w worktree zawierającym wyłącznie ten dokument. Oba dotyczą integralności dokumentacji i powstały z kolizji scalenia między gałęziami:
+Na bazowym commicie `b6b6124` `uv run pytest -q` dawało **398 passed, 2 failed**. **Po rebase na `frontend-integration` (`c7c56f0`) licznik to 417 passed / 3 failed**, bo gałąź gospodarza wniosła trzeci, niezależny błąd. Żaden z tych trzech nie należy do tego zadania:
 
 | Test | Przyczyna |
 | --- | --- |
 | `tests/repo/test_docs_integrity.py::test_adr_numbers_are_unique` | Numery ADR kolidują: `0010` istnieje dwa razy (`0010-frontend-navigation-and-data-layer.md` i `0010-github-mock-activity-types-and-time-travel-api.md`) oraz `0011` dwa razy (`0011-fixtures-zgodne-z-generowanym-kontraktem.md` i `0011-person-4-baseline-appeals-audit-insights.md`) |
 | `tests/repo/test_docs_integrity.py::test_every_adr_file_is_listed_in_index` | `docs/adr/README.md` indeksuje nowsze pliki pod 0010/0011, a starsze pliki o tych numerach leżą na dysku nieindeksowane. `docs/adr/README.md:13` wprost opisuje kolizję 0010 |
+
+| `tests/contract/test_fixtures_match_contract.py::test_lease_fixtures_cover_all_statuses_roles_and_recommendations` | Test przypina zbiór statusów fixture'ów jako `{ACTIVE, WARNING, EXPIRED}`, a `shared/fixtures/leases.json` zawiera też `PERMANENT`. Wprowadzone przez `f9c9c55` („docs(data): record the shared-data drift…"), który jest przodkiem **zarówno `main`, jak i tej gałęzi**, a pliki fixture'ów są bajtowo identyczne między `frontend-integration` i `HEAD` — czyli błąd jest wcześniejszy i **nie należy do tego zadania**. Należy do właściciela silnika dzierżawy: albo test ma znać `PERMANENT`, albo fixture ma go nie zawierać. |
 
 **Konsekwencje dla tego zadania:**
 
@@ -348,7 +350,7 @@ Dzięki temu rejestr frontendu i dane, na których pracuje backend, mają **jedn
 4. Po przełączeniu na `demo-tracker` nawigacja ma dwie pozycje, a wejście na `/leases` przekierowuje na `/`; powrót na `github` przywraca sześć pozycji.
 5. Wybór usługi przeżywa odświeżenie strony (`localStorage`).
 6. Adresy tras pozostają niezmienione (`/leases`, nie `/github/leases`).
-7. Bramki: `npm run typecheck`, `npm run lint`, `npm test -- --run`, `npm run build` — zielone. Backend: `UV_CACHE_DIR=<repo>/.uv-cache uv run pytest -q` → **398 + N passed, dokładnie 2 failed** (te same dwa wcześniejsze błędy integralności ADR-ów z §2.1; żaden nowy). Kontrakt zregenerowany, `tests/schemas/test_contract_is_fresh.py` przechodzi.
+7. Bramki: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test -- --run`, `npm run build` — zielone. Backend: `UV_CACHE_DIR=<repo>/.uv-cache uv run pytest -q` → **417 + N passed, dokładnie 3 failed**, i to **te same trzy nazwane błędy wcześniejsze** z §2.1. Kryterium jest nazwane, nie liczbowe: **żaden nowy failing test**. Liczby bezwzględne starzeją się razem z gałęzią gospodarza — dwa razy w tym zadaniu okazały się nieaktualne, więc porównujemy zbiór nazw, nie samą liczbę. `tests/schemas/test_contract_is_fresh.py` przechodzi.
 8. Dokumentacja spójna: ADR 0014, `AGENTS.md`/`SKILLS.md` bez zmian, `frontend/DESIGN.md` z nową sekcją o kontrolce chrome (patrz §9).
 
 ---
@@ -375,7 +377,7 @@ Dzięki temu rejestr frontendu i dane, na których pracuje backend, mają **jedn
 | Rozjazd nazw tras frontend/backend | Test krzyżowy (§7.4) porównujący rejestr frontendu ze wspólnym fixture'em + identyfikatory tras jako `capabilities`; granica gwarancji opisana w §7.4 |
 | `localStorage` niedostępny (tryb prywatny) | Odczyt i zapis w `try/catch`; brak zapisu nie blokuje działania |
 | Pozorny „wybór” przy jednej realnej usłudze | Druga usługa jest jawnie oznaczona jako demonstracyjna w `name` i w docstringu; spec mówi o tym wprost w §1 |
-| Dwa wcześniejsze błędy `test_docs_integrity` zagłuszają sygnał z bramki backendu | Kryterium brzmi „dokładnie 2 failed, żaden nowy”, a nie „zero failed” (§2.1); przy weryfikacji porównujemy liczbę i nazwy testów, nie sam kod wyjścia |
+| Wcześniejsze błędy backendu zagłuszają sygnał z bramki (dwa w `test_docs_integrity`, jeden w `test_fixtures_match_contract`) | Kryterium brzmi „żaden **nowy** failing test”, nie „zero failed” ani stała liczba (§2.1); przy weryfikacji porównujemy **zbiór nazw** testów, nie sam kod wyjścia. Liczby bezwzględne okazały się nieaktualne dwukrotnie, więc nie są kryterium |
 
 ---
 
