@@ -45,7 +45,7 @@ export function WarningWindowList(): React.JSX.Element {
   const userIds: number[] = groups.map((group: LeaseGroup): number => group.user.id);
 
   return (
-    <Card data-testid="warning-window">
+    <Card data-testid="warning-window" className="gap-0 pb-0">
       <CardHeader className="border-b">
         <CardTitle>W oknie ostrzegawczym</CardTitle>
         <CardDescription>
@@ -64,7 +64,7 @@ export function WarningWindowList(): React.JSX.Element {
         {leasesQuery.isPending ? <WarningWindowSkeleton /> : null}
 
         {leasesQuery.isError ? (
-          <Alert variant="destructive" className="mx-4">
+          <Alert variant="destructive" className="m-4 w-auto">
             <AlertTitle>Nie udało się pobrać dostępów</AlertTitle>
             <AlertDescription>
               Liczniki powyżej nadal obowiązują. Spróbuj ponownie odczytać listę.
