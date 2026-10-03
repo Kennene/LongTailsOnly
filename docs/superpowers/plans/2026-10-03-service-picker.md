@@ -48,7 +48,7 @@ Inputs and conditions the spec implies but no task's tests naturally exercise. E
 
 - [ ] **Step 1: Write the failing test**
 
-Create `backend/tests/ports/test_service_registry.py`. Use a pytest fixture calling `reset_registry()` before and after each test so tests do not leak into each other.
+Create `backend/tests/ports/test_service_registry.py`. Use an autouse pytest fixture that calls `reset_registry()` **after** each test, so `_EXTRA` never leaks between tests while `_BUILTIN` stays intact.
 
 ```python
 def test_register_then_all_services_returns_descriptor() -> None:
@@ -57,19 +57,35 @@ def test_register_then_all_services_returns_descriptor() -> None:
         capabilities=("dashboard",), is_available=True,
     )
     register(descriptor)
-    assert all_services() == (descriptor,)
+    assert descriptor in all_services()
 
 
 def test_all_services_is_sorted_by_id() -> None:
     register(ServiceDescriptor("zeta", "Z", ServiceKind.VCS, (), True))
     register(ServiceDescriptor("alpha", "A", ServiceKind.VCS, (), True))
-    assert [s.id for s in all_services()] == ["alpha", "zeta"]
+    ids = [service.id for service in all_services()]
+    assert ids == sorted(ids)
 
 
-def test_duplicate_id_raises_value_error() -> None:
+def test_reregistering_an_identical_descriptor_is_a_noop() -> None:
+    descriptor = ServiceDescriptor("same", "Same", ServiceKind.VCS, (), True)
+    register(descriptor)
+    register(descriptor)
+    assert [service.id for service in all_services()].count("same") == 1
+
+
+def test_conflicting_descriptor_for_a_known_id_raises() -> None:
     register(ServiceDescriptor("dup", "One", ServiceKind.VCS, (), True))
     with pytest.raises(ValueError, match="dup"):
         register(ServiceDescriptor("dup", "Two", ServiceKind.VCS, (), True))
+
+
+def test_builtin_descriptors_survive_a_reset() -> None:
+    register(ServiceDescriptor("temp", "Temp", ServiceKind.VCS, (), True))
+    reset_registry()
+    ids = {service.id for service in all_services()}
+    assert "temp" not in ids
+    assert {"github", "demo-tracker"} <= ids
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -79,14 +95,28 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'app.ports.service_regi
 
 - [ ] **Step 3: Implement `backend/app/ports/service_registry.py`**
 
-Module docstring (Polish, matching repo style) must state: this is the single public API (`register` / `all_services`); it is deliberately a plain in-code list rather than `entry_points` discovery because two adapters do not justify the abstraction (`CODING_STANDARDS.md` §1.5); swapping to discovery touches only this file; registering a duplicate `id` raises rather than silently overwriting. Use `enum.StrEnum`, `dataclasses.dataclass(frozen=True, slots=True)`, and a module-level `dict[str, ServiceDescriptor]` keyed by `id`. `all_services()` returns `tuple(sorted(_registry.values(), key=lambda d: d.id))`.
+**Two tiers, and idempotent registration.** `_BUILTIN` is a module-level tuple holding the canonical descriptors for `github` and `demo-tracker`. `register()` adds to a separate module-level `_EXTRA` list. `all_services()` returns `_BUILTIN` merged with `_EXTRA`, de-duplicated by `id` and sorted by `id`. `reset_registry()` clears **only** `_EXTRA`.
+
+Two consequences you must implement deliberately:
+
+1. **`register()` is idempotent for an identical descriptor.** If the `id` is already known and the descriptor compares equal, it is a silent no-op. If the `id` is known but the descriptor differs, raise `ValueError` naming the `id`. Without this, Task 2's adapter modules — which also call `register(...)` at import time for the very same two services — would raise at import.
+2. **Re-registration after a reset must work.** Task 1's tests will call `reset_registry()`, which clears `_EXTRA` but never `_BUILTIN`. Because Python imports a module only once, anything that existed solely in `_EXTRA` would be gone for the rest of the session — which is exactly why the two canonical descriptors live in `_BUILTIN` and why `all_services()` never depends on import order or test order.
+
+Use `enum.StrEnum` and `dataclasses.dataclass(frozen=True, slots=True)`.
+
+The module docstring is **English**, matching its neighbours in `backend/app/ports/` (`vcs_provider.py`, `clock.py` are both English; the codebase mixes English module docstrings with Polish comments). It must state: this is the single public API (`register` / `all_services`); it is deliberately a plain in-code list rather than `entry_points` discovery because two adapters do not justify the abstraction (`CODING_STANDARDS.md` §1.5); swapping to discovery touches only this file; registering a conflicting `id` raises rather than silently overwriting.
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest tests/ports/test_service_registry.py -q`
-Expected: PASS (3 passed)
+Expected: PASS (5 passed)
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Prove the reset does not poison a later test module**
+
+Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest tests/ports/test_service_registry.py tests/api/test_health.py -q`
+Expected: PASS. If a later-running module ever sees an empty catalog, the `_BUILTIN` tier is not being used — fix that rather than making the tests order-dependent.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add backend/app/ports/service_registry.py backend/tests/ports/test_service_registry.py
@@ -153,9 +183,11 @@ Expected: FAIL — `StopIteration`/`KeyError` on `demo-tracker`, and `TypeError`
 
 - [ ] **Step 3: Implement registration**
 
-In `backend/app/adapters/demo_service.py`: a module that registers `demo-tracker` at import time. Its docstring must say in Polish that **this is a demonstrative stub, not an integration — it performs no operations and holds no data of its own**; it exists to prove the registry and per-service view gating are real. Module-level constants for the descriptor.
+In `backend/app/adapters/demo_service.py`: a module that calls `register(...)` for `demo-tracker` at import time. Its docstring must say in Polish that **this is a demonstrative stub, not an integration — it performs no operations and holds no data of its own**; it exists to prove the registry and per-service view gating are real.
 
-In `backend/app/adapters/database_vcs.py`: register `github` (`"GitHub"`, `ServiceKind.VCS`, all six capabilities, `is_available=True`) at module import, beside the class.
+In `backend/app/adapters/database_vcs.py`: call `register(...)` for `github` at module import, beside the class.
+
+Both descriptors are the same values Task 1 puts in `_BUILTIN`; the `register()` calls here are what make the plugin seam real (`grep` invariant in Step 5). Keep the two in sync — `register()` raises on a duplicate id, so any divergence is a loud import-time failure rather than a silent difference.
 
 In `backend/app/api/v1/deps.py`: import `demo_service` for its registration side effect, give `get_vcs_provider` the `service_id: str = "github"` parameter, and raise `ServiceError(404, f"Unknown service {service_id}")` when the id is not in `all_services()`. Keep the default so existing callers are unaffected.
 
