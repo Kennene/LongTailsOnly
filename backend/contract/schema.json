@@ -7,7 +7,11 @@
         "IssueCommentEvent",
         "PullRequestEvent",
         "IssuesEvent",
-        "PublicEvent"
+        "PublicEvent",
+        "jira:issue_created",
+        "jira:issue_updated",
+        "comment_created",
+        "project_updated"
       ],
       "title": "ActionType",
       "type": "string"

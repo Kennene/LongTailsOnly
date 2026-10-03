@@ -23,6 +23,7 @@ pytest
 - Przy pierwszym starcie serwer sam tworzy bazę (migracje) i wgrywa dane demo (19 osób, 10 repo, persony Kamil i Marta).
 - `POST /api/v1/demo/reset` → przywraca bazę i zegar do stanu startowego demo (wyłączenie: `ENABLE_DEMO_RESET=false`).
 - Mock GitHuba (`/api/v3/...`), zdarzenia aktywności i `/api/v1/simulation/time-travel`: patrz `docs/github-mock.md` (ADR 0010).
+- Mock Jiry (`/rest/api/3/...`): patrz `docs/jira-mock.md` (ADR 0016).
 - Baza: SQLite przez aiosqlite, adres w `DATABASE_URL` (patrz `.env.example`).
 - Nowa biblioteka: `uv add nazwa` (narzędzie tylko do developmentu: `uv add --optional dev nazwa`).
 

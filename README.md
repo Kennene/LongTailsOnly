@@ -45,7 +45,7 @@ Przy pierwszym starcie serwer sam buduje bazę i wgrywa dane demo (19 osób, 10 
 ```
 backend/            FastAPI + SQLAlchemy + Alembic (app/, tests/, contract/schema.json)
 frontend/src/types/ typy TS generowane z kontraktu backendu (ADR 0009) — nie edytować ręcznie
-docs/adr/           decyzje architektoniczne (ADR 0001–0011)
+docs/adr/           decyzje architektoniczne (ADR 0001–0016)
 docs/superpowers/   plany zadań (plans/) i specyfikacje (specs/)
 docs/osoba-4.md     stan i kontrakty Osoby 4
 ```

@@ -38,6 +38,7 @@ git ls-tree -r --name-only origin/main -- docs/adr
 | [0013](0013-prelint-i-straz-adr-w-procesie-pr.md) | Prelint jako pamięć decyzji i straż ADR-ów w procesie PR | Proponowany | Proces, `.mcp.json`, szablon PR, krok 6.0 |
 | [0014](0014-person-4-baseline-appeals-audit-insights.md) | Kontrakty Osoby 4: standard zespołu, onboarding, odwołania, audyt, dane widoków | Proponowany | `baseline_service`, `appeal_service`, `audit_service`, `insights`, kroki 4.1–4.6 |
 | [0015](0015-frontend-navigation-and-data-layer.md) | Frontend SPA: nawigacja, warstwa danych i praca na generowanym kontrakcie | Proponowany | `frontend/src`, kroki 5.x |
+| [0016](0016-multi-provider-resources-and-jira-mock.md) | Wielu dostawców (`provider`) i mock Jiry | Proponowany | `repositories.provider`, `api/jira_mock`, `access_leases`, `jql` |
 
 ## Statusy
 
