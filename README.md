@@ -168,7 +168,7 @@ Wymagania: [`uv`](https://docs.astral.sh/uv/), Node.js 20.19+ lub 22.12+, `curl`
 
 - Panel: <http://localhost:5173>
 - Dokumentacja API (Swagger): <http://localhost:8000/docs>
-- Dokumentacja mocków: <http://localhost:8000/mocks/docs>
+- Dokumentacja mocków: GitHub <http://localhost:8000/mocks/github/docs>, Jira <http://localhost:8000/mocks/jira/docs>
 
 Inne warianty:
 
@@ -176,6 +176,8 @@ Inne warianty:
 ./run.sh --fixtures   # sam panel na statycznych danych, bez backendu
 ./build.sh --test     # testy backendu i scenariuszy, lint i testy frontendu, build produkcyjny
 ```
+
+`run.sh` przy każdym starcie dociąga zależności: synchronizuje backend (`uv sync`), a `npm ci` uruchamia, gdy zmienił się `frontend/package-lock.json` — po pullu z nową paczką nie trzeba ręcznie odpalać `./build.sh`.
 
 Przy pierwszym starcie backend sam buduje bazę i wgrywa dane demo: jedną organizację, 19 osób (zespoły DEV i QA), 10 repozytoriów oraz persony Kamila (senior developer) i Marty (QA). Reset w trakcie działania: `POST /api/v1/demo/reset`.
 
