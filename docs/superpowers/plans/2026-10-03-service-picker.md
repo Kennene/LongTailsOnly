@@ -637,6 +637,7 @@ git commit -m "feat(frontend): active-service context and per-service route guar
 **Files:**
 - Create: `frontend/src/components/layout/ServicePicker.tsx`
 - Create: `frontend/src/lib/selectClasses.ts`
+- Create: `frontend/src/test/serviceProbe.tsx`
 - Modify: `frontend/src/components/layout/TopBar.tsx`
 - Modify: `frontend/src/components/layout/Sidebar.tsx`
 - Modify: `frontend/src/App.tsx`
@@ -645,7 +646,15 @@ git commit -m "feat(frontend): active-service context and per-service route guar
 
 **Interfaces:**
 - Consumes: `useActiveService` (Task 6); `SERVICE_REGISTRY`, `getServiceConfig` (Task 4); `SELECT_CLASSES` (this task).
-- Produces: `ServicePicker`; `SELECT_CLASSES: string` in `@/lib/selectClasses`; a TopBar whose right side is one flex group; a Sidebar driven by the active service's routes; an `App.tsx` with `ServicesProvider` and `ServiceRouteGuard`.
+- Produces: `ServicePicker`; `SELECT_CLASSES: string` in `@/lib/selectClasses`; `ActiveServiceProbe`, `ServiceSwitcherProbe` in `@/test/serviceProbe`; a TopBar whose right side is one flex group; a Sidebar driven by the active service's routes; an `App.tsx` with `ServicesProvider` and `ServiceRouteGuard`.
+
+**Before you write the picker tests — extracting the probe is part of this task.** The brief's picker tests assert `getByTestId('active-service')`, but that testid does **not** exist inside `ServicePicker` and cannot: it belongs to a probe component, and the only copy today is file-local to `src/services/ServicesContext.test.tsx:54`. Rendering `<ServicePicker />` alone would therefore never satisfy those assertions. So:
+
+- Create `frontend/src/test/serviceProbe.tsx` exporting `ActiveServiceProbe` (renders `<span data-testid="active-service">{activeService.id}</span>`) and `ServiceSwitcherProbe` (a button named `Przełącz na demo-tracker` calling `setActiveService('demo-tracker')` plus the same span), both built on `useActiveService`.
+- **Consume it in your picker tests by rendering the probe inside the picker**, e.g. `renderWithProviders(<><ServicePicker /><ActiveServiceProbe /></>)`, so an assertion on the picker's effect has both the control and the observable in the tree.
+- Leave Task 6's file-local probes where they are — refactoring a reviewed, passing test file is not this task's job, and two small local probes plus one shared module is acceptable duplication until something needs a third.
+
+This is the third plan error of this shape (a test asserting UI that its own render never produces, alongside the non-existent `clock` fixture and the wrong `test_health` path), so if any *other* assertion in this brief looks like it depends on something your render does not include, stop and raise it rather than guessing.
 
 - [ ] **Step 1: Write the failing picker tests**
 
@@ -658,9 +667,15 @@ it('exposes an accessible name for the selector', async () => {
 });
 
 it('switches the active service through selectOptions', async () => {
-  renderWithProviders(<ServicePicker />);
+  // The probe must be in the tree: `ServicePicker` does not own the `active-service` testid.
+  renderWithProviders(
+    <>
+      <ServicePicker />
+      <ActiveServiceProbe />
+    </>,
+  );
   await userEvent.selectOptions(await screen.findByLabelText('Usługa'), 'demo-tracker');
-  expect(screen.getByTestId('active-service')).toHaveTextContent('demo-tracker');
+  expect(await screen.findByTestId('active-service')).toHaveTextContent('demo-tracker');
 });
 
 it('marks an unavailable service in its option label', async () => {
