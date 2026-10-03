@@ -7,12 +7,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppealsQuery } from '@/api/appeals';
 import { leasesFixture } from '@/api/fixtures';
 import { servicesFixture } from '@/api/fixtures/services';
+import { useActivityStats } from '@/hooks/useActivityStats';
 import { useAppeals } from '@/hooks/useAppeals';
+import { useAuditLog } from '@/hooks/useAuditLog';
+import { useDashboard } from '@/hooks/useDashboard';
+import { useGraph } from '@/hooks/useGraph';
 import { useLeaseDecision } from '@/hooks/useLeaseDecision';
 import { useLeases } from '@/hooks/useLeases';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { useServices } from '@/hooks/useServices';
 import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { useSubmitAppeal } from '@/hooks/useSubmitAppeal';
+import { useTeamBaseline } from '@/hooks/useTeamBaseline';
 import { resetAppealsMswState } from '@/test/msw/domains/appeals';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -43,6 +49,8 @@ const STORAGE_KEY = 'lease-governor.service';
 const DEMO_TRACKER = 'demo-tracker';
 const GITHUB = 'github';
 const LEASE_ID = 1;
+const TEAM_SLUG = 'dev';
+const ONBOARDING_LOGIN = 'nowy-dev';
 const JUSTIFICATION = 'Prowadzę release v2.1 w przyszłym tygodniu';
 const SUBMIT_APPEAL_LABEL = 'Złóż odwołanie';
 const DECIDE_LABEL = 'Rozstrzygnij';
@@ -83,6 +91,21 @@ function AppealsProbe({ query }: { query: AppealsQuery }): React.JSX.Element {
   useAppeals(query);
 
   return <span data-testid="appeals-probe" />;
+}
+
+/**
+ * Sonda pozostałych czytników: pinuje kształt klucza każdego z nich w jednym montażu, żeby
+ * „przeoczenie jednego hooka przy namespace'owaniu” miało test, a nie tylko przegląd kodu.
+ */
+function AllReadersProbe(): React.JSX.Element {
+  useDashboard();
+  useGraph();
+  useAuditLog();
+  useActivityStats(LEASE_ID);
+  useTeamBaseline(TEAM_SLUG);
+  useOnboarding(ONBOARDING_LOGIN);
+
+  return <span data-testid="all-readers-probe" />;
 }
 
 function SubmitAppealProbe(): React.JSX.Element {
@@ -142,6 +165,20 @@ describe('service-scoped query keys', () => {
         { lease_id: LEASE_ID },
       ]);
     });
+  });
+
+  it('namespaces every remaining reader key by the active service', async () => {
+    window.localStorage.setItem(STORAGE_KEY, DEMO_TRACKER);
+    const { queryClient } = renderWithProviders(<AllReadersProbe />);
+
+    await waitFor(() => {
+      expect(cachedKeys(queryClient)).toContainEqual(['dashboard', DEMO_TRACKER]);
+    });
+    expect(cachedKeys(queryClient)).toContainEqual(['graph', DEMO_TRACKER]);
+    expect(cachedKeys(queryClient)).toContainEqual(['audit', DEMO_TRACKER]);
+    expect(cachedKeys(queryClient)).toContainEqual(['activity-stats', DEMO_TRACKER, LEASE_ID]);
+    expect(cachedKeys(queryClient)).toContainEqual(['baseline', DEMO_TRACKER, TEAM_SLUG]);
+    expect(cachedKeys(queryClient)).toContainEqual(['onboarding', DEMO_TRACKER, ONBOARDING_LOGIN]);
   });
 
   it('does not request data in the placeholder namespace while the catalog is pending', async () => {
