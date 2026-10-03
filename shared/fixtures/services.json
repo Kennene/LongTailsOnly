@@ -1,0 +1,16 @@
+[
+  {
+    "id": "demo-tracker",
+    "name": "Demo Tracker (integracja demonstracyjna)",
+    "kind": "issue_tracker",
+    "capabilities": ["dashboard", "audit"],
+    "is_available": false
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "kind": "vcs",
+    "capabilities": ["dashboard", "leases", "appeals", "baseline", "graph", "audit"],
+    "is_available": true
+  }
+]

@@ -7,6 +7,7 @@ import { baselineHandlers } from './domains/baseline';
 import { dashboardHandlers } from './domains/dashboard';
 import { graphHandlers } from './domains/graph';
 import { leasesHandlers } from './domains/leases';
+import { servicesHandlers } from './domains/services';
 import { simulationHandlers } from './domains/simulation';
 
 /**
@@ -22,4 +23,5 @@ export const handlers: HttpHandler[] = [
   ...activityHandlers,
   ...graphHandlers,
   ...auditHandlers,
+  ...servicesHandlers,
 ];

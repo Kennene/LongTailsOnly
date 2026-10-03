@@ -112,6 +112,15 @@
       "kind": "request",
       "consumedBy": ["frontend:5.5"],
       "status": "provisional"
+    },
+    {
+      "id": "services",
+      "file": "services.json",
+      "shape": "list",
+      "model": "ServiceRead",
+      "kind": "response",
+      "consumedBy": ["frontend:service-picker"],
+      "status": "provisional"
     }
   ]
 }
