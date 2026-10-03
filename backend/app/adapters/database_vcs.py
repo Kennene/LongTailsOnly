@@ -2,6 +2,11 @@
 
 Grants, restores and removes access; removal goes through Last Admin Protection (step 3.4).
 It still refuses to demote an admin (409).
+
+The module also declares the `github` service descriptor and publishes it to
+`app.ports.service_registry` at import time, so the catalog is fed by the adapter that
+actually serves the service. The descriptor must stay identical to the `_BUILTIN` entry of
+the same id; `register` raises `ValueError` at import on any difference.
 """
 
 from datetime import timedelta
@@ -12,8 +17,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.enums import Role
 from app.models import Lease, Repository, User
 from app.ports.clock import ClockPort
+from app.ports.service_registry import ServiceDescriptor, ServiceKind, register
 from app.services.errors import ServiceError
 from app.services.last_admin_guard import ensure_not_last_admin
+
+GITHUB_DESCRIPTOR = ServiceDescriptor(
+    id="github",
+    name="GitHub",
+    kind=ServiceKind.VCS,
+    capabilities=("dashboard", "leases", "appeals", "baseline", "graph", "audit"),
+    is_available=True,
+)
+
+register(GITHUB_DESCRIPTOR)
 
 
 class DatabaseVCSAdapter:
