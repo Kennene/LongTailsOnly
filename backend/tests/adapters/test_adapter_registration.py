@@ -1,4 +1,6 @@
+import ast
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +12,31 @@ from app.ports.service_registry import ServiceKind, all_services
 from app.services.errors import ServiceError
 
 NOW = datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
+ADAPTERS_DIR = Path(__file__).resolve().parents[2] / "app" / "adapters"
+
+
+def top_level_register_calls(source: str) -> int:
+    """Count module-level `register(...)` call statements in `source`, without importing it."""
+    return sum(
+        1
+        for node in ast.parse(source).body
+        if isinstance(node, ast.Expr)
+        and isinstance(node.value, ast.Call)
+        and isinstance(node.value.func, ast.Name)
+        and node.value.func.id == "register"
+    )
+
+
+@pytest.mark.parametrize("module_name", ["database_vcs.py", "demo_service.py"])
+def test_each_adapter_declares_its_descriptor_at_import(module_name: str) -> None:
+    """Deleting an adapter's declaration changes nothing at runtime, so this test guards it.
+
+    Both ids are also served from the registry's `_BUILTIN` tier, which makes the import-time
+    registration a checked no-op: every other test here would still pass without it. Parsing
+    the source is the only thing that notices the declaration going away.
+    """
+    source = (ADAPTERS_DIR / module_name).read_text(encoding="utf-8")
+    assert top_level_register_calls(source) == 1
 
 
 def test_both_adapters_are_registered() -> None:

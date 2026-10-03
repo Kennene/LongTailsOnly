@@ -3,10 +3,12 @@
 Grants, restores and removes access; removal goes through Last Admin Protection (step 3.4).
 It still refuses to demote an admin (409).
 
-The module also declares the `github` service descriptor and publishes it to
-`app.ports.service_registry` at import time, so the catalog is fed by the adapter that
-actually serves the service. The descriptor must stay identical to the `_BUILTIN` entry of
-the same id; `register` raises `ValueError` at import on any difference.
+The module also declares the `github` service descriptor and republishes it through the
+registry's public API at import time. The catalog is currently served from the registry's
+built-in entries, so this declaration is a *checked no-op*: it changes nothing today, and it
+exists so the plugin seam is the real registration path once the built-in entry is retired.
+The descriptor must stay identical to the `_BUILTIN` entry of the same id; `register` raises
+`ValueError` at import on any difference.
 """
 
 from datetime import timedelta
@@ -21,7 +23,7 @@ from app.ports.service_registry import ServiceDescriptor, ServiceKind, register
 from app.services.errors import ServiceError
 from app.services.last_admin_guard import ensure_not_last_admin
 
-GITHUB_DESCRIPTOR = ServiceDescriptor(
+GITHUB_DESCRIPTOR: ServiceDescriptor = ServiceDescriptor(
     id="github",
     name="GitHub",
     kind=ServiceKind.VCS,
