@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -5,6 +6,7 @@ import {
   getAppealStatusBadge,
   getRecommendationBadge,
   getRecommendationLabel,
+  getRoleBadge,
   getRoleLabel,
   getStatusBadge,
 } from '@/lib/statusBadges';
@@ -56,6 +58,30 @@ describe('getStatusBadge', () => {
     expect(className).toContain(`text-status-${token}`);
     expect(className).toContain(`border-status-${token}-border`);
   });
+  it('prefixes every lease status label with its own lucide icon', () => {
+    const slugs: string[] = STATUSES.map(
+      (status: LeaseStatus): string => getStatusBadge(status).slug,
+    );
+
+    slugs.forEach((slug: string): void => {
+      expect(slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+    });
+    expect(new Set(slugs).size).toBe(STATUSES.length);
+  });
+
+  it('names the icon slug the way lucide writes it into the svg class', () => {
+    // `lucide-react` renderuje `class="lucide lucide-clock"`; slug jest kontraktem między mapą
+    // a DOM-em i to on trzyma testy komponentów, bo `icon.name` bywa zminifikowane.
+    expect(getStatusBadge('WARNING').slug).toBe('clock');
+  });
+
+  it('gives every appeal status an icon too, since the badge shape is shared', () => {
+    APPEAL_STATUSES.forEach((status: AppealStatus): void => {
+      const { icon }: { icon: LucideIcon } = getAppealStatusBadge(status);
+
+      expect(icon.displayName ?? icon.name).toBeTruthy();
+    });
+  });
 });
 
 describe('getRoleLabel', () => {
@@ -65,6 +91,21 @@ describe('getRoleLabel', () => {
       'Zapis (write)',
       'Odczyt (read)',
     ]);
+  });
+
+  it('prefixes every role label with its own lucide icon', () => {
+    const slugs: string[] = ROLES.map((role: Role): string => getRoleBadge(role).slug);
+
+    slugs.forEach((slug: string): void => {
+      expect(slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+    });
+    expect(new Set(slugs).size).toBe(ROLES.length);
+  });
+
+  it('marks the level icons so a reader can tell the eye from the pencil', () => {
+    expect(getRoleBadge('read').slug).toBe('eye');
+    expect(getRoleBadge('write').slug).toBe('pencil');
+    expect(getRoleBadge('admin').slug).toBe('shield');
   });
 });
 
@@ -83,6 +124,18 @@ describe('getRecommendationBadge', () => {
     ).toEqual(
       RECOMMENDATIONS.map((value: Recommendation): string => getRecommendationLabel(value)),
     );
+  });
+
+  it('prefixes every recommendation with its own lucide icon', () => {
+    const slugs: string[] = RECOMMENDATIONS.map(
+      (value: Recommendation): string => getRecommendationBadge(value).slug,
+    );
+
+    expect(new Set(slugs).size).toBe(RECOMMENDATIONS.length);
+  });
+
+  it('separates the warning status icon from the downscope action icon', () => {
+    expect(getStatusBadge('WARNING').slug).not.toBe(getRecommendationBadge('DOWNSCOPE').slug);
   });
 
   it('gives every recommendation a distinct, non-empty class name', () => {
