@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 
 from app.api.v1.deps import AdminIdDep, ClockDep, SessionDep
+from app.domain.enums import AppealStatus
 from app.models import Appeal
 from app.schemas.appeal import AppealCreate, AppealOverview, AppealRejectRequest
-from app.services.appeal_service import build_appeal_overviews, reject_appeal, submit_appeal
+from app.services.appeal_service import build_appeal_overviews, list_appeal_overviews, reject_appeal, submit_appeal
 
 router = APIRouter(prefix="/appeals", tags=["appeals"])
 
@@ -11,6 +12,13 @@ router = APIRouter(prefix="/appeals", tags=["appeals"])
 async def _overview(session: SessionDep, appeal: Appeal, clock: ClockDep) -> AppealOverview:
     (overview,) = await build_appeal_overviews(session, [appeal], clock.get_current_time())
     return overview
+
+
+@router.get("", response_model=list[AppealOverview])
+async def list_appeals(session: SessionDep, clock: ClockDep, login: str | None = None, lease_id: int | None = None,
+                       status: AppealStatus | None = None) -> list[AppealOverview]:
+    return await list_appeal_overviews(session, now=clock.get_current_time(), login=login, lease_id=lease_id,
+                                       status=status)
 
 
 @router.post("", response_model=AppealOverview, status_code=201)

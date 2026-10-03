@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.appeal_rules import JustificationError, ensure_new_justification, is_appealable
 from app.domain.enums import ActorType, AppealStatus, AuditAction
 from app.domain.lease_window import days_remaining
-from app.models import ActivityEvent, Appeal, Lease
+from app.models import ActivityEvent, Appeal, Lease, User
 from app.schemas.appeal import AppealOverview, AppealRead
 from app.schemas.people import UserRead
 from app.schemas.repository import RepositoryRead
@@ -93,3 +93,24 @@ async def _overview(session: AsyncSession, appeal: Appeal, history: Sequence[Row
         previous_appeals=sum(1 for user_id, created_at, appeal_id in history
                              if user_id == appeal.user_id and (created_at, appeal_id) < order),
     )
+
+
+async def list_appeal_overviews(
+    session: AsyncSession,
+    *,
+    now: datetime,
+    login: str | None = None,
+    lease_id: int | None = None,
+    status: AppealStatus | None = None,
+) -> list[AppealOverview]:
+    query = select(Appeal).order_by(Appeal.created_at.desc(), Appeal.id.desc())
+    if login is not None:
+        user_id = await session.scalar(select(User.id).where(User.login == login))
+        if user_id is None:
+            raise ServiceError(404, f"User {login} not found")
+        query = query.where(Appeal.user_id == user_id)
+    if lease_id is not None:
+        query = query.where(Appeal.lease_id == lease_id)
+    if status is not None:
+        query = query.where(Appeal.status == status)
+    return await build_appeal_overviews(session, (await session.scalars(query)).all(), now)

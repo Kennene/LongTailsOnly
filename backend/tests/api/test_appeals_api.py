@@ -94,3 +94,26 @@ async def test_reject_appeal(client: AsyncClient, session: AsyncSession) -> None
     assert rejected.json()["resolved_at"] is not None
     assert (again.status_code, blank.status_code) == (409, 422)
     assert [(entry["actor_login"], entry["justification"]) for entry in audit] == [("tomasz-admin", "No business need")]
+
+
+async def test_history_endpoint_filters(client: AsyncClient, session: AsyncSession) -> None:
+    ids = await appeal_world(session)
+    mine = await submit(client, ids["warning"], "Release v2.1")
+
+    by_login = (await client.get("/api/v1/appeals", params={"login": "marta"})).json()
+    pending = (await client.get("/api/v1/appeals", params={"lease_id": ids["warning"], "status": "PENDING"})).json()
+    nobody = (await client.get("/api/v1/appeals", params={"login": "ania"})).json()
+
+    assert [item["id"] for item in by_login] == [mine["id"]]
+    assert [item["justification"] for item in pending] == ["Release v2.1"]
+    assert nobody == []
+
+
+async def test_history_endpoint_errors(client: AsyncClient, session: AsyncSession) -> None:
+    await appeal_world(session)
+
+    unknown = await client.get("/api/v1/appeals", params={"login": "ghost"})
+    bad_status = await client.get("/api/v1/appeals", params={"status": "OPEN"})
+
+    assert (unknown.status_code, unknown.json()) == (404, {"detail": "User ghost not found"})
+    assert bad_status.status_code == 422
