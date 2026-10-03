@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.database_vcs import DatabaseVCSAdapter
-from app.api.v1.deps import get_vcs_provider
+from app.api.v1.deps import get_vcs_provider, resolve_vcs_provider
 from app.core.time_provider import TimeProvider
 from app.ports.service_registry import ServiceKind, all_services
 from app.services.errors import ServiceError
@@ -65,7 +65,12 @@ async def test_get_vcs_provider_defaults_to_github(session: AsyncSession) -> Non
     assert isinstance(provider, DatabaseVCSAdapter)
 
 
-async def test_get_vcs_provider_rejects_unknown_id(session: AsyncSession) -> None:
+async def test_resolve_vcs_provider_rejects_unknown_id(session: AsyncSession) -> None:
+    """The 404 lives in the resolver, which takes the id explicitly (Ruling 36).
+
+    It cannot be reached through `get_vcs_provider`: the dependency no longer accepts a
+    `service_id`, precisely so the parameter stays off the HTTP surface.
+    """
     with pytest.raises(ServiceError) as excinfo:
-        get_vcs_provider(session, TimeProvider(base_time_source=lambda: NOW), service_id="nope")
+        resolve_vcs_provider(session, TimeProvider(base_time_source=lambda: NOW), "nope")
     assert excinfo.value.status_code == 404

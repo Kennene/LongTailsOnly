@@ -30,12 +30,13 @@ async def get_admin_id(session: SessionDep, settings: SettingsDep) -> int:
     return admin_id
 
 
-def resolve_vcs_provider(session: SessionDep, clock: ClockDep, service_id: str) -> VCSProvider:
-    """Resolve a registered service to its adapter; an unknown id is a 404.
+def resolve_vcs_provider(session: AsyncSession, clock: TimeProvider, service_id: str) -> VCSProvider:
+    """The provider serving `service_id`; an unknown id is a 404.
 
-    Kept separate from `get_vcs_provider` so the seam exists in Python without leaking a
-    `service_id` query parameter onto every endpoint that depends on `VCSDep` (FastAPI promotes
-    a dependency's scalar parameter).
+    Kept as a plain function taking the id explicitly: FastAPI promotes a *dependency's* scalar
+    parameters into every operation that depends on it, so a `service_id` argument here would leak
+    an undocumented `service_id` query parameter onto mutating endpoints (Ruling 36). Nothing
+    selects a service per request today, so no caller loses anything.
     """
     if service_id not in {service.id for service in all_services()}:
         raise ServiceError(404, f"Unknown service {service_id}")
@@ -43,7 +44,11 @@ def resolve_vcs_provider(session: SessionDep, clock: ClockDep, service_id: str) 
 
 
 def get_vcs_provider(session: SessionDep, clock: ClockDep) -> VCSProvider:
-    """The default VCS provider (ADR 0014 §3). Per-request selection goes through `resolve_vcs_provider`."""
+    """The default VCS provider (ADR 0014 §3).
+
+    The selected service is client state (ADR 0014 decision 3), so the request surface stays free
+    of it: this resolves the default via `resolve_vcs_provider` explicitly.
+    """
     return resolve_vcs_provider(session, clock, "github")
 
 
