@@ -1,0 +1,8 @@
+[
+  { "action": "EXTEND", "extension": { "preset_days": 30 }, "justification": null },
+  { "action": "EXTEND", "extension": { "multiplier": 2.0 }, "justification": null },
+  { "action": "EXTEND", "extension": { "custom_days": 45 }, "justification": null },
+  { "action": "EXTEND", "extension": { "until_date": "2026-12-31" }, "justification": null },
+  { "action": "DOWNSCOPE", "extension": null, "justification": "Brak pushy od 30 dni; użytkownik nadal recenzuje kod." },
+  { "action": "REVOKE", "extension": null, "justification": "Brak jakiejkolwiek aktywności w oknie 30 dni." }
+]

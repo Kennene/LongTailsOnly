@@ -1,0 +1,45 @@
+{
+  "id": "uc-05-last-admin",
+  "use_case": "UC-5",
+  "title": "Ochrona ostatniego administratora (break-glass guard)",
+  "given": {
+    "anchor": "2026-10-03T00:00:00Z",
+    "seed": "default",
+    "relies_on": ["tomasz-admin", "kamil", "payment-service"],
+    "note": "Seed nadaje rolę admin wyłącznie tomasz-admin, po jednym na repozytorium (ADR 0008). Dlatego scenariusz najpierw nadaje drugiego administratora: bez tego asercja 403 nie odróżniałaby działającej straży od reguły, która zawsze blokuje."
+  },
+  "when": [
+    { "type": "reset" },
+    {
+      "type": "api",
+      "method": "DELETE",
+      "path": "/api/v3/repos/longtails/payment-service/collaborators/tomasz-admin",
+      "as": "remove-only-admin"
+    },
+    {
+      "type": "api",
+      "method": "PUT",
+      "path": "/api/v3/repos/longtails/payment-service/collaborators/kamil",
+      "as": "grant-second-admin",
+      "body": { "permission": "admin" }
+    },
+    {
+      "type": "api",
+      "method": "DELETE",
+      "path": "/api/v3/repos/longtails/payment-service/collaborators/tomasz-admin",
+      "as": "remove-first-admin"
+    },
+    {
+      "type": "api",
+      "method": "DELETE",
+      "path": "/api/v3/repos/longtails/payment-service/collaborators/kamil",
+      "as": "remove-last-admin"
+    }
+  ],
+  "then": [
+    { "target": "remove-only-admin", "expect": { "status_code": 403 } },
+    { "target": "grant-second-admin", "expect": { "status_code": 201 } },
+    { "target": "remove-first-admin", "expect": { "status_code": 204 } },
+    { "target": "remove-last-admin", "expect": { "status_code": 403 } }
+  ]
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "team_id": 1,
+    "repository": { "id": 1, "name": "core-api", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "proposed_role": "write",
+    "active_members": 10,
+    "team_size": 12
+  },
+  {
+    "team_id": 1,
+    "repository": { "id": 2, "name": "auth-service", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "proposed_role": "write",
+    "active_members": 6,
+    "team_size": 12
+  },
+  {
+    "team_id": 1,
+    "repository": { "id": 3, "name": "payment-service", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "proposed_role": "read",
+    "active_members": 7,
+    "team_size": 12
+  },
+  {
+    "team_id": 2,
+    "repository": { "id": 9, "name": "qa-automation", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "proposed_role": "read",
+    "active_members": 6,
+    "team_size": 6
+  }
+]

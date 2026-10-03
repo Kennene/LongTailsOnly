@@ -1,0 +1,93 @@
+[
+  {
+    "id": 9,
+    "user": { "id": 2, "login": "kamil", "name": "Kamil", "team": { "id": 1, "slug": "dev", "name": "DEV" }, "is_admin": false },
+    "repository": { "id": 4, "name": "frontend-app", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "current_role": "write",
+    "granted_at": "2026-07-05T00:00:00Z",
+    "expires_at": "2026-08-04T00:00:00Z",
+    "is_active": true,
+    "status": "EXPIRED",
+    "days_remaining": -61,
+    "last_activity_at": "2026-09-30T10:00:00Z",
+    "recommendation": "DOWNSCOPE"
+  },
+  {
+    "id": 10,
+    "user": { "id": 2, "login": "kamil", "name": "Kamil", "team": { "id": 1, "slug": "dev", "name": "DEV" }, "is_admin": false },
+    "repository": { "id": 6, "name": "notifications", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "current_role": "write",
+    "granted_at": "2026-07-05T00:00:00Z",
+    "expires_at": "2026-08-04T00:00:00Z",
+    "is_active": true,
+    "status": "EXPIRED",
+    "days_remaining": -61,
+    "last_activity_at": "2026-09-30T10:00:00Z",
+    "recommendation": "DOWNSCOPE"
+  },
+  {
+    "id": 11,
+    "user": { "id": 2, "login": "kamil", "name": "Kamil", "team": { "id": 1, "slug": "dev", "name": "DEV" }, "is_admin": false },
+    "repository": { "id": 5, "name": "infra-terraform", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "current_role": "write",
+    "granted_at": "2026-07-05T00:00:00Z",
+    "expires_at": "2026-08-04T00:00:00Z",
+    "is_active": true,
+    "status": "EXPIRED",
+    "days_remaining": -61,
+    "last_activity_at": null,
+    "recommendation": "REVOKE"
+  },
+  {
+    "id": 12,
+    "user": { "id": 2, "login": "kamil", "name": "Kamil", "team": { "id": 1, "slug": "dev", "name": "DEV" }, "is_admin": false },
+    "repository": { "id": 7, "name": "mobile-app", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "current_role": "write",
+    "granted_at": "2026-07-05T00:00:00Z",
+    "expires_at": "2026-08-04T00:00:00Z",
+    "is_active": true,
+    "status": "EXPIRED",
+    "days_remaining": -61,
+    "last_activity_at": null,
+    "recommendation": "REVOKE"
+  },
+  {
+    "id": 13,
+    "user": { "id": 2, "login": "kamil", "name": "Kamil", "team": { "id": 1, "slug": "dev", "name": "DEV" }, "is_admin": false },
+    "repository": { "id": 8, "name": "data-pipeline", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "current_role": "write",
+    "granted_at": "2026-07-05T00:00:00Z",
+    "expires_at": "2026-08-04T00:00:00Z",
+    "is_active": true,
+    "status": "EXPIRED",
+    "days_remaining": -61,
+    "last_activity_at": null,
+    "recommendation": "REVOKE"
+  },
+  {
+    "id": 14,
+    "user": { "id": 2, "login": "kamil", "name": "Kamil", "team": { "id": 1, "slug": "dev", "name": "DEV" }, "is_admin": false },
+    "repository": { "id": 9, "name": "qa-automation", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "current_role": "write",
+    "granted_at": "2026-07-05T00:00:00Z",
+    "expires_at": "2026-08-04T00:00:00Z",
+    "is_active": true,
+    "status": "EXPIRED",
+    "days_remaining": -61,
+    "last_activity_at": null,
+    "recommendation": "REVOKE"
+  },
+  {
+    "id": 15,
+    "user": { "id": 2, "login": "kamil", "name": "Kamil", "team": { "id": 1, "slug": "dev", "name": "DEV" }, "is_admin": false },
+    "repository": { "id": 10, "name": "legacy-reports", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+    "current_role": "write",
+    "granted_at": "2026-07-05T00:00:00Z",
+    "expires_at": "2026-08-04T00:00:00Z",
+    "is_active": true,
+    "status": "EXPIRED",
+    "days_remaining": -61,
+    "last_activity_at": null,
+    "recommendation": "REVOKE"
+  }
+]

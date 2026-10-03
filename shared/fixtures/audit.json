@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "timestamp": "2026-10-03T00:05:00Z",
+    "actor_type": "SYSTEM",
+    "actor_id": null,
+    "action": "LEASE_EXPIRED",
+    "target": "kamil@legacy-reports",
+    "details": { "recommendation": "REVOKE", "days_remaining": -61, "current_role": "write" },
+    "justification": null
+  },
+  {
+    "id": 2,
+    "timestamp": "2026-09-29T11:30:00Z",
+    "actor_type": "ADMIN",
+    "actor_id": 1,
+    "action": "APPEAL_APPROVED",
+    "target": "kamil@payment-service",
+    "details": { "lease_id": 3, "preset_days": 30, "requested_role": "write" },
+    "justification": "Zamykam migrację płatności; zostały dwie poprawki do wypchnięcia przed końcem sprintu."
+  },
+  {
+    "id": 3,
+    "timestamp": "2026-09-28T08:00:00Z",
+    "actor_type": "USER",
+    "actor_id": 2,
+    "action": "APPEAL_SUBMITTED",
+    "target": "kamil@payment-service",
+    "details": { "lease_id": 3, "requested_role": "write" },
+    "justification": "Zamykam migrację płatności; zostały dwie poprawki do wypchnięcia przed końcem sprintu."
+  },
+  {
+    "id": 4,
+    "timestamp": "2026-10-03T00:05:00Z",
+    "actor_type": "SYSTEM",
+    "actor_id": null,
+    "action": "DOWNSCOPE_RECOMMENDED",
+    "target": "kamil@frontend-app",
+    "details": { "recommendation": "DOWNSCOPE", "from_role": "write", "to_role": "read" },
+    "justification": null
+  }
+]

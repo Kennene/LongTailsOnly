@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "lease_id": 5,
+    "user_id": 14,
+    "repo_id": 9,
+    "requested_role": "read",
+    "justification": "W przyszłym tygodniu prowadzę testy regresyjne wydania v2.1 — muszę mieć dostęp do zgłoszeń i wyników QA.",
+    "status": "PENDING",
+    "created_at": "2026-10-02T09:15:00Z",
+    "resolved_at": null
+  },
+  {
+    "id": 2,
+    "lease_id": 3,
+    "user_id": 2,
+    "repo_id": 3,
+    "requested_role": "write",
+    "justification": "Zamykam migrację płatności; zostały dwie poprawki do wypchnięcia przed końcem sprintu.",
+    "status": "APPROVED",
+    "created_at": "2026-09-28T08:00:00Z",
+    "resolved_at": "2026-09-29T11:30:00Z"
+  },
+  {
+    "id": 3,
+    "lease_id": 1,
+    "user_id": 2,
+    "repo_id": 1,
+    "requested_role": "write",
+    "justification": "Wdrożenie endpointu zwrotów wymaga jeszcze dwóch pushy w tym tygodniu.",
+    "status": "REJECTED",
+    "created_at": "2026-09-20T14:05:00Z",
+    "resolved_at": "2026-09-21T09:00:00Z"
+  }
+]

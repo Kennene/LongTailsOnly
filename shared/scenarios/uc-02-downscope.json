@@ -1,0 +1,39 @@
+{
+  "id": "uc-02-downscope",
+  "use_case": "UC-2",
+  "title": "Deeskalacja write → read przy braku pushów",
+  "given": {
+    "anchor": "2026-10-03T00:00:00Z",
+    "seed": "default",
+    "relies_on": ["kamil", "payment-service", "core-api"],
+    "note": "kamil ma write w payment-service, ale ostatni PushEvent był 25 dni temu; od tego czasu wyłącznie recenzje PR. Dzierżawa wygasa za 4 dni, więc wchodzi w okno ostrzegawcze (scenariusz A z ADR 0008)."
+  },
+  "when": [
+    { "type": "reset" },
+    { "type": "api", "method": "GET", "path": "/api/v1/leases", "as": "leases" }
+  ],
+  "then": [
+    {
+      "target": "leases",
+      "model": "LeaseOverview",
+      "where": { "user.login": "kamil", "repository.name": "payment-service" },
+      "expect": {
+        "status": "WARNING",
+        "recommendation": "DOWNSCOPE",
+        "current_role": "write",
+        "days_remaining": 4
+      }
+    },
+    {
+      "target": "leases",
+      "model": "LeaseOverview",
+      "where": { "user.login": "kamil", "repository.name": "core-api" },
+      "expect": {
+        "status": "ACTIVE",
+        "recommendation": "KEEP",
+        "current_role": "write",
+        "days_remaining": 28
+      }
+    }
+  ]
+}
