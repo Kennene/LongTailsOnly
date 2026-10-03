@@ -14,8 +14,8 @@ Celem nadrzędnym jest **maksymalna czytelność, modułowość i szybkość dos
 2. **Zakaz bloatowania utilami i powtórzeniami (DRY)**:
    - Zanim napiszesz funkcję formatującą datę, kalkulację dni czy helper stylów — **zawsze sprawdź istniejący katalog `utils/` lub `lib/`**.
    - Wszystkie formatowania dat, badge'y statusów czy parsowania błędów API muszą mieć dokładnie jedno źródło prawdy w projekcie.
-3. **Brak testów w fazie MVP Demo**:
-   - Skupiamy się na manualnej weryfikacji, stabilnym działaniu scenariuszy demonstracyjnych i deterministycznym seedowaniu danych.
+3. **Testy zgodnie z TDD**:
+   - Implementację prowadzimy w cyklu Red-Green-Refactor: najpierw test, następnie minimalny kod produkcyjny i refaktoryzacja.
 4. **Spójne sygnatury funkcji**:
    - **Frontend (TS/React)**: Wyłącznie standardowe deklaracje funkcji z explicite typowanymi parametrami i typem zwracanym:
      ```typescript
