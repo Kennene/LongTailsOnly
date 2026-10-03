@@ -24,6 +24,8 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': 'http://localhost:8000',
+      // Osobne Swaggery mocków GitHuba i Jiry z backendu; sama trasa SPA `/mocks` zostaje we froncie.
+      '^/mocks/(github|jira)/(docs|openapi\\.json)$': 'http://localhost:8000',
     },
   },
   test: {

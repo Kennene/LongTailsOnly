@@ -1,10 +1,10 @@
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchAppeals, postAppeal, rejectAppeal } from '@/api/appeals';
+import { fetchAppeals, postAppeal, postAppealDecision, rejectAppeal } from '@/api/appeals';
 import { ApiError } from '@/api/client';
 import { appealsFixture } from '@/api/fixtures';
-import { resetAppealsMswState } from '@/test/msw/domains/appeals';
+import { getLastAppealDecision, resetAppealsMswState } from '@/test/msw/domains/appeals';
 import { server } from '@/test/msw/server';
 import { getLeases } from '@/test/msw/state';
 import type { LeaseOverview } from '@/types/api';
@@ -14,7 +14,10 @@ import type { LeaseOverview } from '@/types/api';
  *
  * - `GET /api/v1/appeals` zwraca **gołą tablicę** `AppealOverview` (bez koperty `{ appeals }`),
  * - `POST /api/v1/appeals` odpowiada `201` i zwraca `AppealOverview`,
- * - rozstrzygnięcie to wyłącznie `POST /api/v1/appeals/{id}/reject` — endpointu `/decision` nie ma.
+ * - `POST /api/v1/appeals/{id}/reject` odrzuca wniosek,
+ * - `POST /api/v1/appeals/{id}/decision` rozstrzyga wniosek decyzją o dzierżawie (krok 4.3C):
+ *   `EXTEND` zamyka go jako `APPROVED`, a `DOWNSCOPE`/`REVOKE` jako `REJECTED`
+ *   (`backend/app/services/appeal_service.py`), a wniosek już rozstrzygnięty to `409`.
  *
  * Testujemy tutaj, bo te kształty łatwo „naprawić” po stronie komponentu (np. dodając kopertę),
  * a wtedy frontend rozjeżdża się z backendem po cichu.
@@ -137,5 +140,42 @@ describe('rejectAppeal', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 404 });
+  });
+});
+
+describe('postAppealDecision', () => {
+  it('zatwierdza wniosek przedłużeniem i zwraca overview po decyzji', async () => {
+    const decided = await postAppealDecision(1, {
+      action: 'EXTEND',
+      extension: { preset_days: 30 },
+    });
+
+    expect(decided).toMatchObject({ id: 1, status: 'APPROVED' });
+    expect(decided.resolved_at).not.toBeNull();
+    expect(getLastAppealDecision()).toEqual({
+      appeal_id: 1,
+      request: { action: 'EXTEND', extension: { preset_days: 30 } },
+    });
+  });
+
+  it('zamyka wniosek jako odrzucony, gdy decyzja odbiera dostęp', async () => {
+    const decided = await postAppealDecision(1, {
+      action: 'REVOKE',
+      justification: 'Brak dowodu użycia w oknie.',
+    });
+
+    expect(decided.status).toBe('REJECTED');
+  });
+
+  it('zwraca 409, gdy wniosek został już rozstrzygnięty', async () => {
+    await rejectAppeal(1, 'Brak konkretnego planu użycia.');
+
+    const error: unknown = await postAppealDecision(1, {
+      action: 'EXTEND',
+      extension: { preset_days: 30 },
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 409 });
   });
 });

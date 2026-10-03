@@ -1,120 +1,46 @@
-import { applyColumnLayout, type GraphNodeInput } from '@/lib/graphLayout';
-import type {
-  GraphEdge,
-  LeaseOverview,
-  PermissionGraph,
-  RepositoryRead,
-  UserRead,
-} from '@/types/api';
+import type { PermissionGraph } from '@/types/api';
 
+import { getJson } from './client';
 import { shouldUseFixtures } from './config';
 import { graphFixture } from './fixtures/graph';
-import { fetchLeases } from './leases';
 
 /**
- * Graf uprawnień dla widoku `/graph`.
+ * Filtry grafu — te same, które przyjmuje `GET /api/v1/graph` (`app/api/v1/graph.py`).
  *
- * Backend **nie serwuje** `GET /api/v1/graph` (krok 4.6B, plan
- * `docs/superpowers/plans/2026-10-03-p4-4.6-dashboard-graph.md`), więc w trybie live składamy
- * graf z danych, które API już oddaje — z listy dostępów (`GET /api/v1/leases`). Reguły
- * odwzorowują `app/domain/insights.py::build_graph_layout`:
- *
- * - węzły to osoby i repozytoria z **czynnych** dostępów; nieaktywne pomijamy tak samo jak
- *   backend (odebrany dostęp nie jest już krawędzią w grafie),
- * - każdy czynny dostęp to jedna krawędź `lease` z rolą, statusem i rekomendacją; `animated`
- *   zapala się dla `WARNING`/`EXPIRED`,
- * - identyfikatory są stabilne między odświeżeniami: `user:<id>`, `repo:<id>`, `lease:<id>`,
- * - `position` dokłada układ kolumnowy (`lib/graphLayout.ts`), bo kontrakt wymaga go w węźle.
- *
- * **Zespołów tu nie ma i to jest poprawne**: lista dostępów niesie tylko `user.team` osoby, która
- * dostęp ma — nie niesie składu zespołu. Węzeł `team:<slug>` z krawędziami `membership` dla
- * samych posiadaczy dostępów kłamałby o członkostwie (pokazywałby część zespołu jako cały zespół),
- * więc zespoły zostają tam, gdzie payload je naprawdę niesie: na węźle osoby (`data.team` = slug),
- * z którego korzysta filtr w widoku. Graf z węzłami zespołów wróci razem z 4.6B.
+ * `team` to **slug** zespołu (`dev`, `qa`), nie jego nazwa z węzła (`DEV`, `QA`): backend rozwiązuje
+ * go przez `baseline_service.team_by_slug` i odpowiada `404` na nieznany slug.
  */
-export async function fetchGraph(): Promise<PermissionGraph> {
+export interface GraphQuery {
+  team?: string;
+}
+
+/**
+ * Graf uprawnień dla widoku `/graph` — `GET /api/v1/graph`.
+ *
+ * Backend oddaje gotowy `PermissionGraph` w formacie React Flow (ADR 0009): węzły zespołów, osób
+ * i repozytoriów oraz krawędzie `membership` i `lease` z rolą, statusem i rekomendacją. Frontend
+ * **nie składa już grafu z listy dzierżaw** — lista nie niesie składu zespołów, więc taka ścieżka
+ * kłamałaby o członkostwie, a `position` węzłów i tak musi przyjść z API.
+ *
+ * Odpowiedź idzie na ekran co do znaku: brak endpointu (404) jest błędem widoku, a nie powodem do
+ * cichego powrotu na ścieżkę pochodną. Układ kolumnowy (`lib/graphLayout.ts`) zostaje wyłącznie
+ * jako zabezpieczenie widoku na odpowiedź bez `position` — patrz `GraphPage`.
+ *
+ * Tryb `VITE_USE_FIXTURES=true` (praca bez backendu) zostaje na wspólnym fixture: ten sam kształt
+ * i ta sama reguła co backend, bez pytania API.
+ */
+export async function fetchGraph(query: GraphQuery = {}): Promise<PermissionGraph> {
   if (shouldUseFixtures()) {
     return graphFixture;
   }
 
-  return buildLeaseGraph(await fetchLeases());
+  return getJson<PermissionGraph>(`/api/v1/graph${buildQueryString(query)}`);
 }
 
-/** Graf z listy dostępów — jedyne źródło węzłów i krawędzi, gdy backend nie ma jeszcze 4.6B. */
-export function buildLeaseGraph(leases: LeaseOverview[]): PermissionGraph {
-  const live: LeaseOverview[] = leases.filter((lease: LeaseOverview): boolean => lease.is_active);
-  const users: UserRead[] = uniqueUsers(live);
-  const repositories: RepositoryRead[] = uniqueRepositories(live);
-
-  const nodes: GraphNodeInput[] = [
-    ...users.map((user: UserRead): GraphNodeInput => ({
-      id: `user:${user.id}`,
-      type: 'user',
-      data: { label: user.login, team: user.team?.slug ?? null, is_admin: user.is_admin },
-    })),
-    ...repositories.map((repository: RepositoryRead): GraphNodeInput => ({
-      id: `repo:${repository.id}`,
-      type: 'repo',
-      data: { label: repository.name, team: null, is_admin: false },
-    })),
-  ];
-
-  const edges: GraphEdge[] = live.map((lease: LeaseOverview): GraphEdge => ({
-    id: `lease:${lease.id}`,
-    source: `user:${lease.user.id}`,
-    target: `repo:${lease.repository.id}`,
-    label: lease.current_role,
-    animated: lease.status === 'WARNING' || lease.status === 'EXPIRED',
-    data: {
-      kind: 'lease',
-      role: lease.current_role,
-      status: lease.status,
-      recommendation: lease.recommendation,
-    },
-  }));
-
-  return { nodes: applyColumnLayout(nodes), edges };
-}
-
-/** Osoby z dostępów, bez powtórzeń, w kolejności backendu (zespół → login, na końcu bez zespołu). */
-function uniqueUsers(live: LeaseOverview[]): UserRead[] {
-  const byId: Map<number, UserRead> = new Map<number, UserRead>();
-  live.forEach((lease: LeaseOverview): void => {
-    byId.set(lease.user.id, lease.user);
-  });
-
-  return [...byId.values()].toSorted(compareUsers);
-}
-
-/** Repozytoria z dostępów, bez powtórzeń, po nazwie — jak `build_graph_layout` (`sorted(repos)`). */
-function uniqueRepositories(live: LeaseOverview[]): RepositoryRead[] {
-  const byId: Map<number, RepositoryRead> = new Map<number, RepositoryRead>();
-  live.forEach((lease: LeaseOverview): void => {
-    byId.set(lease.repository.id, lease.repository);
-  });
-
-  return [...byId.values()].toSorted(compareRepositories);
-}
-
-function compareUsers(left: UserRead, right: UserRead): number {
-  if ((left.team === null) !== (right.team === null)) {
-    return left.team === null ? 1 : -1;
+function buildQueryString(query: GraphQuery): string {
+  if (query.team === undefined) {
+    return '';
   }
 
-  return (
-    compareStrings(left.team?.slug ?? '', right.team?.slug ?? '') ||
-    compareStrings(left.login, right.login)
-  );
-}
-
-function compareRepositories(left: RepositoryRead, right: RepositoryRead): number {
-  return compareStrings(left.name, right.name);
-}
-
-function compareStrings(left: string, right: string): number {
-  if (left === right) {
-    return 0;
-  }
-
-  return left < right ? -1 : 1;
+  return `?${new URLSearchParams({ team: query.team }).toString()}`;
 }

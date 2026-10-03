@@ -71,6 +71,7 @@ Po scaleniu mocka Osoba 2 podmienia tylko `get_vcs_provider` w `app/api/v1/deps.
 | Metoda i ścieżka | Body / query | Odpowiedź | Krok |
 | --- | --- | --- | --- |
 | `GET /api/v1/teams/{slug}/baseline` | — | `BaselineEntry[]` (posortowane po nazwie repo); 404 nieznany zespół | 4.1 |
+| `GET /api/v1/teams/{slug}/onboarding-candidates` | — | `UserRead[]` (po loginie): członkowie zespołu bez flagi admina i bez aktywnego dostępu — ta sama reguła co `onboarding_candidates`; 404 nieznany zespół | 4.2 |
 | `GET /api/v1/onboarding/{login}` | — | `OnboardingProposal`; 404 nieznany login; 422 admin lub brak zespołu | 4.2 |
 | `POST /api/v1/onboarding/{login}/apply` | — | 200 `OnboardingProposal` po nadaniu (`to_grant == []`) | 4.2 |
 | `POST /api/v1/appeals` | `AppealCreate` | 201 `AppealOverview`; 422 puste lub powtórzone uzasadnienie; 409 dostęp nie kwalifikuje się albo ma już odwołanie `PENDING`; 404 | 4.3 |

@@ -10,6 +10,8 @@ from app.api.github_mock.http import register_github_error_handlers
 from app.api.github_mock.router import router as github_mock_router
 from app.api.jira_mock.http import register_jira_error_handlers
 from app.api.jira_mock.router import router as jira_mock_router
+from app.api.mock_docs import MAIN_DESCRIPTION
+from app.api.mock_docs import router as mock_docs_router
 from app.api.v1.demo import router as demo_router
 from app.api.v1.errors import service_error_handler
 from app.api.v1.router import v1_router
@@ -26,12 +28,14 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="LongTailsOnly API", lifespan=lifespan)
+app = FastAPI(title="LongTailsOnly API", description=MAIN_DESCRIPTION, lifespan=lifespan)
 app.add_exception_handler(ServiceError, service_error_handler)
 app.include_router(demo_router)
 app.include_router(simulation_router)
-app.include_router(github_mock_router)
-app.include_router(jira_mock_router)
+# Each mock is documented on its own page (`/mocks/github/docs`, `/mocks/jira/docs`), not in the product's `/docs`.
+app.include_router(github_mock_router, include_in_schema=False)
+app.include_router(jira_mock_router, include_in_schema=False)
+app.include_router(mock_docs_router)
 app.include_router(v1_router)
 register_github_error_handlers(app)
 register_jira_error_handlers(app)

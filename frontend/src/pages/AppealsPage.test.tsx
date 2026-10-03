@@ -5,8 +5,10 @@ import { toast } from 'sonner';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { appealsFixture, leasesFixture } from '@/api/fixtures';
+import { fetchLeases } from '@/api/leases';
 import { AppealsPage } from '@/pages/AppealsPage';
 import {
+  getLastAppealDecision,
   getLastAppealRejection,
   getLastAppealRequest,
   resetAppealsMswState,
@@ -170,6 +172,35 @@ describe('AppealsPage', () => {
     expect(within(dialog).getByText('longtails/qa-automation')).toBeInTheDocument();
     expect(within(dialog).getByText('Uzasadnienie odwołania')).toBeInTheDocument();
     expect(getLastAppealRejection()).toBeNull();
+  });
+
+  it('zatwierdza odwołanie przedłużeniem i pokazuje wniosek oraz dzierżawę po decyzji', async () => {
+    const user = userEvent.setup();
+    renderAppealsPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Rozpatrz' }));
+    await user.click(await screen.findByRole('button', { name: '+30' }));
+    await user.click(screen.getByRole('button', { name: 'Zatwierdź odwołanie' }));
+
+    await waitFor(() => {
+      expect(getLastAppealDecision()).toEqual({
+        appeal_id: PENDING_APPEAL.id,
+        request: { action: 'EXTEND', extension: { preset_days: 30 } },
+      });
+    });
+    expect(await screen.findByText('Odwołanie zatwierdzone')).toBeInTheDocument();
+
+    // Zatwierdzenie zamyka wniosek jako `APPROVED` — lista odświeża się po unieważnieniu `['appeals']`.
+    const submitted = await screen.findByRole('list', { name: SUBMITTED_LIST });
+    expect(within(submitted).getAllByText('Zatwierdzone')).toHaveLength(2);
+    expect(within(submitted).queryByText('Oczekujące')).not.toBeInTheDocument();
+    expect(within(submitted).queryByRole('button', { name: 'Rozpatrz' })).not.toBeInTheDocument();
+
+    // Decyzja poszła na dzierżawę z odwołania (unieważnione `['leases']`), a nie tylko na wniosek.
+    const extended: LeaseOverview | undefined = (await fetchLeases()).find(
+      (lease: LeaseOverview): boolean => lease.id === PENDING_APPEAL.lease_id,
+    );
+    expect(extended).toMatchObject({ is_active: true, status: 'ACTIVE' });
   });
 
   it('odrzuca odwołanie z uzasadnieniem i odświeża listę z nowym statusem', async () => {

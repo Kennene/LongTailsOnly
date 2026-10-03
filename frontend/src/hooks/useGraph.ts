@@ -4,16 +4,19 @@ import { fetchGraph } from '@/api/graph';
 import type { PermissionGraph } from '@/types/api';
 
 /**
- * Graf uprawnień (`fetchGraph`, krok 4.6B podmieni go na `GET /api/v1/graph`).
+ * Graf uprawnień — `GET /api/v1/graph` (`app/api/v1/graph.py`).
  *
- * Kształt to kontraktowy `PermissionGraph` (ADR 0009) — własny interfejs zniknął razem z
- * lokalnymi `GraphNode`/`GraphEdge`/`GraphResponse`.
+ * Kształt to kontraktowy `PermissionGraph` (ADR 0009) razem z węzłami zespołów i krawędziami
+ * członkostwa — frontend niczego nie dokłada.
  *
- * Do czasu 4.6B graf powstaje z listy dostępów, więc nie ma w nim węzłów zespołów (szczegóły
- * i uzasadnienie: `api/graph.ts`). Klucz `['graph']` jest unieważniany po każdej decyzji
- * o dostępie (spec §7.3), żeby widok pokazywał świeże statusy krawędzi po podróży w czasie
- * i po decyzjach administratora.
+ * `team` to **slug** zespołu (`dev`, `qa`) i wchodzi zarówno do zapytania (`?team=<slug>`), jak
+ * i do klucza cache: pełny graf (`null`) i zawężony do zespołu to dwa osobne wpisy, więc powrót do
+ * „Wszystkie” nie czeka na sieć. Prefiks `['graph']` unieważniamy po każdej decyzji o dzierżawie
+ * (spec §7.3), żeby krawędzie niosły świeże statusy po podróży w czasie i po decyzjach.
  */
-export function useGraph(): UseQueryResult<PermissionGraph> {
-  return useQuery({ queryKey: ['graph'], queryFn: fetchGraph });
+export function useGraph(team: string | null = null): UseQueryResult<PermissionGraph> {
+  return useQuery({
+    queryKey: ['graph', team],
+    queryFn: () => fetchGraph(team === null ? {} : { team }),
+  });
 }

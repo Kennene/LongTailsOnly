@@ -49,10 +49,19 @@ const PERMANENT_LEASES: LeaseOverview[] = leasesFixture.filter(
 );
 const LAST_PERMANENT: LeaseOverview = PERMANENT_LEASES[PERMANENT_LEASES.length - 1];
 
-/** Renderuje stronę i zwraca wiersze tabeli: nagłówek + dostępy z MSW. */
+/** Renderuje stronę i zwraca wiersze tabeli: nagłówek + jeden wiersz na osobę. */
 async function loadLeaseRows(): Promise<HTMLElement[]> {
   renderWithProviders(<LeasesPage />);
   await screen.findByRole('table');
+
+  return screen.getAllByRole('row');
+}
+
+/** Jak `loadLeaseRows`, ale z rozwiniętymi repozytoriami każdej osoby. */
+async function loadExpandedRows(): Promise<HTMLElement[]> {
+  const user = userEvent.setup();
+  await loadLeaseRows();
+  await user.click(screen.getByRole('button', { name: 'Rozwiń wszystkie' }));
 
   return screen.getAllByRole('row');
 }
@@ -72,15 +81,19 @@ function cellsOf(row: HTMLElement): HTMLElement[] {
   return within(row).getAllByRole('cell');
 }
 
-/** Wiersz konkretnego dostępu — pary (login, repozytorium) są w fixture'ach unikalne. */
+/** Wiersze osób (te z przyciskiem rozwijania), w kolejności tabeli. */
+function groupRows(rows: HTMLElement[]): HTMLElement[] {
+  return rows.filter(
+    (row: HTMLElement): boolean =>
+      within(row).queryByRole('button', { name: /dostępy: / }) !== null,
+  );
+}
+
+/** Wiersz konkretnego dostępu po rozwinięciu. */
 function rowFor(rows: HTMLElement[], lease: LeaseOverview): HTMLElement {
-  const row: HTMLElement | undefined = rows
-    .slice(1)
-    .find(
-      (candidate: HTMLElement): boolean =>
-        within(candidate).queryByText(lease.user.login) !== null &&
-        within(candidate).queryByText(fullName(lease)) !== null,
-    );
+  const row: HTMLElement | undefined = rows.find(
+    (candidate: HTMLElement): boolean => candidate.dataset.leaseId === String(lease.id),
+  );
 
   if (row === undefined) {
     throw new Error(`Brak wiersza dla ${lease.user.login}@${fullName(lease)}`);
@@ -89,21 +102,29 @@ function rowFor(rows: HTMLElement[], lease: LeaseOverview): HTMLElement {
   return row;
 }
 
-/** Loginy w kolejności wierszy — do porównania dwóch renderów. */
+/** Ranga statusu w kolejności pilności — jak w `leaseGroups.ts`. */
+const STATUS_ORDER: string[] = ['EXPIRED', 'WARNING', 'ACTIVE', 'PERMANENT', 'REVOKED'].map(
+  (status: string): string => getStatusBadge(status as LeaseOverview['status']).label,
+);
+
+/** Loginy osób w kolejności wierszy — do porównania dwóch renderów. */
 function shownLogins(): string[] {
-  return screen
-    .getAllByRole('row')
-    .slice(1)
-    .map((row: HTMLElement): string => cellsOf(row)[0].textContent ?? '');
+  return groupRows(screen.getAllByRole('row')).map(
+    (row: HTMLElement): string => cellsOf(row)[0].textContent ?? '',
+  );
 }
 
 describe('LeasesPage', () => {
-  it('renders the whole shared inventory in urgency order', async () => {
-    const rows = await loadLeaseRows();
+  it('renders one row per person from the shared inventory', async () => {
+    const people: number = new Set(leasesFixture.map((lease: LeaseOverview) => lease.user.id)).size;
 
-    // 15 dostępów z `shared/fixtures` (8 bieżących + 7 wygasłych) plus wiersz nagłówka.
-    expect(rows).toHaveLength(leasesFixture.length + 1);
-    expect(within(rows[rows.length - 1]).getByText(LAST_PERMANENT.user.name)).toBeInTheDocument();
+    expect(await loadLeaseRows()).toHaveLength(people + 1);
+  });
+
+  it('renders every lease of the shared inventory after expanding', async () => {
+    const people: number = new Set(leasesFixture.map((lease: LeaseOverview) => lease.user.id)).size;
+
+    expect(await loadExpandedRows()).toHaveLength(people + leasesFixture.length + 1);
   });
 
   it('renders the pinned columns in order', async () => {
@@ -116,43 +137,57 @@ describe('LeasesPage', () => {
     expect(headers).toEqual(COLUMNS);
   });
 
-  it('puts the expired lease with the fewest days first, with its days and status', async () => {
+  it('puts the person with the most urgent lease first, with that lease days and status', async () => {
     const rows = await loadLeaseRows();
     const row: HTMLElement = rows[1];
 
     expect(within(row).getByText(MOST_URGENT.user.name)).toBeInTheDocument();
-    expect(within(row).getByText(fullName(MOST_URGENT))).toBeInTheDocument();
     expect(
       within(row).getByText(formatDaysRemaining(MOST_URGENT.days_remaining)),
     ).toBeInTheDocument();
     expect(within(row).getByText(getStatusBadge(MOST_URGENT.status).label)).toBeInTheDocument();
   });
 
-  it('orders expired before warning and warning before active', async () => {
+  it('orders people by their worst status: expired, then warning, then active', async () => {
     const rows = await loadLeaseRows();
-    const activeRowIndex: number = rows.indexOf(rowFor(rows, FIRST_ACTIVE));
+    const statusColumn: number = columnIndex(rows, 'Status');
+    const ranks: number[] = groupRows(rows).map((row: HTMLElement): number =>
+      STATUS_ORDER.findIndex((label: string): boolean =>
+        (cellsOf(row)[statusColumn].textContent ?? '').includes(label),
+      ),
+    );
 
-    expect(rows.indexOf(rowFor(rows, MOST_URGENT))).toBeLessThan(activeRowIndex);
+    expect(ranks).toEqual(ranks.toSorted((left: number, right: number): number => left - right));
+  });
 
-    WARNING_LEASES.forEach((lease: LeaseOverview): void => {
+  it('shows each lease with its days and status once the person is expanded', async () => {
+    const rows = await loadExpandedRows();
+
+    [MOST_URGENT, ...WARNING_LEASES, FIRST_ACTIVE].forEach((lease: LeaseOverview): void => {
       const row: HTMLElement = rowFor(rows, lease);
 
+      expect(within(row).getByText(fullName(lease))).toBeInTheDocument();
       expect(within(row).getByText(formatDaysRemaining(lease.days_remaining))).toBeInTheDocument();
       expect(within(row).getByText(getStatusBadge(lease.status).label)).toBeInTheDocument();
-      expect(rows.indexOf(row)).toBeLessThan(activeRowIndex);
     });
   });
 
-  it('keeps the lease without an expiry at the end with a dash for its remaining days', async () => {
+  it('keeps the person without expiring leases at the end with dashes', async () => {
     const rows = await loadLeaseRows();
     const adminRow: HTMLElement = rows[rows.length - 1];
     const cells: HTMLElement[] = cellsOf(adminRow);
 
     expect(within(adminRow).getByText(LAST_PERMANENT.user.name)).toBeInTheDocument();
-    expect(within(adminRow).getByText(fullName(LAST_PERMANENT))).toBeInTheDocument();
-    expect(within(adminRow).getByText(getRoleLabel('admin'))).toBeInTheDocument();
     expect(cells[columnIndex(rows, 'Pozostało')]).toHaveTextContent('—');
     expect(cells[columnIndex(rows, 'Zespół')]).toHaveTextContent('—');
+  });
+
+  it('shows the admin level on the expanded permanent lease', async () => {
+    const rows = await loadExpandedRows();
+    const row: HTMLElement = rowFor(rows, LAST_PERMANENT);
+
+    expect(within(row).getByText(fullName(LAST_PERMANENT))).toBeInTheDocument();
+    expect(within(row).getByText(getRoleLabel('admin'))).toBeInTheDocument();
   });
 
   it('replaces the table with the loading state until the inventory arrives', async () => {
@@ -219,10 +254,11 @@ describe('LeaseTable', () => {
 
     renderWithProviders(<LeaseTable leases={leasesFixture} onDecide={handleDecide} />);
 
-    const rows: HTMLElement[] = screen.getAllByRole('row');
-    await user.click(within(rows[1]).getByRole('button', { name: 'Decyzja' }));
+    // Pierwsza osoba ma najpilniejszy dostęp, a po rozwinięciu stoi on na samej górze jej listy.
+    await user.click(screen.getAllByRole('button', { name: /^Pokaż dostępy: / })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Decyzja' })[0]);
 
-    expect(decided).toEqual([MOST_URGENT.id]); // pierwszy wiersz to najpilniejszy dostęp
+    expect(decided).toEqual([MOST_URGENT.id]);
   });
 
   it('sorts by urgency regardless of the payload order', () => {

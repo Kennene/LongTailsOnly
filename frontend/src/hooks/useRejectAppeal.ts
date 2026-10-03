@@ -12,10 +12,10 @@ export interface RejectAppealVariables {
 /**
  * Odrzucenie odwołania (UC-3) — `POST /api/v1/appeals/{appeal_id}/reject`.
  *
- * To jedyna droga rozstrzygnięcia wniosku, jaką ma dziś backend: zatwierdzenie wymagałoby
- * decyzji o dostępie (3.6/5.5), której jeszcze nie ma. Odrzucenie zmienia listę odwołań,
- * licznik `pending_appeals` dashboardu i dziennik audytu (`APPEAL_REJECTED`); dostęp
- * zostawiamy w spokoju, bo odrzucenie wniosku go nie modyfikuje.
+ * To alternatywa dla rozstrzygnięcia decyzją o dzierżawie (`useDecideAppeal`): odrzucenie zamyka
+ * wniosek i **nie dotyka dzierżawy**, więc unieważnia tylko listę odwołań, licznik
+ * `pending_appeals` pulpitu i dziennik audytu (`APPEAL_REJECTED`). Dzierżaw ani statystyk
+ * aktywności modala nie ruszamy — nic w nich nie zaszło.
  */
 export function useRejectAppeal(): UseMutationResult<AppealOverview, Error, RejectAppealVariables> {
   const queryClient = useQueryClient();

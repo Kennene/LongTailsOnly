@@ -6,7 +6,7 @@ from app.api.jira_mock.deps import ReadsDep
 from app.api.jira_mock.http import PageParams, page
 from app.schemas.jira_payloads import JiraProject
 
-router = APIRouter()
+router = APIRouter(tags=["Jira · Projekty"])
 Page = Annotated[PageParams, Depends()]
 
 

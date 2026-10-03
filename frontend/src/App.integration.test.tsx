@@ -56,13 +56,16 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
     within(screen.getByTestId('kpi-warning')).getByText(String(dashboardFixture.warning)),
   ).toBeInTheDocument();
 
-  // 2. Podróż w czasie o 25 dni (UC-4) — własna liczba dni, bo presety to +15/+30/+60.
+  // 2. Podróż w czasie o 25 dni (UC-4) w widoku „Mocki” — własna liczba dni, bo presety to +15/+30/+60.
+  await user.click(screen.getByRole('link', { name: 'Mocki' }));
   await user.type(screen.getByLabelText('Własna liczba dni'), '25');
   await user.click(screen.getByRole('button', { name: 'Przesuń' }));
   await waitFor(() => expect(getSimulatedNow()).toBe('2026-10-28T00:00:00.000Z'));
 
   // 3. Dostępy: dostęp, który był zielony, wchodzi w okno ostrzegawcze (UC-2).
   await user.click(screen.getByRole('link', { name: 'Dostępy' }));
+  // Tabela grupuje dostępy po osobie; rozwijamy wszystkie, żeby zobaczyć każdy termin.
+  await user.click(await screen.findByRole('button', { name: 'Rozwiń wszystkie' }));
   const warning: LeaseOverview | undefined = firstWarningAfterJump();
   expect(warning).toBeDefined();
   expect(
@@ -82,9 +85,13 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
   await user.click(screen.getByRole('link', { name: 'Dostępy' }));
 
   // 4. Ochrona ostatniego administratora (UC-5) — próba wyłączenia musi się skończyć 403.
+  // Rozwijamy tylko administratora, więc jego repozytorium jest jedynym wierszem o tej nazwie.
+  await user.click(
+    await screen.findByRole('button', { name: `Pokaż dostępy: ${ADMIN_LEASE?.user.name ?? ''}` }),
+  );
   const adminRow: HTMLElement = await screen.findByRole('row', {
     name: new RegExp(
-      `${ADMIN_LEASE?.user.login ?? ''}[\\s\\S]*${ADMIN_LEASE?.repository.name ?? ''}`,
+      `${ADMIN_LEASE?.repository.owner ?? ''}/${ADMIN_LEASE?.repository.name ?? ''}`,
     ),
   });
   await user.click(within(adminRow).getByRole('button', { name: 'Decyzja' }));
