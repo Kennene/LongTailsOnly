@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/brand/logo-transparent.png" alt="Logo TailCut" width="160" /></p>
+
 # TailCut
 
 > **Żaden dostęp nie jest wieczny.**

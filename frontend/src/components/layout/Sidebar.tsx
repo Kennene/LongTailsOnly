@@ -1,6 +1,6 @@
-import { ShieldCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
+import logoUrl from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
 import { getServiceConfig, type ServiceRoute } from '@/services/serviceRegistry';
 import { useActiveService } from '@/services/ServicesContext';
@@ -19,9 +19,7 @@ export function Sidebar(): React.JSX.Element {
       className="flex h-dvh w-16 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground xl:w-60"
     >
       <div className="flex h-14 shrink-0 items-center justify-center gap-2.5 border-b border-sidebar-border px-2 xl:justify-start xl:px-4">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-          <ShieldCheck className="size-4" aria-hidden="true" />
-        </span>
+        <img src={logoUrl} alt="" aria-hidden="true" className="size-8 shrink-0" />
         {/* Nazwa produktu zostaje w drzewie dostępności także w zwiniętym pasku (`sr-only`). */}
         <span className="sr-only flex min-w-0 flex-col leading-tight xl:not-sr-only">
           <span className="truncate text-sm font-semibold">Lease Governor</span>
