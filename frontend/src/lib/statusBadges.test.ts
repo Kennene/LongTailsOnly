@@ -10,7 +10,7 @@ import {
 } from '@/lib/statusBadges';
 import type { AppealStatus, LeaseStatus, Recommendation, Role } from '@/types/api';
 
-const STATUSES: LeaseStatus[] = ['ACTIVE', 'WARNING', 'EXPIRED'];
+const STATUSES: LeaseStatus[] = ['ACTIVE', 'WARNING', 'EXPIRED', 'PERMANENT', 'REVOKED'];
 const APPEAL_STATUSES: AppealStatus[] = ['PENDING', 'APPROVED', 'REJECTED'];
 const ROLES: Role[] = ['admin', 'write', 'read'];
 const RECOMMENDATIONS: Recommendation[] = ['KEEP', 'DOWNSCOPE', 'REVOKE'];
@@ -25,15 +25,24 @@ describe('getStatusBadge', () => {
       'Aktywna',
       'Wygasa wkrótce',
       'Wygasła',
+      'Stała (admin)',
+      'Odebrana',
     ]);
   });
+
+  it.each<LeaseStatus>(['PERMANENT', 'REVOKED'])(
+    'keeps %s neutral: it needs no decision, so it takes no status colour',
+    (status: LeaseStatus) => {
+      expect(getStatusBadge(status).className).toContain('bg-muted');
+    },
+  );
 
   it('gives every lease status a distinct class name', () => {
     const classNames: string[] = STATUSES.map(
       (status: LeaseStatus): string => getStatusBadge(status).className,
     );
 
-    expect(new Set(classNames).size).toBe(3);
+    expect(new Set(classNames).size).toBe(5);
   });
 
   it.each<[LeaseStatus, string]>([
