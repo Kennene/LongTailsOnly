@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
-    "module": "esnext",
-    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    /* Testy celowo dostają `node`: czytają pliki (np. arkusz motywu) i dokładnie tak samo
+       traktuje je eslint (`long-tails-only/tests` dokłada `globals.node`). Kod aplikacji
+       zostaje browser-only — to jedyny strażnik, bo typescript-eslint wyłącza `no-undef`. */
+    "types": ["node", "vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "allowArbitraryExtensions": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -31,14 +33,12 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
-  /* Testy mają własny projekt (`tsconfig.test.json`), bo potrzebują `types: ["node"]`,
-     a kod aplikacji ma pozostać browser-only. */
-  "exclude": [
+  "include": [
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.spec.ts",
     "src/**/*.spec.tsx",
-    "src/test/**"
+    "src/test/**/*.ts",
+    "src/test/**/*.tsx"
   ]
 }
