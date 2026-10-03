@@ -239,7 +239,7 @@ Przekierowanie jest **deklaratywne** (`<Navigate>`), nie w `useEffect` — brak 
 Kontrolka to **natywny `<select>`** (spójnie z `AppealForm`, `GraphFilters`, `AuditFilters`), z ikoną aktywnej usługi obok:
 
 - `<Label htmlFor="service-picker" className="sr-only">Usługa</Label>` — nazwa dostępna.
-- `<select className="h-8 rounded-lg border border-input bg-background py-1 pr-7 pl-2 text-xs">` — **bez własnego `appearance-none`**; przy dyskretnym rozmiarze natywna strzałka zapewnia afordancję bez nowej zależności.
+- `<select className="h-8 rounded-lg border border-input py-1 pr-7 pl-2 text-xs">` — tło pochodzi ze wspólnego rdzenia (`bg-transparent`), **bez własnego `appearance-none`**; przy dyskretnym rozmiarze natywna strzałka zapewnia afordancję bez nowej zależności.
 - Ikona: `<span className="text-muted-foreground"><ActiveIcon className="size-4" aria-hidden="true" /></span>`.
 - Opcje renderują `name` z backendu, a przy `is_available === false` dopisek `(niedostępna)`.
 - Zapisany wybór, którego nie ma w katalogu, dochodzi jako opcja „(nieznana)” — użytkownik widzi prawdę zamiast pustego pola.

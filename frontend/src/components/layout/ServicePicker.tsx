@@ -96,8 +96,9 @@ export function ServicePicker(): React.JSX.Element {
       <select
         // Rozmiar `h-8`, tło i widoczny fokus pochodzą ze wspólnego rdzenia (spec §6); różnice tego
         // pola to padding (`pr-7` robi miejsce na strzałkę) i rozmiar tekstu chrome. Tła nie
-        // nadpisujemy: dwie wykluczające się klasy (`bg-transparent` z rdzenia i `bg-background`)
-        // zostawiałyby wybór scalaczowi klas, a nie kodowi.
+        // nadpisujemy: kontrolka ma wyglądać jak pozostałe trzy selecty i nie zależeć od tego,
+        // którą z dwóch konkurencyjnych klas wygra scalacz (`cn` rozstrzyga `bg-*` na korzyść
+        // ostatniego argumentu, więc o wyniku decydowałaby kolejność wywołania, nie kod).
         // Natywnej strzałki nie ukrywamy (`appearance-none`) — przy `h-8` to ona daje afordancję
         // bez nowej zależności.
         aria-busy={isPending}
