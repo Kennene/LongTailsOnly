@@ -1,25 +1,22 @@
 # Osoba 4 (Durczkos) — standard zespołu, onboarding, odwołania, audyt, dane dla widoków
 
-> **Stan na: 2026-10-03.** Testy backendu: `256 passed` (cały `main` z mockiem Osoby 2 + moje kroki + poprawki po audycie). Kontrakt TS aktualny.
+> **Stan na: 2026-10-03, wieczór.** Wszystkie kroki 4.1–4.6 zrobione. Testy backendu: `412 passed` (cały `main` + moje zmiany). Kontrakt TS aktualny.
 > Kontrakty: [ADR 0014](adr/0014-person-4-baseline-appeals-audit-insights.md) · Plany: [`superpowers/plans/2026-10-03-p4-*.md`](superpowers/plans/2026-10-03-p4-overview.md)
 
 ## 1. Stan kroków
 
-| Krok | Co | Stan | Gałąź |
-| --- | --- | --- | --- |
-| 4.5 | Audyt tylko do dopisywania + `GET /api/v1/audit` z filtrami + wspólna infrastruktura API v1 | ✅ | `feat/4-5-audit-log` |
-| 4.1 | Standard zespołu (50% aktywnych, najniższy poziom, bez admina) | ✅ | `feat/4-1-team-baseline` |
-| 4.2 | Onboarding: propozycja dla nowej osoby + zatwierdzenie | ✅ | `feat/4-2-onboarding` |
-| 4.3 | Odwołania: złożenie (puste i powtórzone uzasadnienie → 422), odrzucenie | ✅ | `feat/4-3-appeals` |
-| 4.3C | Rozpatrzenie odwołania decyzją (przedłuż / zdeeskaluj / odbierz) | ⏳ czeka na Osobę 3 (3.6) | — |
-| 4.4 | Historia odwołań osoby | ✅ | `feat/4-4-appeal-history` |
-| 4.6A | Liczniki dashboardu, układ grafu, typy dla frontu | ✅ | `feat/4-6-insights-core` |
-| 4.6B | Endpointy `GET /dashboard/stats`, `GET /graph` | ⏳ czeka na Osobę 3 (3.6) — **linia cięcia demo** | — |
-| + | Zegar symulacji: który dzień demo | ✅ | `feat/simulation-clock` |
-| + | Poprawki po audycie kodu (wyścig odwołań, odebrany dostęp, ochrona admina w adapterze) | ✅ | `fix/p4-review` |
-| + | Dopasowanie do mocka Osoby 2: tylko akcje odnawiające, zegar w jej routerze, ADR 0010 → 0011 | ✅ | `fix/p4-align-github-mock` |
+| Krok | Co | Stan |
+| --- | --- | --- |
+| 4.5 | Audyt tylko do dopisywania + `GET /api/v1/audit` z filtrami + wspólna infrastruktura API v1 | ✅ |
+| 4.1 | Standard zespołu (50% aktywnych, najniższy poziom, bez admina) | ✅ |
+| 4.2 | Onboarding: propozycja dla nowej osoby + zatwierdzenie | ✅ |
+| 4.3 | Odwołania: złożenie (puste i powtórzone uzasadnienie → 422), odrzucenie, decyzja (przedłuż / zdeeskaluj / odbierz) | ✅ |
+| 4.4 | Historia odwołań osoby | ✅ |
+| 4.6 | Dashboard (`GET /dashboard/stats`) i graf React Flow (`GET /graph`) na silniku Osoby 3 | ✅ |
+| + | Zegar symulacji: który dzień demo | ✅ |
+| + | Poprawki po audycie kodu, dopasowanie do mocka Osoby 2, porządek numeracji ADR (0014) | ✅ |
 
-Gałęzie tworzą stos: każda wyrasta z poprzedniej, w kolejności z tabeli. PR-y scalamy w tej samej kolejności, a po scaleniu jednego następny ma już czysty diff.
+Cała praca Osoby 4 jest na gałęzi `feat/osoba-4` (pierwsza część scalona w PR #8).
 
 ## 2. Endpointy, które działają
 
@@ -34,6 +31,9 @@ Gałęzie tworzą stos: każda wyrasta z poprzedniej, w kolejności z tabeli. PR
 | `GET /api/v1/appeals?login=marta` | historia odwołań osoby (najnowsze pierwsze), z `days_remaining`, `recent_activity_count`, `previous_appeals` |
 | `GET /api/v1/appeals?lease_id=5&status=PENDING` | czy dzierżawa ma oczekujące odwołanie (dla modala decyzji) |
 | `GET /api/v1/audit?actor_type=&action=&actor_login=&target=&since=&until=&limit=` | `AuditEntry[]` z gotowym `actor_login`, najnowsze pierwsze |
+| `POST /api/v1/appeals/{id}/decision` (body jak `DecisionRequest`) | wykonuje decyzję silnikiem Osoby 3 i zamyka odwołanie: `EXTEND` → `APPROVED`, `DOWNSCOPE`/`REVOKE` → `REJECTED`; 409 już rozpatrzone; 403 ostatni admin |
+| `GET /api/v1/dashboard/stats` | `{"generated_at", "active", "warning", "expired", "permanent", "revoked", "downscope_recommendations", "revoke_recommendations", "pending_appeals", "onboarding_candidates"}` |
+| `GET /api/v1/graph?team=dev` | `{"nodes", "edges"}` gotowe do `<ReactFlow>` (pozycje policzone, status w `edge.data.status`) |
 
 Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `OnboardingProposal`, `AppealOverview`, `AppealRejectRequest`, `AuditEntry`, `DashboardStats`, `PermissionGraph`.
 
@@ -50,34 +50,17 @@ Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `Onboarding
 
 ## 4. Na co czekam
 
+Na nic, co by mnie blokowało. Osoba 3 dostarczyła `list_lease_overviews` i `apply_lease_decision` (PR #11), więc 4.3C i 4.6B są zrobione.
+
 | Od kogo | Czego | Czy mnie blokuje |
 | --- | --- | --- |
-| Osoba 3 | `list_lease_overviews(session, now) -> list[LeaseOverview]` w `app/services/lease_service.py` | **Tak:** dashboard i graf (4.6B), czyli linia cięcia demo |
-| Osoba 3 | `apply_lease_decision(session, vcs, *, lease, decision, now, actor_id) -> Lease` w `app/services/decision_service.py` | **Tak:** rozpatrzenie odwołania decyzją (4.3C) |
-| Osoba 2 | adapter `VCSProvider` na bazie jej `GitHubCollaboratorService` + podmiana `get_vcs_provider`; audyt `TIME_TRAVEL` | Nie: mam adapter tymczasowy |
-
-Gotowy kod i testy 4.3C i 4.6B są w planach (sprawdzone na zaślepkach: `169 passed`). Po 3.6 to około godziny pracy.
+| Osoba 2 | adapter `VCSProvider` na bazie jej `GitHubCollaboratorService` + podmiana `get_vcs_provider`; audyt `TIME_TRAVEL` | Nie: działa adapter tymczasowy |
 
 ## 5. Wiadomości dla zespołu (do wklejenia)
 
 **Do Osoby 3 (Guziol)**
 
-Cześć! Potrzebuję od Ciebie dwóch funkcji. Bez nich nie zrobię dashboardu, który jest na linii cięcia demo.
-
-1. W pliku `backend/app/services/lease_service.py` funkcja `async def list_lease_overviews(session, now) -> list[LeaseOverview]`. Ma zwracać wszystkie dzierżawy jako `LeaseOverview` (ten schemat już jest w `main`), czyli ze statusem, liczbą dni i rekomendacją.
-2. W pliku `backend/app/services/decision_service.py` funkcja `async def apply_lease_decision(session, vcs, *, lease, decision: DecisionRequest, now, actor_id) -> Lease`. Ma wykonać decyzję admina na dzierżawie.
-
-Gotowe rzeczy, z których możesz od razu korzystać:
-- **Liczba 7 dni i liczenie „ile dni zostało”** są w `app/domain/lease_window.py`. Weź je stamtąd, nie pisz drugi raz.
-- **Audyt zapisujesz tylko przez `write_audit_event`** (`app/services/audit_service.py`). Typ akcji bierzesz z `AuditAction` (np. `LEASE_EXTENDED`, `LEASE_REVOKED`), a cel opisujesz przez `lease_target(owner, repo, login)`. Nie twórz ręcznie `AuditLog`, bo baza i tak zablokuje każdą zmianę wpisu.
-- **Admin** to `actor_id` z zależności `AdminIdDep`, a **system** (tryb auto) to `actor_id=None`.
-- **Swój router dopisujesz jedną linią** w `app/api/v1/router.py`.
-
-Dwie rzeczy do decyzji po Twojej stronie:
-- Nowa osoba dostaje dostęp i jeszcze nic nie zrobiła. Obecne reguły dadzą jej od razu „odbierz”. Proponuję wtedy zwracać `KEEP`.
-- W `LeaseStatus` nie ma statusu dla admina ani dla odebranego dostępu. Wybierz, co tam wpisujesz; moje liczniki i tak to ignorują.
-
-Szkic reguł: `docs/superpowers/specs/archive/2026-10-03-draft-lease-rules-for-person-3.md`.
+Dzięki! Twoje `list_lease_overviews` i `apply_lease_decision` są już podpięte: dashboard, graf i `POST /api/v1/appeals/{id}/decision` działają na Twoim silniku. Twój 409 na `/leases/{id}/decision` przy oczekującym odwołaniu współpracuje z moim endpointem (jest na to test). Niczego więcej od Ciebie nie potrzebuję.
 
 **Do Osoby 2 (Dawid)**
 
@@ -106,9 +89,9 @@ Endpointy, które już działają, są w tabeli w sekcji 2. Najważniejsze dla C
 - **historia odwołań w modalu:** `GET /api/v1/appeals?login=...`;
 - **czy dzierżawa ma oczekujące odwołanie:** `GET /api/v1/appeals?lease_id=...&status=PENDING`.
 
-Jeśli odwołanie czeka, decyzję wysyłasz na `/appeals/{id}/decision` (dojdzie po Osobie 3), a nie na endpoint dzierżawy.
+Jeśli odwołanie czeka, decyzję wysyłasz na `POST /api/v1/appeals/{id}/decision` (to samo body co dla dzierżawy), a nie na endpoint dzierżawy, bo ten zwróci 409.
 
-Wkrótce dojdą `GET /api/v1/dashboard/stats` (gotowe liczby do kart) i `GET /api/v1/graph` (gotowe `nodes` i `edges` do `<ReactFlow>`). Typy masz w `frontend/src/types/api.ts`.
+Działają też `GET /api/v1/dashboard/stats` (gotowe liczby do kart) i `GET /api/v1/graph?team=dev` (gotowe `nodes` i `edges` do `<ReactFlow>`, bez liczenia pozycji). Typy masz w `frontend/src/types/api.ts`.
 
 **Do Osoby 6 (Sydor)**
 
