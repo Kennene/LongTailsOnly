@@ -22,6 +22,9 @@ export default defineConfig({
     },
     proxy: {
       '/api': 'http://localhost:8000',
+      // Swagger mocków z backendu; sama trasa SPA `/mocks` zostaje we froncie.
+      '/mocks/docs': 'http://localhost:8000',
+      '/mocks/openapi.json': 'http://localhost:8000',
     },
   },
   test: {
