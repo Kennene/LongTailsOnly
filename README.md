@@ -244,3 +244,4 @@ GLOSSARY.md         słownik pojęć
 - [`docs/adr/`](docs/adr/README.md): decyzje architektoniczne wraz z uzasadnieniem
 - [`frontend/DESIGN.md`](frontend/DESIGN.md): język projektowy panelu
 - [`AGENTS.md`](AGENTS.md) i [`CODING_STANDARDS.md`](CODING_STANDARDS.md): zasady pracy i standardy kodu
+ 
