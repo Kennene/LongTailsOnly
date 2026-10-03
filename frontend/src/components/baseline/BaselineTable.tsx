@@ -1,3 +1,4 @@
+import { RoleBadge } from '@/components/leases/RoleBadge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -8,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getRoleLabel } from '@/lib/statusBadges';
 import type { BaselineEntry } from '@/types/api';
 
 export interface BaselineTableProps {
@@ -40,9 +40,9 @@ export function BaselineTable({ entries }: BaselineTableProps): React.JSX.Elemen
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Repozytorium</TableHead>
-                <TableHead>Proponowana rola</TableHead>
-                <TableHead>Aktywni członkowie</TableHead>
+                <TableHead className="text-muted-foreground">Repozytorium</TableHead>
+                <TableHead className="text-muted-foreground">Proponowana rola</TableHead>
+                <TableHead className="text-muted-foreground">Aktywni członkowie</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -51,7 +51,9 @@ export function BaselineTable({ entries }: BaselineTableProps): React.JSX.Elemen
                   <TableCell className="font-mono">
                     {entry.repository.owner}/{entry.repository.name}
                   </TableCell>
-                  <TableCell>{getRoleLabel(entry.proposed_role)}</TableCell>
+                  <TableCell>
+                    <RoleBadge role={entry.proposed_role} />
+                  </TableCell>
                   <TableCell>
                     {entry.active_members}/{entry.team_size}
                   </TableCell>

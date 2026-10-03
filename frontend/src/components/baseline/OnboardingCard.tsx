@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 
+import { RoleBadge } from '@/components/leases/RoleBadge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +14,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useApplyOnboarding } from '@/hooks/useApplyOnboarding';
-import { getRoleLabel } from '@/lib/statusBadges';
 import type { BaselineEntry, OnboardingProposal } from '@/types/api';
 
 export interface OnboardingCardProps {
@@ -41,8 +41,8 @@ function EntriesTable({ label, entries, empty_message }: EntriesTableProps): Rea
         <Table aria-label={label}>
           <TableHeader>
             <TableRow>
-              <TableHead>Repozytorium</TableHead>
-              <TableHead>Rola</TableHead>
+              <TableHead className="text-muted-foreground">Repozytorium</TableHead>
+              <TableHead className="text-muted-foreground">Rola</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -51,7 +51,9 @@ function EntriesTable({ label, entries, empty_message }: EntriesTableProps): Rea
                 <TableCell className="font-mono">
                   {entry.repository.owner}/{entry.repository.name}
                 </TableCell>
-                <TableCell>{getRoleLabel(entry.proposed_role)}</TableCell>
+                <TableCell>
+                  <RoleBadge role={entry.proposed_role} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -87,16 +89,19 @@ export function OnboardingCard({ proposal }: OnboardingCardProps): React.JSX.Ele
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <EntriesTable
-          label="Do nadania"
-          entries={proposal.to_grant}
-          empty_message="Standard zespołu jest już nadany — nie ma nic do zatwierdzenia."
-        />
-        <EntriesTable
-          label="Już nadane"
-          entries={proposal.already_granted}
-          empty_message="Brak nadanych dostępów z tego standardu."
-        />
+        {/* „Do nadania” i „Już nadane” obok siebie od `xl` — to jedno porównanie, nie dwie listy. */}
+        <div className="grid gap-4 xl:grid-cols-2">
+          <EntriesTable
+            label="Do nadania"
+            entries={proposal.to_grant}
+            empty_message="Standard zespołu jest już nadany — nie ma nic do zatwierdzenia."
+          />
+          <EntriesTable
+            label="Już nadane"
+            entries={proposal.already_granted}
+            empty_message="Brak nadanych dostępów z tego standardu."
+          />
+        </div>
         {proposal.to_grant.length === 0 ? null : (
           <Button
             type="button"

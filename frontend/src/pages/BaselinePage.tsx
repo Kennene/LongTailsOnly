@@ -17,6 +17,12 @@ const DEV_TEAM_SLUG = 'dev';
 const QA_TEAM_SLUG = 'qa';
 const DEMO_ONBOARDING_LOGIN = 'nowy-dev';
 
+/**
+ * DEV i QA obok siebie od `xl`: administrator porównuje standardy zespołów, a trzy wąskie kolumny
+ * rozciągnięte na pełną szerokość treści rozsuwały repozytorium i rolę o kilkaset pikseli.
+ */
+const TEAMS_GRID = 'grid gap-8 xl:grid-cols-2';
+
 interface BaselineTeamSectionProps {
   section_slug: string;
   title: string;
@@ -36,8 +42,8 @@ function BaselineTeamSection({
   const headingId = `baseline-${section_slug}-heading`;
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <h2 id={headingId} className="font-heading text-lg font-medium">
+    <section aria-labelledby={headingId} className="flex min-w-0 flex-col gap-3">
+      <h2 id={headingId} className="font-heading text-base font-medium">
         {title}
       </h2>
       {isError ? (
@@ -65,8 +71,8 @@ function OnboardingSection({ result }: OnboardingSectionProps): React.JSX.Elemen
   const { data, isError, error, refetch } = result;
 
   return (
-    <section aria-labelledby="baseline-onboarding-heading" className="flex flex-col gap-4">
-      <h2 id="baseline-onboarding-heading" className="font-heading text-lg font-medium">
+    <section aria-labelledby="baseline-onboarding-heading" className="flex flex-col gap-3">
+      <h2 id="baseline-onboarding-heading" className="font-heading text-base font-medium">
         Onboarding nowego członka
       </h2>
       {isError ? (
@@ -111,14 +117,18 @@ export function BaselinePage(): React.JSX.Element {
       </header>
       {isPending ? (
         <div role="status" aria-label="Ładowanie standardu zespołu" className="flex flex-col gap-8">
-          <BaselineTableSkeleton />
-          <BaselineTableSkeleton />
+          <div className={TEAMS_GRID}>
+            <BaselineTableSkeleton />
+            <BaselineTableSkeleton />
+          </div>
           <OnboardingCardSkeleton />
         </div>
       ) : (
         <>
-          <BaselineTeamSection section_slug={DEV_TEAM_SLUG} title="Zespół DEV" result={dev} />
-          <BaselineTeamSection section_slug={QA_TEAM_SLUG} title="Zespół QA" result={qa} />
+          <div className={TEAMS_GRID}>
+            <BaselineTeamSection section_slug={DEV_TEAM_SLUG} title="Zespół DEV" result={dev} />
+            <BaselineTeamSection section_slug={QA_TEAM_SLUG} title="Zespół QA" result={qa} />
+          </div>
           <OnboardingSection result={onboarding} />
         </>
       )}
