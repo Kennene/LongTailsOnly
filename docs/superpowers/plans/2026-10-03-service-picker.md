@@ -892,7 +892,24 @@ Expected: tests PASS; exactly two `register(` matches, in `database_vcs.py` and 
 Run: `cd frontend && npm run lint`
 Expected: 0 errors, in particular no `max-lines` violation on the new modules.
 
-- [ ] **Step 5: Close the Task 8 coverage minors (deferred from its review, no fix loop)**
+- [ ] **Step 5: Make spec §7.4's cross-registry conformance test real (Ruling 32)**
+
+Spec §7.4 promises that `frontend/src/api/services.test.ts` checks the frontend registry's route ids against the backend's `github` capabilities. **That test does not exist.** The closest thing is `frontend/src/services/serviceRegistry.test.ts:18`, which asserts a hand-written six-id literal plus `['demo-tracker','github']` — a duplicated literal, i.e. exactly the drift §7.4 was written to catch. Nothing in `frontend/src` reads `capabilities` from the API.
+
+**Implement the real check in `frontend/src/api/services.test.ts`, deriving from the shared fixture rather than a second literal:**
+
+```ts
+const github = servicesFixture.find((service) => service.id === 'github');
+expect(new Set(github?.capabilities)).toEqual(
+  new Set(SERVICE_REGISTRY.github.routes.map((route) => route.id)),
+);
+```
+
+`servicesFixture` is the shared, Pydantic-validated `shared/fixtures/services.json`, so this gives the frontend registry and the backend's data **one shared source** instead of two hand-maintained lists. Note the boundary honestly in the test's comment: this compares against the fixture, not a live backend — the fixture's *values* are pinned on the backend side by `backend/tests/api/test_services.py`, which asserts the six capabilities literally. Do not claim it validates against a running API.
+
+Then **fix the over-claiming comment at `frontend/src/api/services.test.ts:14-17`**, which currently says the declaration order "is the backend contract" and that a contract test guards it. Only prose pins it — the backend tests normalise with `sorted()`/`set()`. Correct it to match what the README now says.
+
+- [ ] **Step 6: Close the Task 8 coverage minors (deferred from its review, no fix loop)**
 
 These are the cheapest mitigations for the residual drift risk of the 8 duplicated `enabled` expressions, and they are test-only:
 
@@ -902,7 +919,7 @@ These are the cheapest mitigations for the residual drift risk of the 8 duplicat
 
 Then run the full suite and record the number.
 
-- [ ] **Step 6: Report evidence**
+- [ ] **Step 7: Report evidence**
 
 Record the exact counts from Steps 1–2 for the PR body, which requires a command and its real output. Note in the PR that the two backend failures pre-date this branch and are documented in the spec.
 
