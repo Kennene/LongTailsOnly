@@ -164,12 +164,30 @@ describe('DashboardPage', () => {
     expect(expected.expired).not.toBe(dashboardFixture.expired);
   });
 
+  it('mówi na karcie „Wygaśnięte”, z jakiego okna liczy backend', async () => {
+    // Okno pochodzi z odpowiedzi (`expired_window_days`), nie z literału w widoku: gdyby ktoś
+    // zmienił `EXPIRED_WINDOW_DAYS` w backendzie, karta nie może dalej kłamać „30 dni”.
+    const payload: DashboardStats = {
+      ...expectedCounters(),
+      expired: 4,
+      expired_window_days: 14,
+    };
+    server.use(http.get('/api/v1/dashboard/stats', () => HttpResponse.json(payload)));
+
+    renderWithProviders(<DashboardPage />);
+
+    const card: HTMLElement = await screen.findByTestId('kpi-expired');
+    expectKpi('kpi-expired', 4);
+    expect(within(card).getByText('Wygasłe w ostatnich 14 dniach')).toBeInTheDocument();
+  });
+
   it('pokazuje zera, gdy backend oddaje zerowe liczniki', async () => {
     const zeros: DashboardStats = {
       generated_at: getSimulatedNow(),
       active: 0,
       warning: 0,
       expired: 0,
+      expired_window_days: 30,
       permanent: 0,
       revoked: 0,
       downscope_recommendations: 0,

@@ -4,9 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/api/client';
 import { fetchDashboard } from '@/api/dashboard';
 import { countDashboard, dashboardFixture } from '@/api/fixtures/dashboard';
+import { leasesFixture } from '@/api/fixtures/leases';
 import { server } from '@/test/msw/server';
 import { advanceSimulatedClock, getLeases, getSimulatedNow } from '@/test/msw/state';
-import type { DashboardStats } from '@/types/api';
+import type { DashboardStats, LeaseOverview } from '@/types/api';
 
 /**
  * Warstwa danych pulpitu: backend serwuje `GET /api/v1/dashboard/stats` (kontraktowy
@@ -57,6 +58,18 @@ describe('fetchDashboard', () => {
     expect(stats.generated_at).toBe(getSimulatedNow());
   });
 
+  it('liczy do „Wygaśnięte” tylko wygaśnięcia z okna, a nie wszystkie dostępy po terminie', () => {
+    // Licznik pulpitu to alarm świeżych wygaśnięć (backend: `lapsed_within_window`), więc ten sam
+    // zbiór dzierżaw daje mniej niż liczba wszystkich wierszy `EXPIRED` — inaczej rosnąłby wiecznie.
+    const lapsed: LeaseOverview[] = leasesFixture.filter(
+      (lease: LeaseOverview): boolean => lease.status === 'EXPIRED',
+    );
+
+    expect(dashboardFixture.expired_window_days).toBe(30);
+    expect(dashboardFixture.expired).toBe(5);
+    expect(dashboardFixture.expired).toBeLessThan(lapsed.length);
+  });
+
   it('przepuszcza odpowiedź serwera co do znaku, bez nadpisywania liczników', async () => {
     // `pending_appeals` był jedynym licznikiem, który frontend nadpisywał własnym odczytem
     // odwołań; teraz cała dziewiątka pól idzie na ekran dokładnie taka, jaka przyszła z API.
@@ -65,6 +78,7 @@ describe('fetchDashboard', () => {
       active: 42,
       warning: 7,
       expired: 1,
+      expired_window_days: 30,
       permanent: 3,
       revoked: 2,
       downscope_recommendations: 5,

@@ -27,7 +27,6 @@ REPOSITORIES: list[str] = [
     "core-api", "auth-service", "payment-service", "frontend-app", "infra-terraform",
     "notifications", "mobile-app", "data-pipeline", "qa-automation", "legacy-reports",
 ]
-KAMIL_FORGOTTEN = ["infra-terraform", "mobile-app", "data-pipeline", "qa-automation", "legacy-reports"]
 
 
 @dataclass(frozen=True)
@@ -42,6 +41,7 @@ class LeaseSpec:
     repo: str
     role: Role
     events: tuple[EventSpec, ...] = ()
+    granted_days_ago: int | None = None  # None → the shared LEASE_GRANTED_DAYS_AGO
 
 
 def _push(*days: int) -> tuple[EventSpec, ...]:
@@ -56,14 +56,30 @@ def _comment(*days: int) -> tuple[EventSpec, ...]:
     return tuple(EventSpec(ActionType.ISSUE_COMMENT, d) for d in days)
 
 
+def _lapsed(login: str, repo: str, days_ago: int, events: tuple[EventSpec, ...] = (),
+            role: Role = Role.WRITE) -> LeaseSpec:
+    """Dostęp po terminie: wygasł `days_ago` dni temu, więc nadano go `days_ago + LEASE_DURATION_DAYS` dni temu."""
+    return LeaseSpec(login, repo, role, events, granted_days_ago=days_ago + LEASE_DURATION_DAYS)
+
+
 def _kamil() -> list[LeaseSpec]:
+    """Kamil: dwa repozytoria odnawiane codziennym pushem, resztę zapomniał — każdy dostęp w innym czasie.
+
+    Liczby przy `_lapsed` to „ile dni temu minął termin ważności”. Rozrzut jest celowy: Pulpit liczy
+    tylko wygaśnięcia z ostatnich 30 dni (`app/domain/lease_window.py::EXPIRED_WINDOW_DAYS`), więc
+    `qa-automation` i `legacy-reports` muszą wypaść z licznika, żeby było widać, że okno filtruje.
+    """
     return [
         LeaseSpec("kamil", "core-api", Role.WRITE, _push(1, 2, 3)),
         LeaseSpec("kamil", "auth-service", Role.WRITE, _push(1, 2, 3)),
         LeaseSpec("kamil", "payment-service", Role.WRITE, _push(25) + _review(2, 5)),  # scenario A
-        LeaseSpec("kamil", "frontend-app", Role.WRITE, _review(3) + _comment(8)),
-        LeaseSpec("kamil", "notifications", Role.WRITE, _review(3) + _comment(8)),
-        *(LeaseSpec("kamil", repo, Role.WRITE) for repo in KAMIL_FORGOTTEN),
+        _lapsed("kamil", "frontend-app", 2, _review(3) + _comment(8)),
+        _lapsed("kamil", "notifications", 6, _review(3) + _comment(8)),
+        _lapsed("kamil", "infra-terraform", 11),
+        _lapsed("kamil", "mobile-app", 17),
+        _lapsed("kamil", "data-pipeline", 23),
+        _lapsed("kamil", "qa-automation", 34),
+        _lapsed("kamil", "legacy-reports", 47),
     ]
 
 

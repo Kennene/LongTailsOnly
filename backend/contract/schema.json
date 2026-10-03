@@ -433,6 +433,9 @@
         "expired": {
           "type": "integer"
         },
+        "expired_window_days": {
+          "type": "integer"
+        },
         "generated_at": {
           "format": "date-time",
           "type": "string"
@@ -461,6 +464,7 @@
         "active",
         "warning",
         "expired",
+        "expired_window_days",
         "permanent",
         "revoked",
         "downscope_recommendations",

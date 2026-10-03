@@ -14,12 +14,27 @@ import { leasesFixture } from './leases';
  * tylko liczymy je **tą samą regułą co backend** (`app/domain/insights.py::compute_dashboard_counters`):
  * dzierżawy stałe (`admin`, `expires_at: null`) idą do `permanent`, wyłączone do `revoked`,
  * a statusy i rekomendacje liczymy wyłącznie po dzierżawach czynnych i nie-stałych.
+ * `expired` to **alarm, nie archiwum**: wchodzą tylko dostępy po terminie z ostatnich
+ * `EXPIRED_WINDOW_DAYS` dni (`lapsed_within_window`), starsze zostają w tabeli `/leases`.
  *
  * `pending_appeals` i `onboarding_candidates` nie wynikają z samych dzierżaw: pierwszy bierzemy
  * z parametru (w trybie MSW to żywy stan domeny „appeals”, domyślnie wspólny `appeals.json`),
  * drugi liczymy ze wspólnego `users.json` — zamiast wpisywać liczby z sufitu.
  */
 const DEMO_ANCHOR: string = (clockJson as ClockRead).now;
+
+/**
+ * Okno licznika `expired` — tyle dni po terminie liczy się jeszcze jako świeże wygaśnięcie.
+ *
+ * Musi być równe `backend/app/domain/lease_window.py::EXPIRED_WINDOW_DAYS`; backend jest źródłem
+ * prawdy, a ten plik odtwarza jego regułę dla trybu `VITE_USE_FIXTURES` i MSW.
+ */
+const EXPIRED_WINDOW_DAYS = 30;
+
+/** Reguła backendu na polu, które MSW przesuwa razem z zegarem: ujemne `days_remaining` to dni po terminie. */
+function isLapsedWithinWindow(lease: LeaseOverview): boolean {
+  return lease.days_remaining !== null && lease.days_remaining >= -EXPIRED_WINDOW_DAYS;
+}
 
 export function countDashboard(
   leases: LeaseOverview[],
@@ -40,7 +55,11 @@ export function countDashboard(
     generated_at: generatedAt,
     active: countWhere(leased, (lease: LeaseOverview): boolean => lease.status === 'ACTIVE'),
     warning: countWhere(leased, (lease: LeaseOverview): boolean => lease.status === 'WARNING'),
-    expired: countWhere(leased, (lease: LeaseOverview): boolean => lease.status === 'EXPIRED'),
+    expired: countWhere(
+      leased,
+      (lease: LeaseOverview): boolean => lease.status === 'EXPIRED' && isLapsedWithinWindow(lease),
+    ),
+    expired_window_days: EXPIRED_WINDOW_DAYS,
     permanent: live.length - leased.length,
     revoked: leases.length - live.length,
     downscope_recommendations: countWhere(

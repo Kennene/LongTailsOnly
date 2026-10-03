@@ -33,7 +33,7 @@ Cała praca Osoby 4 jest na gałęzi `feat/osoba-4` (pierwsza część scalona w
 | `GET /api/v1/appeals?lease_id=5&status=PENDING` | czy dostęp ma oczekujące odwołanie (dla modala decyzji) |
 | `GET /api/v1/audit?actor_type=&action=&actor_login=&target=&since=&until=&limit=` | `AuditEntry[]` z gotowym `actor_login`, najnowsze pierwsze |
 | `POST /api/v1/appeals/{id}/decision` (body jak `DecisionRequest`) | wykonuje decyzję silnikiem Osoby 3 i zamyka odwołanie: `EXTEND` → `APPROVED`, `DOWNSCOPE`/`REVOKE` → `REJECTED`; 409 już rozpatrzone; 403 ostatni admin |
-| `GET /api/v1/dashboard/stats` | `{"generated_at", "active", "warning", "expired", "permanent", "revoked", "downscope_recommendations", "revoke_recommendations", "pending_appeals", "onboarding_candidates"}` |
+| `GET /api/v1/dashboard/stats` | `{"generated_at", "active", "warning", "expired", "expired_window_days", "permanent", "revoked", "downscope_recommendations", "revoke_recommendations", "pending_appeals", "onboarding_candidates"}`; `expired` liczy tylko wygaśnięcia z ostatnich `expired_window_days` (30) dni |
 | `GET /api/v1/graph?team=dev` | `{"nodes", "edges"}` gotowe do `<ReactFlow>` (pozycje policzone, status w `edge.data.status`) |
 
 Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `OnboardingProposal`, `AppealOverview`, `AppealRejectRequest`, `AuditEntry`, `DashboardStats`, `PermissionGraph`.
@@ -45,7 +45,7 @@ Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `Onboarding
 3. **Dostęp nadajemy tylko przez port `VCSProvider`.** Mock Osoby 2 jest w `main`, ale jeszcze nie implementuje portu, więc działa tymczasowy adapter (dostęp = kolaborator).
 4. **Odwołanie przysługuje**, gdy dostęp odebrano albo wygasa w ciągu 7 dni (także już wygasł). Każde odwołanie wymaga **nowego** uzasadnienia: wielkość liter i spacje się nie liczą. Na jeden dostęp może czekać tylko jedno odwołanie; pilnuje tego też baza (migracja `0003`), więc podwójne kliknięcie daje 409.
 5. **Status odwołania:** przedłużenie → `APPROVED`; deeskalacja, odebranie albo odrzucenie → `REJECTED`.
-6. **Liczba 7 dni i „ile dni zostało”** są w jednym miejscu: `app/domain/lease_window.py`. Osoba 3 korzysta z tego samego.
+6. **Liczba 7 dni i „ile dni zostało”** są w jednym miejscu: `app/domain/lease_window.py`. Osoba 3 korzysta z tego samego. Tam też mieszka okno licznika „Wygaśnięte” (`EXPIRED_WINDOW_DAYS = 30`, `lapsed_within_window`).
 7. **Aktor „admin”** to konto z `Settings.admin_login` (domyślnie `tomasz-admin`), bo MVP nie ma logowania.
 8. **Jako dowód użycia liczą się tylko akcje odnawiające** (push, review, komentarz — `RENEWING_ACTIONS` z ADR 0010 Osoby 2); merge, label i zmiana ustawień z mocka nie.
 

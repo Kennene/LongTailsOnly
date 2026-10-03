@@ -9,10 +9,10 @@ MEMBERS = [
 ]
 REPOS = ["qa-automation", "core-api", "payment-service", "docs-portal"]
 LEASES = [
-    LeaseSnapshot(1, "tomasz-admin", "core-api", Role.ADMIN, True, None, None),
-    LeaseSnapshot(2, "kamil", "payment-service", Role.WRITE, True, LeaseStatus.WARNING, Recommendation.DOWNSCOPE),
-    LeaseSnapshot(3, "marta", "qa-automation", Role.READ, True, LeaseStatus.ACTIVE, Recommendation.KEEP),
-    LeaseSnapshot(4, "kamil", "core-api", Role.WRITE, False, LeaseStatus.EXPIRED, Recommendation.REVOKE),
+    LeaseSnapshot(1, "tomasz-admin", "core-api", Role.ADMIN, None, True, None, None),
+    LeaseSnapshot(2, "kamil", "payment-service", Role.WRITE, 5, True, LeaseStatus.WARNING, Recommendation.DOWNSCOPE),
+    LeaseSnapshot(3, "marta", "qa-automation", Role.READ, 3, True, LeaseStatus.ACTIVE, Recommendation.KEEP),
+    LeaseSnapshot(4, "kamil", "core-api", Role.WRITE, -2, False, LeaseStatus.EXPIRED, Recommendation.REVOKE),
 ]
 
 

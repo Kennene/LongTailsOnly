@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.enums import AppealStatus
 from app.domain.insights import LeaseSnapshot, MemberSnapshot, build_graph_layout, compute_dashboard_counters
+from app.domain.lease_window import EXPIRED_WINDOW_DAYS
 from app.models import Appeal, Repository, User
 from app.schemas.insights import DashboardStats, PermissionGraph
 from app.schemas.lease import LeaseOverview
@@ -16,8 +17,9 @@ from app.services.lease_service import list_lease_overviews
 
 
 def _snapshot(view: LeaseOverview) -> LeaseSnapshot:
-    return LeaseSnapshot(view.id, view.user.login, view.repository.name, view.current_role, view.is_active,
-                         view.status if view.is_active else None, view.recommendation if view.is_active else None)
+    return LeaseSnapshot(view.id, view.user.login, view.repository.name, view.current_role, view.days_remaining,
+                         view.is_active, view.status if view.is_active else None,
+                         view.recommendation if view.is_active else None)
 
 
 async def _leases(session: AsyncSession, now: datetime) -> list[LeaseSnapshot]:
@@ -34,7 +36,7 @@ async def get_dashboard_stats(session: AsyncSession, *, now: datetime) -> Dashbo
     pending = await session.scalar(
         select(func.count()).select_from(Appeal).where(Appeal.status == AppealStatus.PENDING))
     counters = compute_dashboard_counters(await _leases(session, now), await _members(session), int(pending or 0))
-    return DashboardStats(generated_at=now, **asdict(counters))
+    return DashboardStats(generated_at=now, expired_window_days=EXPIRED_WINDOW_DAYS, **asdict(counters))
 
 
 async def get_permission_graph(session: AsyncSession, *, now: datetime, team: str | None = None) -> PermissionGraph:
