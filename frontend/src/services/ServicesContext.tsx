@@ -101,9 +101,10 @@ export function ServicesProvider({ children }: { children: ReactNode }): React.J
     // 3. `isError` — katalog **nie wypowie się** już w tej sesji, więc reguła jest ta sama co
     //    w punkcie 2 (użytkownik na nieaktualnym zapisie może się przełączyć), a rozwiązanie i tak
     //    zawodzi bezpiecznie na placeholderze.
-    // Wspólny mianownik stanów 2 i 3: identyfikator spoza rejestru frontendu nie jest wybieralny
-    // nigdy — picker takiej opcji nie oferuje, więc nie ma czego przyjmować, a literówka nie trafia
-    // do `localStorage`.
+    // Wspólny mianownik stanów 2 i 3: **dopóki katalog nie jest rozstrzygnięty**, identyfikator
+    // spoza rejestru frontendu nie jest wybieralny — picker takiej opcji wtedy nie oferuje, więc
+    // nie ma czego przyjmować, a literówka nie trafia do `localStorage`. Gdy katalog już osiadł,
+    // obowiązuje wyłącznie on (punkt 1): wpis z katalogu spoza rejestru jest wybieralny.
     const isInCatalog = services.some((service: ServiceRead): boolean => service.id === id);
     const isInRegistry = getServiceConfig(id) !== undefined;
     const isSelectable = isInCatalog || (isInRegistry && (isPending || isError));

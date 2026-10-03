@@ -10,8 +10,11 @@ it('renders navigation for all seven views and switches route', async () => {
   const user = userEvent.setup();
   renderWithProviders(<App />, { route: '/' });
 
+  // Od zadania 7 nawigacja pochodzi z tras aktywnej usługi, a ta istnieje dopiero po
+  // rozstrzygnięciu katalogu (`ServicesProvider` pyta `GET /api/v1/services`). Asercja bez zmian:
+  // przy domyślnym `github` ma być sześć pozycji — czekamy tylko, aż katalog dotrze.
   for (const label of NAV_LABELS) {
-    expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: label })).toBeInTheDocument();
   }
 
   await user.click(screen.getByRole('link', { name: 'Dostępy' }));

@@ -3,7 +3,9 @@ import { type ChangeEvent, type FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { SELECT_CLASSES } from '@/lib/selectClasses';
 import { getRoleLabel } from '@/lib/statusBadges';
+import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
 
 export interface AppealFormProps {
@@ -15,11 +17,6 @@ export interface AppealFormProps {
 
 /** Komunikat walidacji; `trim()` odsiewa też uzasadnienie z samych białych znaków. */
 const JUSTIFICATION_REQUIRED = 'Uzasadnienie jest wymagane';
-
-// Natywny `<select`: jest w pełni dostępny bez JS, a Radixowy `Select` z `components/ui`
-// nie przyjmuje `userEvent.selectOptions` (plan testów 5.8a) i wymaga polyfilli w jsdom.
-const SELECT_CLASSES =
-  'h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30';
 
 export function AppealForm({
   leases,
@@ -48,7 +45,14 @@ export function AppealForm({
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="appeal-lease">Dostęp</Label>
         <select
-          className={SELECT_CLASSES}
+          // Natywny `<select>`: jest w pełni dostępny bez JS, a Radixowy `Select` z `components/ui`
+          // nie przyjmuje `userEvent.selectOptions` (plan testów 5.8a) i wymaga polyfilli w jsdom.
+          // `SELECT_CLASSES` to wspólny rdzeń (spec §6), a `px-2`, `w-full` i `disabled:*` — różnice
+          // tego pola.
+          className={cn(
+            SELECT_CLASSES,
+            'w-full px-2 disabled:cursor-not-allowed disabled:opacity-50',
+          )}
           id="appeal-lease"
           onChange={(event: ChangeEvent<HTMLSelectElement>): void => setLeaseId(event.target.value)}
           value={leaseId}

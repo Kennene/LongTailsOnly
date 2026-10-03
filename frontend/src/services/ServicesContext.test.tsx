@@ -273,6 +273,20 @@ describe('ServicesProvider', () => {
     expect(screen.getByTestId('active-service')).toBeEmptyDOMElement();
   });
 
+  it('accepts and persists a registry-known selection from a settled catalog', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<FixedSwitcherProbe />);
+
+    await waitForCatalog();
+    await user.click(screen.getByRole('button', { name: 'Przełącz na demo-tracker' }));
+
+    // Komórka „katalog osiadły + wpis w katalogu + znany rejestrowi”: stan dowodzi przyjęcia,
+    // ale dopiero odczyt `localStorage` dowodzi zapisu — inaczej „przyjęte, ale niezapisane”
+    // przechodzi niezauważone.
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe('demo-tracker');
+  });
+
   it('ignores a registry-known selection that the settled catalog omits', async () => {
     const user = userEvent.setup();
     server.use(http.get('/api/v1/services', () => HttpResponse.json(DEMO_TRACKER_ONLY)));

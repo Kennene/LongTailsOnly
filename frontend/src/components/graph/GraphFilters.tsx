@@ -2,6 +2,8 @@ import type { ChangeEvent, ReactNode } from 'react';
 
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { SELECT_CLASSES } from '@/lib/selectClasses';
+import { cn } from '@/lib/utils';
 
 export interface GraphFiltersProps {
   /** Zespoły zebrane z węzłów (`data.team` osób oraz etykiety węzłów typu `team`). */
@@ -18,11 +20,6 @@ export interface GraphFiltersProps {
 const TEAM_SELECT_ID = 'graph-team-filter';
 const RISK_SWITCH_ID = 'graph-risk-filter';
 
-// Natywny `<select>`: Radixowy `Select` z `components/ui` nie przyjmuje `userEvent.selectOptions`
-// i wymaga polyfilli w jsdom (plan testów 5.8a), a filtr zespołu to jedna lista wartości.
-const SELECT_CLASSES =
-  'h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30';
-
 /** Filtry grafu: zespół (`data.team`) i zwężenie widoku do podwyższonego ryzyka. */
 export function GraphFilters({
   teams,
@@ -37,7 +34,11 @@ export function GraphFilters({
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={TEAM_SELECT_ID}>Zespół</Label>
         <select
-          className={SELECT_CLASSES}
+          // Natywny `<select>`: Radixowy `Select` z `components/ui` nie przyjmuje
+          // `userEvent.selectOptions` i wymaga polyfilli w jsdom (plan testów 5.8a),
+          // a filtr zespołu to jedna lista wartości. Klasy są współdzielone (spec §6),
+          // a `px-2` to jedyna różnica tego pola.
+          className={cn(SELECT_CLASSES, 'px-2')}
           id={TEAM_SELECT_ID}
           onChange={(event: ChangeEvent<HTMLSelectElement>): void =>
             onTeamChange(event.target.value === '' ? null : event.target.value)

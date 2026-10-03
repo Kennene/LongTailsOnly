@@ -1,6 +1,8 @@
 import type { ChangeEvent } from 'react';
 
 import { Label } from '@/components/ui/label';
+import { SELECT_CLASSES } from '@/lib/selectClasses';
+import { cn } from '@/lib/utils';
 import type { ActorType } from '@/types/api';
 
 /** Wartość filtra aktora: konkretny aktor z kontraktu albo „Wszystkie”. */
@@ -20,11 +22,6 @@ const FILTER_LABELS: Record<AuditActorFilter, string> = {
   SYSTEM: 'SYSTEM',
 };
 
-// Natywny `<select>`: jest dostępny bez JS, a Radixowy `Select` z `components/ui` nie przyjmuje
-// `userEvent.selectOptions` (plan 5.10) i wymaga polyfilli w jsdom — ta sama decyzja co w 5.8a.
-const SELECT_CLASSES =
-  'h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 sm:w-40';
-
 const ACTOR_FILTER_ID = 'audit-actor-filter';
 
 /**
@@ -36,7 +33,14 @@ export function AuditFilters({ actorType, onChange }: AuditFiltersProps): React.
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={ACTOR_FILTER_ID}>Aktor</Label>
       <select
-        className={SELECT_CLASSES}
+        // Natywny `<select>`: jest dostępny bez JS, a Radixowy `Select` z `components/ui` nie
+        // przyjmuje `userEvent.selectOptions` (plan 5.10) i wymaga polyfilli w jsdom — ta sama
+        // decyzja co w 5.8a. `SELECT_CLASSES` to wspólny rdzeń (spec §6), a `px-2`, `sm:w-40`
+        // i `disabled:*` to różnice tego pola.
+        className={cn(
+          SELECT_CLASSES,
+          'w-full px-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-40',
+        )}
         id={ACTOR_FILTER_ID}
         onChange={(event: ChangeEvent<HTMLSelectElement>): void =>
           onChange(toActorFilter(event.target.value))

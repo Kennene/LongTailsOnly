@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import {
   FileCheck2,
   FlaskConical,
@@ -20,8 +21,22 @@ const NAV_ITEMS = [
   { to: '/audit', label: 'Audyt', icon: ScrollText },
   { to: '/mocks', label: 'Mocki', icon: FlaskConical },
 ];
+=======
+import { ShieldCheck } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+
+import { cn } from '@/lib/utils';
+import { getServiceConfig, type ServiceRoute } from '@/services/serviceRegistry';
+import { useActiveService } from '@/services/ServicesContext';
+>>>>>>> b41577d (feat(frontend): service picker in the top bar with per-service navigation)
 
 export function Sidebar(): React.JSX.Element {
+  const { activeService } = useActiveService();
+  // Nawigacja to jedyna lista tras (spec §5.7): rejestr usług jest źródłem prawdy dla sidebaru
+  // i strażnika, więc usługa spoza rejestru nie ma własnych pozycji. Podczas `isPending`
+  // identyfikator jest pusty, więc nawigacja startuje pusta — katalog ją uzupełnia.
+  const routes = getServiceConfig(activeService.id)?.routes ?? [];
+
   return (
     <aside
       data-slot="sidebar"
@@ -34,7 +49,9 @@ export function Sidebar(): React.JSX.Element {
         {/* Nazwa produktu zostaje w drzewie dostępności także w zwiniętym pasku (`sr-only`). */}
         <span className="sr-only flex min-w-0 flex-col leading-tight xl:not-sr-only">
           <span className="truncate text-sm font-semibold">Lease Governor</span>
-          <span className="truncate text-[11px] text-muted-foreground">Dostęp do GitHub</span>
+          <span className="truncate text-[11px] text-muted-foreground">
+            {`Dostęp: ${activeService.name}`}
+          </span>
         </span>
       </div>
 
@@ -42,11 +59,11 @@ export function Sidebar(): React.JSX.Element {
         aria-label="Nawigacja główna"
         className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2"
       >
-        {NAV_ITEMS.map((item) => (
+        {routes.map((route: ServiceRoute): React.JSX.Element => (
           <NavLink
-            key={item.to}
-            to={item.to}
-            title={item.label}
+            key={route.path}
+            to={route.path}
+            title={route.label}
             className={({ isActive }) =>
               cn(
                 // Poniżej `xl` pasek jest zwinięty do ikon: etykieta jest `sr-only`,
@@ -58,8 +75,8 @@ export function Sidebar(): React.JSX.Element {
               )
             }
           >
-            <item.icon className="size-4 shrink-0" aria-hidden="true" />
-            <span className="sr-only xl:not-sr-only xl:truncate">{item.label}</span>
+            <route.icon className="size-4 shrink-0" aria-hidden="true" />
+            <span className="sr-only xl:not-sr-only xl:truncate">{route.label}</span>
           </NavLink>
         ))}
       </nav>
