@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.enums import ActionType
+from app.core.enforcement_mode import enforcement_state
+from app.domain.enums import ActionType, EnforcementMode, Recommendation
 from app.domain.lease_rules import Activity, lease_days_remaining, lease_status, newest_activity, recommend, renews
 from app.domain.roles import RENEWING_ACTIONS, required_permission_for
 from app.models import ActivityEvent, Lease
@@ -31,23 +32,31 @@ async def record_activity(session: AsyncSession, *, user_id: int, repo_id: int, 
     return event
 
 
-async def list_lease_overviews(session: AsyncSession, now: datetime) -> list[LeaseOverview]:
-    """Every lease (admin and revoked included), ordered by id, with values computed by the engine."""
+async def list_lease_overviews(session: AsyncSession, now: datetime, *,
+                               mode: EnforcementMode | None = None) -> list[LeaseOverview]:
+    """Every lease (admin and revoked included), ordered by id; `mode=None` means the current enforcement mode."""
     leases = (await session.scalars(select(Lease).order_by(Lease.id))).all()
-    return await build_lease_overviews(session, leases, now)
+    return await build_lease_overviews(session, leases, now, mode=mode)
 
 
-async def get_lease_overview(session: AsyncSession, lease_id: int, now: datetime) -> LeaseOverview:
-    lease = await session.get(Lease, lease_id)
-    if lease is None:
-        raise ServiceError(404, f"Lease {lease_id} not found")
-    (overview,) = await build_lease_overviews(session, [lease], now)
+async def get_lease_overview(session: AsyncSession, lease_id: int, now: datetime, *,
+                             mode: EnforcementMode | None = None) -> LeaseOverview:
+    (overview,) = await build_lease_overviews(session, [await get_lease(session, lease_id)], now, mode=mode)
     return overview
 
 
-async def build_lease_overviews(session: AsyncSession, leases: Sequence[Lease], now: datetime) -> list[LeaseOverview]:
+async def get_lease(session: AsyncSession, lease_id: int) -> Lease:
+    lease = await session.get(Lease, lease_id)
+    if lease is None:
+        raise ServiceError(404, f"Lease {lease_id} not found")
+    return lease
+
+
+async def build_lease_overviews(session: AsyncSession, leases: Sequence[Lease], now: datetime, *,
+                                mode: EnforcementMode | None = None) -> list[LeaseOverview]:
+    advise = (mode or enforcement_state.mode) is not EnforcementMode.DISABLED
     activity = await _renewing_activity(session, {lease.user_id for lease in leases}, now)
-    return [_overview(lease, activity.get((lease.user_id, lease.repo_id), []), now) for lease in leases]
+    return [_overview(lease, activity.get((lease.user_id, lease.repo_id), []), now, advise) for lease in leases]
 
 
 async def _renewing_activity(session: AsyncSession, user_ids: set[int], now: datetime) -> ActivityByLease:
@@ -61,7 +70,7 @@ async def _renewing_activity(session: AsyncSession, user_ids: set[int], now: dat
     return grouped
 
 
-def _overview(lease: Lease, activity: list[Activity], now: datetime) -> LeaseOverview:
+def _overview(lease: Lease, activity: list[Activity], now: datetime, advise: bool) -> LeaseOverview:
     status = lease_status(lease.current_role, lease.expires_at, lease.is_active, now)
     window_start = now - timedelta(days=lease.repository.default_lease_duration_days)
     newest = newest_activity(activity, since=window_start, until=now)
@@ -71,5 +80,6 @@ def _overview(lease: Lease, activity: list[Activity], now: datetime) -> LeaseOve
         status=status,
         days_remaining=lease_days_remaining(status, lease.expires_at, now),
         last_activity_at=latest.at if latest else None,
-        recommendation=recommend(status, lease.current_role, newest.action if newest else None),
+        recommendation=(recommend(status, lease.current_role, newest.action if newest else None)
+                        if advise else Recommendation.KEEP),
     )

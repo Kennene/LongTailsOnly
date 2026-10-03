@@ -27,6 +27,13 @@ export type AppealStatus = "PENDING" | "APPROVED" | "REJECTED";
  */
 export type DecisionAction = "EXTEND" | "DOWNSCOPE" | "REVOKE";
 /**
+ * How the lease engine acts on lapsing leases (docs/3-silnik-dzierzawy §5).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "EnforcementMode".
+ */
+export type EnforcementMode = "disabled" | "warning" | "auto";
+/**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "Recommendation".
  */
@@ -239,6 +246,20 @@ export interface DemoResetResult {
   };
   now: string;
   offset_days: number;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "EnforcementModeRead".
+ */
+export interface EnforcementModeRead {
+  mode: EnforcementMode;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "EnforcementModeUpdate".
+ */
+export interface EnforcementModeUpdate {
+  mode: EnforcementMode;
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema

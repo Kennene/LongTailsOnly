@@ -534,6 +534,40 @@
       "title": "DemoResetResult",
       "type": "object"
     },
+    "EnforcementMode": {
+      "description": "How the lease engine acts on lapsing leases (docs/3-silnik-dzierzawy \u00a75).",
+      "enum": [
+        "disabled",
+        "warning",
+        "auto"
+      ],
+      "title": "EnforcementMode",
+      "type": "string"
+    },
+    "EnforcementModeRead": {
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/EnforcementMode"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "EnforcementModeRead",
+      "type": "object"
+    },
+    "EnforcementModeUpdate": {
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/EnforcementMode"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "EnforcementModeUpdate",
+      "type": "object"
+    },
     "Extension": {
       "description": "Exactly one way of extending a lease (ADR 0005).",
       "properties": {

@@ -57,6 +57,14 @@ class DecisionAction(StrEnum):
     REVOKE = "REVOKE"
 
 
+class EnforcementMode(StrEnum):
+    """How the lease engine acts on lapsing leases (docs/3-silnik-dzierzawy §5)."""
+
+    DISABLED = "disabled"  # statuses only: no recommendations, no actions
+    WARNING = "warning"  # default: recommendations, the admin decides
+    AUTO = "auto"  # expired leases are downscoped/revoked by the system
+
+
 class AuditAction(StrEnum):
     """What an audit_logs row records (ADR 0011 §2); the column stays text, writers must use this enum."""
 
@@ -68,4 +76,5 @@ class AuditAction(StrEnum):
     BASELINE_APPLIED = "BASELINE_APPLIED"
     TIME_TRAVEL = "TIME_TRAVEL"
     LAST_ADMIN_BLOCKED = "LAST_ADMIN_BLOCKED"
+    ENFORCEMENT_MODE_CHANGED = "ENFORCEMENT_MODE_CHANGED"
     DEMO_RESET = "DEMO_RESET"
