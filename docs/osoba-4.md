@@ -24,6 +24,7 @@ Cała praca Osoby 4 jest na gałęzi `feat/osoba-4` (pierwsza część scalona w
 | --- | --- |
 | `GET /api/v1/simulation/clock` | `{"simulated_now": "2026-10-18T15:24:00Z", "offset_days": 15}` |
 | `GET /api/v1/teams/dev/baseline` | `BaselineEntry[]`; na seedzie: `auth-service` write (7/12), `core-api` write (11/12), `payment-service` read (8/12) |
+| `GET /api/v1/teams/dev/onboarding-candidates` | `UserRead[]` — kto w zespole czeka na standard (bez aktywnego dostępu); na seedzie: `nowy-dev` |
 | `GET /api/v1/onboarding/nowy-dev` | `OnboardingProposal {user, team, to_grant, already_granted}` |
 | `POST /api/v1/onboarding/nowy-dev/apply` | nadaje brakujące dostępy, zwraca propozycję po nadaniu (`to_grant: []`); drugie kliknięcie nic nie dubluje |
 | `POST /api/v1/appeals` `{"lease_id", "justification"}` | 201 `AppealOverview`; 422 puste/powtórzone uzasadnienie; 409 dostęp nie wygasa w ciągu 7 dni albo odwołanie już czeka; 404 |
