@@ -51,13 +51,13 @@ Oczekiwane: oba testy PASS.
 ### Zadanie 3: Modele ORM i inicjalizacja bazy
 
 **Pliki:**
-- Utwórz: `backend/app/models/__init__.py`, `backend/app/models/user.py`, `backend/app/models/repository.py`, `backend/app/models/lease.py`, `backend/app/models/appeal.py`, `backend/app/models/audit_log.py`
+- Utwórz: `backend/app/models/__init__.py`, `backend/app/models/user.py`, `backend/app/models/repository.py`, `backend/app/models/lease.py`, `backend/app/models/activity.py`, `backend/app/models/appeal.py`, `backend/app/models/audit_log.py`
 - Utwórz: `backend/app/db/__init__.py`, `backend/app/db/session.py`, `backend/app/db/base.py`
 - Test: `backend/tests/db/test_models.py`
 
-**Interfejs:** modele `User`, `Repository`, `Lease`, `Appeal` i `AuditLog` są mapowane przez SQLAlchemy 2.0; `app.db.session.init_db()` tworzy schemat SQLite.
+**Interfejs:** modele `User`, `Repository`, `Lease`, `ActivityEvent`, `Appeal` i `AuditLog` są mapowane przez SQLAlchemy 2.0; `app.db.session.init_db()` tworzy schemat SQLite.
 
-- [ ] **Krok 1: Napisz testy `test_models_persist_required_fields` i `test_init_db_creates_tables`** sprawdzające pola z tej listy: `User(id, login, name, team, is_admin)`, `Repository(id, name, owner, default_branch)`, `Lease(user_id, repo_id, current_role, expires_at, last_activity_at, last_activity_type)`, `Appeal(lease_id, user_id, repo_id, requested_role, justification, status, created_at, resolved_at)` oraz `AuditLog(timestamp, actor_type, actor_id, action, target, details, justification)`.
+- [ ] **Krok 1: Napisz testy `test_models_persist_required_fields` i `test_init_db_creates_tables`** sprawdzające pola z tej listy: `User(id, login, name, team, is_admin)`, `Repository(id, name, owner, default_branch)`, `Lease(id, user_id, repo_id, current_role, expires_at, granted_at)`, `ActivityEvent(id, user_id, repo_id, timestamp, action_type, required_permission)`, `Appeal(lease_id, user_id, repo_id, requested_role, justification, status, created_at, resolved_at)` oraz `AuditLog(timestamp, actor_type, actor_id, action, target, details, justification)`. `ActivityEvent.user_id` i `repo_id` są indeksowanymi kluczami obcymi; `required_permission` używa hierarchii ról z ADR 0002. `Lease` nie przechowuje pól `last_activity_at` ani `last_activity_type`.
 - [ ] **Krok 2: Uruchom:** `cd backend && pytest tests/db/test_models.py -q`
 Oczekiwane: FAIL z powodu brakujących modeli lub tabel.
 - [ ] **Krok 3: Zaimplementuj modele, sesję async SQLite i inicjalizację schematu.**
@@ -70,9 +70,9 @@ Oczekiwane: oba testy PASS, tabele są widoczne w bazie testowej.
 - Utwórz: `backend/app/db/seed.py`
 - Test: `backend/tests/db/test_seed.py`
 
-**Interfejs:** `seed_demo_data(session) -> None` tworzy deterministyczny zestaw organizacji, użytkowników, zespołów, repozytoriów, dzierżaw i scenariuszy.
+**Interfejs:** `seed_demo_data(session) -> None` tworzy deterministyczny zestaw organizacji, użytkowników, zespołów, repozytoriów, dzierżaw, zdarzeń aktywności i scenariuszy.
 
-- [ ] **Krok 1: Napisz testy `test_seed_creates_demo_population` i `test_seed_is_idempotent`** sprawdzające 1 organizację, admina `tomasz-admin`, zespoły DEV/QA, 10 repozytoriów oraz cztery przypadki: (A) developer z `admin`, który używa tylko `push`; (B) QA z dostępem wygasającym za 3 dni; (C) nieużywane repozytorium z wygasłym dostępem; (D) nowy developer bez dostępów.
+- [ ] **Krok 1: Napisz testy `test_seed_creates_demo_population` i `test_seed_is_idempotent`** sprawdzające 1 organizację, admina `tomasz-admin`, zespoły DEV/QA, 10 repozytoriów, deterministyczne zdarzenia `ActivityEvent` oraz cztery przypadki: (A) developer z `admin`, który wykonuje tylko zdarzenia `push`; (B) QA z dostępem wygasającym za 3 dni; (C) nieużywane repozytorium bez zdarzeń w ostatnich 30 dniach; (D) nowy developer bez dostępów.
 - [ ] **Krok 2: Uruchom:** `cd backend && pytest tests/db/test_seed.py -q`
 Oczekiwane: FAIL, ponieważ funkcja seeda nie istnieje.
 - [ ] **Krok 3: Zaimplementuj seed deterministyczny, używając zegara wstrzykiwanego zamiast zegara systemowego.**
@@ -107,7 +107,7 @@ Oczekiwane: wszystkie testy PASS.
 - Zmień: `backend/app/main.py`
 - Test: `backend/tests/api/test_github_mock_reads.py`
 
-**Interfejs:** router udostępnia `GET /api/v3/orgs/{org}/members`, `GET /api/v3/repos/{owner}/{repo}/collaborators` i `GET /api/v3/repos/{owner}/{repo}/events`.
+**Interfejs:** router udostępnia `GET /api/v3/orgs/{org}/members`, `GET /api/v3/repos/{owner}/{repo}/collaborators` i `GET /api/v3/repos/{owner}/{repo}/events`; endpoint zdarzeń odczytuje rekordy `ActivityEvent` repozytorium.
 
 - [ ] **Krok 1: Napisz testy `test_list_org_members`, `test_list_repo_collaborators` i `test_list_repo_events`** weryfikujące kody odpowiedzi oraz format JSON dla danych z seeda.
 - [ ] **Krok 2: Uruchom:** `cd backend && pytest tests/api/test_github_mock_reads.py -q`
@@ -138,12 +138,12 @@ Oczekiwane: wszystkie testy PASS; zabronione usunięcia zwracają dokładnie 403
 - Utwórz: `backend/app/services/lease_service.py`
 - Test: `backend/tests/services/test_lease_service.py`
 
-**Interfejs:** `get_lease_status(lease, now) -> LeaseStatus` wyznacza `ACTIVE`, `WARNING` (pozostało najwyżej 7 dni) albo `EXPIRED`; `record_activity(lease, activity_type, occurred_at) -> Lease` odnawia wyłącznie poziomy nie wyższe niż wymagany przez aktywność.
+**Interfejs:** `record_activity(user_id, repo_id, action_type, required_permission, occurred_at) -> ActivityEvent` zapisuje każde zdarzenie bez nadpisywania historii; `occurred_at` pochodzi z `TimeProvider`, a dzierżawę odnawia tylko wtedy, gdy wymagany poziom zdarzenia jest co najmniej równy `current_role` (ustawia wtedy `expires_at = occurred_at + 30 dni`). `evaluate_lease_status(lease, now) -> LeaseStatus` wyznacza `ACTIVE`, `WARNING` (pozostało najwyżej 7 dni) albo `EXPIRED` na podstawie historii `ActivityEvent`.
 
-- [ ] **Krok 1: Napisz testy `test_status_active_warning_expired_boundaries`, `test_push_renews_only_push_and_lower_roles` i `test_admin_activity_renews_admin_lease`** dla 30-dniowego okresu i 7-dniowego okna ostrzegawczego.
+- [ ] **Krok 1: Napisz testy `test_status_active_warning_expired_boundaries`, `test_push_does_not_renew_admin_lease`, `test_recent_lower_role_activity_recommends_downscope`, `test_no_recent_activity_recommends_revoke` i `test_admin_activity_renews_admin_lease`** dla 30-dniowego okresu i 7-dniowego okna ostrzegawczego.
 - [ ] **Krok 2: Uruchom:** `cd backend && pytest tests/services/test_lease_service.py -q`
 Oczekiwane: FAIL, ponieważ serwis dzierżaw nie istnieje.
-- [ ] **Krok 3: Zaimplementuj wyliczanie statusu oraz odnawianie przez `TimeProvider`; przy aktywnym niższym poziomie zwróć rekomendację down-scope zamiast odnowienia wyższego poziomu.**
+- [ ] **Krok 3: Zaimplementuj zapis zdarzeń i ewaluację przez `TimeProvider` zgodnie z hierarchią z ADR 0002. Dla dzierżawy sprawdź najnowsze zdarzenie o poziomie wymaganym co najmniej równym `current_role` z ostatnich 30 dni; brak takiego zdarzenia oznacza wygaśnięcie tego poziomu. Następnie sprawdź najnowsze zdarzenie niższego poziomu z tego okna: zaproponuj down-scope do jego `required_permission`, a jeśli go brak — revoke.**
 - [ ] **Krok 4: Uruchom ponownie to samo polecenie.**
 Oczekiwane: wszystkie testy PASS, w tym granice 7 i 0 dni.
 
@@ -153,12 +153,12 @@ Oczekiwane: wszystkie testy PASS, w tym granice 7 i 0 dni.
 - Utwórz: `backend/app/services/baseline_service.py`
 - Test: `backend/tests/services/test_baseline_service.py`
 
-**Interfejs:** `get_team_baseline(team_id, since) -> list[BaselineEntry]` uwzględnia repozytorium przy aktywności co najmniej 50% zespołu z ostatnich 30 dni i proponuje najniższą odpowiednią rolę, nigdy `admin`.
+**Interfejs:** `get_team_baseline(team_id, now) -> list[BaselineEntry]` oblicza aktywność z rekordów `ActivityEvent` z przedziału `[now - 30 dni, now]` i proponuje najniższy wystarczający poziom zarejestrowanej aktywności, nigdy `admin`.
 
-- [ ] **Krok 1: Napisz testy `test_baseline_requires_half_of_team`, `test_baseline_uses_lowest_sufficient_role` i `test_baseline_never_proposes_admin`.**
+- [ ] **Krok 1: Napisz testy `test_baseline_requires_half_of_team`, `test_baseline_uses_lowest_sufficient_role` i `test_baseline_never_proposes_admin`** na podstawie zdarzeń `ActivityEvent`; próg liczy unikalnych członków zespołu aktywnych w repozytorium w ostatnich 30 dniach, a poziom wyznacza się z wymaganych uprawnień zdarzeń bez `admin`.
 - [ ] **Krok 2: Uruchom:** `cd backend && pytest tests/services/test_baseline_service.py -q`
 Oczekiwane: FAIL, ponieważ serwis baseline nie istnieje.
-- [ ] **Krok 3: Zaimplementuj liczenie aktywnych członków i najniższego wymaganego poziomu.**
+- [ ] **Krok 3: Zaimplementuj liczenie unikalnych aktywnych `user_id` względem liczby członków zespołu; uwzględnij repozytorium przy progu co najmniej 50% i wyznacz najniższy wystarczający poziom dla aktywności większości, pomijając `admin`.**
 - [ ] **Krok 4: Uruchom ponownie to samo polecenie.**
 Oczekiwane: wszystkie testy PASS; próg jest spełniony dokładnie przy 50%, a `admin` nigdy nie występuje w wyniku.
 
