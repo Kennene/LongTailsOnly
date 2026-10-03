@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { AppealCandidatesTable } from '@/components/appeals/AppealCandidatesTable';
 import { AppealForm } from '@/components/appeals/AppealForm';
-import { AppealListItem } from '@/components/appeals/AppealListItem';
-import { LeaseCandidatesTable } from '@/components/appeals/LeaseCandidatesTable';
+import { AppealList } from '@/components/appeals/AppealList';
 import { DecisionModal } from '@/components/leases/DecisionModal';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { type ApiErrorDescription, describeApiError, describeEngineError } from 
 import { isAppealable } from '@/lib/appealable';
 import type { AppealOverview, LeaseOverview } from '@/types/api';
 
+const CANDIDATES_HEADING_ID = 'appeals-candidates-heading';
 const APPEALS_LIST_HEADING_ID = 'appeals-submitted-heading';
 const SUBMIT_APPEAL_FALLBACK = 'Nie udało się złożyć odwołania.';
 const EMPTY_CANDIDATES =
@@ -58,9 +59,9 @@ export function AppealsPage(): React.JSX.Element {
         </p>
       </header>
 
-      <Card>
+      <Card role="region" aria-labelledby={CANDIDATES_HEADING_ID}>
         <CardHeader className="border-b">
-          <CardTitle>Dostępy wymagające uwagi</CardTitle>
+          <CardTitle id={CANDIDATES_HEADING_ID}>Dostępy wymagające uwagi</CardTitle>
           <CardDescription>
             Odwołanie przysługuje dostępom odebranym oraz tym, które wygasły albo wygasają w ciągu 7
             dni.
@@ -96,7 +97,7 @@ export function AppealsPage(): React.JSX.Element {
           ) : null}
 
           {leasesQuery.isSuccess && candidates.length > 0 ? (
-            <LeaseCandidatesTable leases={candidates} />
+            <AppealCandidatesTable leases={candidates} />
           ) : null}
         </CardContent>
       </Card>
@@ -154,11 +155,11 @@ export function AppealsPage(): React.JSX.Element {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card role="region" aria-labelledby={APPEALS_LIST_HEADING_ID}>
         <CardHeader className="border-b">
           <CardTitle id={APPEALS_LIST_HEADING_ID}>Złożone odwołania</CardTitle>
           <CardDescription>
-            Najnowsze pierwsze; pozycje oczekujące czekają na decyzję.
+            Pogrupowane po osobie — osoby z oczekującymi wnioskami na górze.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -193,11 +194,11 @@ export function AppealsPage(): React.JSX.Element {
           ) : null}
 
           {appealsQuery.isSuccess && appeals.length > 0 ? (
-            <ul aria-labelledby={APPEALS_LIST_HEADING_ID} className="flex flex-col">
-              {appeals.map((appeal: AppealOverview): React.JSX.Element => (
-                <AppealListItem appeal={appeal} key={appeal.id} onResolve={setSelectedAppeal} />
-              ))}
-            </ul>
+            <AppealList
+              appeals={appeals}
+              labelledBy={APPEALS_LIST_HEADING_ID}
+              onResolve={setSelectedAppeal}
+            />
           ) : null}
         </CardContent>
       </Card>

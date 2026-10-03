@@ -1,4 +1,12 @@
-import { FileCheck2, Gavel, LayoutDashboard, Network, ScrollText, ShieldCheck } from 'lucide-react';
+import {
+  FileCheck2,
+  FlaskConical,
+  Gavel,
+  LayoutDashboard,
+  Network,
+  ScrollText,
+  ShieldCheck,
+} from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
@@ -10,6 +18,7 @@ const NAV_ITEMS = [
   { to: '/baseline', label: 'Standard zespołu', icon: ShieldCheck },
   { to: '/graph', label: 'Graf', icon: Network },
   { to: '/audit', label: 'Audyt', icon: ScrollText },
+  { to: '/mocks', label: 'Mocki', icon: FlaskConical },
 ];
 
 export function Sidebar(): React.JSX.Element {

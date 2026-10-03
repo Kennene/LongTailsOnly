@@ -32,7 +32,7 @@ app = FastAPI(title="LongTailsOnly API", description=MAIN_DESCRIPTION, lifespan=
 app.add_exception_handler(ServiceError, service_error_handler)
 app.include_router(demo_router)
 app.include_router(simulation_router)
-# Mocks are documented on their own page (`/mocks/docs`), not in the product's `/docs`.
+# Each mock is documented on its own page (`/mocks/github/docs`, `/mocks/jira/docs`), not in the product's `/docs`.
 app.include_router(github_mock_router, include_in_schema=False)
 app.include_router(jira_mock_router, include_in_schema=False)
 app.include_router(mock_docs_router)

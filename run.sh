@@ -27,7 +27,7 @@ done
 step() { printf '\n==> %s\n' "$*"; }
 die() { echo "BŁĄD: $*" >&2; exit 1; }
 
-# Lokalny Node w .tools/node ma pierwszeństwo przed systemowym (Vite 8 wymaga Node >= 20.19).
+# Lokalny Node w .tools/node ma pierwszeństwo przed systemowym (frontend wymaga Node >= 24).
 if [[ -x "$ROOT/.tools/node/bin/node" ]]; then
   export PATH="$ROOT/.tools/node/bin:$PATH"
 fi
@@ -40,14 +40,20 @@ port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
 port_busy "$BACKEND_PORT" && die "port $BACKEND_PORT jest zajęty (działa już inny backend?)"
 port_busy "$FRONTEND_PORT" && die "port $FRONTEND_PORT jest zajęty (działa już inny Vite?)"
 
-# Zależności dociągamy tylko, gdy ich brakuje; pełną instalację robi ./build.sh.
-if [[ ! -d "$ROOT/backend/.venv" ]]; then
-  step "Backend: instalacja zależności"
-  (cd "$ROOT/backend" && uv sync)
-fi
-if [[ ! -d "$ROOT/frontend/node_modules" ]]; then
-  step "Frontend: instalacja zależności"
+# Zależności dociągamy przy każdym starcie, żeby pull z nową paczką nie kończył się błędem importu.
+# Backend: `uv sync` przy aktualnym środowisku trwa ułamek sekundy. `--inexact` nie odinstalowuje
+# paczek spoza bieżącego zestawu (np. pytest z `--extra dev` po `./build.sh --test`).
+step "Backend: synchronizacja zależności"
+(cd "$ROOT/backend" && uv sync --inexact)
+
+# Frontend: `npm ci` trwa kilkanaście sekund, więc uruchamiamy je tylko, gdy `package-lock.json`
+# zmienił się od ostatniej instalacji (suma kontrolna zapisana w node_modules) albo node_modules brak.
+LOCK_STAMP="$ROOT/frontend/node_modules/.run-sh-lock-checksum"
+LOCK_CHECKSUM="$(cksum < "$ROOT/frontend/package-lock.json")"
+if [[ ! -f "$LOCK_STAMP" || "$(cat "$LOCK_STAMP")" != "$LOCK_CHECKSUM" ]]; then
+  step "Frontend: instalacja zależności (zmienił się package-lock.json)"
   (cd "$ROOT/frontend" && HUSKY=0 npm ci --no-audit --no-fund)
+  printf '%s\n' "$LOCK_CHECKSUM" > "$LOCK_STAMP"
 fi
 
 BACKEND_PID=""

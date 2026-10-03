@@ -2,7 +2,7 @@
 
 > **Dla agentów wykonujących:** WYMAGANY SUB-SKILL: `superpowers:subagent-driven-development` (zalecane) albo `superpowers:executing-plans`. Kroki mają składnię checkbox (`- [ ]`) do śledzenia postępu.
 
-**Cel:** Zbudować cały frontend (`frontend/`) jako SPA — konsolę Security Admina do zarządzania czasowymi dostępami do GitHuba — w 10 krokach (PR 5.1–5.10), z linią cięcia po 5.6.
+**Cel:** Zbudować cały frontend (`frontend/`) jako SPA — konsolę Security Admina do zarządzania dzierżawami dostępów GitHuba — w 10 krokach (PR 5.1–5.10), z linią cięcia po 5.6.
 
 **Architektura:** React 19 + React Compiler; `react-router-dom` v7 dla nawigacji; TanStack Query v5 dla stanu serwerowego; kontrakt DTO w `src/types/api.ts` z fixture'ami i flagą `VITE_USE_FIXTURES`; czas symulowany wyłącznie z `GET /api/v1/simulation/clock`; cała matematyka czasu w `lib/dateTime.ts`, etykiety i kolory w `lib/statusBadges.ts`; testy Vitest + RTL + MSW na tych samych fixture'ach.
 
@@ -57,10 +57,10 @@ zostaje na `shared/fixtures/` (dane zgodne z kontraktem, ADR 0011).
 | Audyt                   | `GET /api/v1/audit` → **goła** `list[AuditEntry]` (niesie `actor_login`)         | ✅                                                    |
 | Standard zespołu        | `GET /api/v1/teams/{slug}/baseline` → **goła** `list[BaselineEntry]`             | ✅                                                    |
 | Onboarding              | `GET /api/v1/onboarding/{login}` + `POST /api/v1/onboarding/{login}/apply`       | ✅                                                    |
-| Dostępy (lista)       | `GET /api/v1/leases` → `list[LeaseOverview]`                                     | ✅ (silnik 3.6)                                        |
-| Decyzja o dostępie    | `POST /api/v1/leases/{id}/decision` → `LeaseOverview`                            | ✅ (3.6) — `REVOKE`/`DOWNSCOPE` bez uzasadnienia to 422, admina nie da się przedłużyć (422) |
-| Liczniki KPI            | `GET /api/v1/dashboard/stats` (plan 4.6B)                                        | ⏳ brak — liczone z realnej listy dostępów, zegara i odwołań (`countDashboard`) |
-| Graf                    | `GET /api/v1/graph` (plan 4.6B)                                                  | ⏳ brak — budowany z realnych dostępów; bez węzłów zespołów, bo lista ich nie niesie |
+| Dzierżawy (lista)       | `GET /api/v1/leases` → `list[LeaseOverview]`                                     | ✅ (silnik 3.6)                                        |
+| Decyzja o dzierżawie    | `POST /api/v1/leases/{id}/decision` → `LeaseOverview`                            | ✅ (3.6) — `REVOKE`/`DOWNSCOPE` bez uzasadnienia to 422, admina nie da się przedłużyć (422) |
+| Liczniki KPI            | `GET /api/v1/dashboard/stats` (plan 4.6B)                                        | ⏳ brak — liczone z realnej listy dzierżaw, zegara i odwołań (`countDashboard`) |
+| Graf                    | `GET /api/v1/graph` (plan 4.6B)                                                  | ⏳ brak — budowany z realnych dzierżaw; bez węzłów zespołów, bo lista ich nie niesie |
 | Aktywność               | `GET /api/v1/leases/{id}/activity-stats` → `LeaseActivityStats`                  | ✅ (3.6) — okno `window_days`/`window_start`/`window_end`/`last_activity_at` z kontraktu |
 | Decyzja o odwołaniu     | `POST /api/v1/appeals/{id}/decision` (plan 4.3C)                                 | ⏳ brak — odrzucenie idzie realnym `/reject`; backend sam wskazuje tę ścieżkę w komunikacie 409 |
 | Tryb egzekwowania       | `GET/PUT /api/v1/enforcement/mode` (`disabled`/`warning`/`auto`, krok 3.5)       | ⏳ brak UI — do decyzji produktowej                     |
@@ -72,15 +72,14 @@ nieistniejące: `GET /api/v1/baseline/1` (realnie `/api/v1/teams/{slug}/baseline
 HTTP „gdy powstaną endpointy widokowe" — rozjazd nie jest więc czerwony, ale skrypt demo (6.6)
 musi użyć ścieżek realnych: `/reject`, `/teams/{slug}/baseline`.
 
-**Znane rozjazdy w danych współdzielonych (do decyzji właścicieli plików).**
+**Znane rozjazdy w danych współdzielonych (stan po merge'u PR #16/#17).**
 
-Wiring odsłonił rozjazdy w `shared/`, których frontend nie naprawia po cichu:
-
-1. **Status dostępów admina** — `shared/fixtures/leases.json` trzymał `ACTIVE` dla trzech dostępów `admin`, a silnik liczy `PERMANENT` (`lease_rules.lease_status`; dowód: `backend/tests/api/test_leases_api.py:47`, `backend/tests/services/test_lease_overviews.py:72`). **Naprawione w tym commicie** (`ACTIVE` → `PERMANENT`, `days_remaining: null`); frontend normalizował to u siebie od merge'u, więc zmiana jest idempotentna.
-2. **Liczba dni przy kotwicy** — dla `kamil@core-api` trzy źródła podają trzy wartości: `uc-04` oczekuje **29**, wspólny fixture ma **28**, a silnik liczący `ceil(expires_at − now)` przy kotwicy `2026-10-03T00:00:00Z` daje **30**. `uc-04` jest wewnętrznie spójny (29 → po +25 dniach 4), więc uzgodnienia wymaga fixture i kotwica, nie scenariusz. Offline frontend pokazuje wartości zamrożone z fixture'u, live — z silnika; **przed demo trzeba to uzgodnić**, inaczej krok „+25 dni” pokaże 3 zamiast 4.
-3. **`uc-03` wskazuje nieistniejącą ścieżkę** — `POST /api/v1/appeals/{id}/decision` (plan 4.3C) z oczekiwaniem `APPROVED`, gdy backend serwuje `POST /api/v1/appeals/{id}/reject`. Scenariusz opisuje intencję (zatwierdzenie odwołania), więc go nie przepisuję: wymaga albo kroku 4.3C, albo świadomej zmiany narracji demo na odrzucenie.
-4. **`docs/osoba-4.md`** podaje baseline DEV `11/7/8`, a `shared/fixtures/baseline.json` (i `uc-01`) `10/6/7`. Frontend czyta fixture'y; która strona jest nieaktualna, rozstrzyga seed.
-5. **`shared/fixtures/manifest.json`** nie wymienia nowych konsumentów (`users.json` czyta też pulpit 5.6, `teams`/`repositories` graf 5.9) i nie ma pliku `dashboard.json`, bo `DashboardStats` jest wyliczany z dostępów.
+1. **Status dzierżaw admina** — `shared/fixtures/leases.json` trzymał `ACTIVE` dla trzech dzierżaw `admin`, a silnik liczy `PERMANENT` (`lease_rules.lease_status`; dowód: `backend/tests/api/test_leases_api.py:47`, `backend/tests/services/test_lease_overviews.py:72`). **Naprawione** (`ACTIVE` → `PERMANENT`, `days_remaining: null`); frontend normalizował to u siebie wcześniej, więc zmiana jest idempotentna.
+2. **Liczba dni przy kotwicy — nadal aktualne, ale już nie blokuje scenariusza.** `d097d0e` usunął z `uc-04` liczby dni (scenariusz pinuje teraz tylko statusy i rekomendację), więc rozjazd nie zapala testów. Zostaje różnica **wyświetlanych** wartości: fixture ma dla `kamil@core-api` 28 dni, a silnik liczący `ceil(expires_at − now)` przy kotwicy daje 30. Offline widać 28, live 30 — przed demo warto uzgodnić kotwicę, żeby slajd „+25 dni” nie zaskoczył.
+3. **`uc-03` — rozwiązane upstream.** `d097d0e` przepisał scenariusz na ścieżki, które istnieją (`/leases/{id}/decision`, `/appeals/{id}/reject`), a `6edf1f9` dodał `POST /api/v1/appeals/{id}/decision` (4.3C) dla zatwierdzania odwołania. Frontend przechodzi na te endpointy w gałęzi `feat/frontend-engine-endpoints`.
+4. **`docs/osoba-4.md`** podaje baseline DEV `11/7/8`, a `shared/fixtures/baseline.json` (i `uc-01`) `10/6/7`. Frontend czyta fixture'y; która strona jest nieaktualna, rozstrzyga seed — **do decyzji właściciela**.
+5. **`shared/fixtures/manifest.json`** nie wymienia nowych konsumentów (`users.json` czyta też pulpit 5.6, `teams`/`repositories` graf 5.9) i nie ma pliku `dashboard.json`, bo `DashboardStats` przychodzi z `GET /api/v1/dashboard/stats` — **do decyzji właściciela**.
+6. **Nowy kontekst po merge'u:** `main` ma mock Jiry (ADR 0016, `backend/app/api/jira_mock`) i gałąź `feat/service-picker` buduje dla niego warstwę frontendu (`services/serviceRegistry.ts`, `brandIcons.tsx`, `useServices.ts`) — poza zakresem tego planu.
 
 ## Globalne ograniczenia
 
@@ -88,7 +87,7 @@ Wiring odsłonił rozjazdy w `shared/`, których frontend nie naprawia po cichu:
 - **Deklaracje funkcji z jawnymi typami** parametrów i wartości zwracanej; brak eksportowanych funkcji strzałkowych.
 - **Zakaz ręcznych `useMemo` / `useCallback`** — memoizację zapewnia React Compiler (`CODING_STANDARDS.md` §3).
 - **Jedno źródło prawdy:** żadnych obliczeń dat poza `src/lib/dateTime.ts`; żadnych etykiet ani kolorów statusów/ról poza `src/lib/statusBadges.ts`.
-- **Zakaz `Date.now()`** w logice dostępów — czas pochodzi z backendu: `ClockRead.now` przez `useSimulatedClock()`, nigdy z zegara systemowego.
+- **Zakaz `Date.now()`** w logice dzierżaw — czas pochodzi z backendu: `ClockRead.now` przez `useSimulatedClock()`, nigdy z zegara systemowego.
 - **Typy pochodzą z kontraktu:** `frontend/src/types/api.ts` jest **generowany** z Pydantic (ADR 0009) i nie edytujemy go ręcznie. Brakujące DTO zamawiamy w `backend/app/schemas/` i regenerujemy: `cd backend && uv run python scripts/export_contract.py`, a następnie `npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false`. Nazwy pól i wartości enumów bierzemy 1:1 z tego pliku (`LeaseOverview`, `ClockRead`, `DecisionRequest`, `Extension`, `AppealRead`, `AuditLogRead`, `BaselineEntry`). Czego jeszcze nie ma (2.5, 3.6, 4.2–4.6), patrz spec §5 — do tego czasu fixture'y w tych samych kształtach.
 - **Strefa wyświetlania dat:** `Europe/Warsaw` (`DISPLAY_TIME_ZONE`), żeby testy były deterministyczne na każdej maszynie.
 - **Status, `days_remaining` i `recommendation` przychodzą z API** (`LeaseOverview`) — frontend ich nie przelicza i nie używa zegara systemowego. `daysRemaining()` w `lib/dateTime.ts` służy wyłącznie walidacji daty wybranej w modalu.
@@ -103,10 +102,10 @@ Wiring odsłonił rozjazdy w `shared/`, których frontend nie naprawia po cichu:
 
 Pięć klas danych/sytuacji, które spec implikuje, a które najczęściej psują demo — każda ma test w zadaniu wskazanym obok:
 
-1. **Wartości brzegowe z API** — `days_remaining: null` i `expires_at: null` (dostęp `admin`), `0` („Wygasa dziś”), wartości ujemne — muszą się poprawnie renderować i sortować (zadanie 2, `formatDaysRemaining`; zadanie 3, sortowanie i wiersze `EXPIRED`/`admin`).
+1. **Wartości brzegowe z API** — `days_remaining: null` i `expires_at: null` (dzierżawa `admin`), `0` („Wygasa dziś”), wartości ujemne — muszą się poprawnie renderować i sortować (zadanie 2, `formatDaysRemaining`; zadanie 3, sortowanie i wiersze `EXPIRED`/`admin`).
 2. **Walidacja wejścia** — własna liczba dni w pasku czasu (`0`, liczby ujemne, tekst, powyżej `365`), data z przeszłości w modalu, puste uzasadnienie odwołania: brak żądania do API i widoczny komunikat (zadania 5, 7, 10).
 3. **Ścieżki błędów API** — `403` ostatniego admina, `409` duplikatu uzasadnienia, `500` na dashboardzie, brak backendu przy `VITE_USE_FIXTURES=false`: komunikat, nie biały ekran (zadania 6, 7, 8, 10).
-4. **Stany puste i zerowe** — brak dostępów, zerowe liczniki, brak odwołań, graf bez krawędzi, audyt bez zdarzeń (zadania 3, 8, 10, 12, 13).
+4. **Stany puste i zerowe** — brak dzierżaw, zerowe liczniki, brak odwołań, graf bez krawędzi, audyt bez zdarzeń (zadania 3, 8, 10, 12, 13).
 5. **Polskie znaki i długie treści** — diakrytyki w etykietach oraz długie uzasadnienie/`details` nie mogą rozsadzać tabeli ani modala (zadania 3, 11, 13).
 
 ---
@@ -142,7 +141,7 @@ Pięć klas danych/sytuacji, które spec implikuje, a które najczęściej psuj�
 - Test: `frontend/src/App.test.tsx`
 
 **Interfejsy:**
-- Produkuje: `renderWithProviders(ui: React.ReactElement, options?: { route?: string }): RenderResult & { queryClient: QueryClient }`; `server` (MSW `setupServer`) z `test/msw/server.ts`; `handlers: HttpHandler[]` (startowo pusta tablica); trasy i etykiety nawigacji: `Dashboard`, `Dostępy`, `Odwołania`, `Standard zespołu`, `Graf`, `Audyt`; `AppShell` renderuje `Sidebar`, `TopBar` i `<Outlet />`.
+- Produkuje: `renderWithProviders(ui: React.ReactElement, options?: { route?: string }): RenderResult & { queryClient: QueryClient }`; `server` (MSW `setupServer`) z `test/msw/server.ts`; `handlers: HttpHandler[]` (startowo pusta tablica); trasy i etykiety nawigacji: `Dashboard`, `Dzierżawy`, `Odwołania`, `Standard zespołu`, `Graf`, `Audyt`; `AppShell` renderuje `Sidebar`, `TopBar` i `<Outlet />`.
 - Konsumuje: nic (pierwsze zadanie).
 
 - [ ] **Krok 1: Utwórz projekt Vite i zainstaluj bazę.**
@@ -199,12 +198,12 @@ it('renders navigation for all six views and switches route', async () => {
   const user = userEvent.setup();
   renderWithProviders(<App />, { route: '/' });
 
-  for (const label of ['Dashboard', 'Dostępy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt']) {
+  for (const label of ['Dashboard', 'Dzierżawy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt']) {
     expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
   }
 
-  await user.click(screen.getByRole('link', { name: 'Dostępy' }));
-  expect(await screen.findByRole('heading', { name: 'Dostępy' })).toBeInTheDocument();
+  await user.click(screen.getByRole('link', { name: 'Dzierżawy' }));
+  expect(await screen.findByRole('heading', { name: 'Dzierżawy' })).toBeInTheDocument();
 });
 ```
 
@@ -262,8 +261,8 @@ it.each([
   [12, 'Pozostało 12 dni'],
   [1, 'Pozostało 1 dzień'],
   [0, 'Wygasa dziś'],
-  [-1, 'Wygasł 1 dzień temu'],
-  [-3, 'Wygasł 3 dni temu'],
+  [-1, 'Wygasła 1 dzień temu'],
+  [-3, 'Wygasła 3 dni temu'],
   [null, '—'],
 ])('formatDaysRemaining(%s)', (days, expected) => {
   expect(formatDaysRemaining(days)).toBe(expected);
@@ -284,7 +283,7 @@ Oczekiwane: FAIL — moduł nie istnieje.
 
 - [ ] **Krok 3: Zaimplementuj `lib/dateTime.ts`.**
 
-`daysRemaining` liczy `Math.ceil((Date.parse(expires_at) - Date.parse(now)) / DAY_MS)`. `formatDateTimePl` używa `Intl.DateTimeFormat('pl-PL', { timeZone: DISPLAY_TIME_ZONE, dateStyle: 'long', timeStyle: 'short' })` — strefa na sztywno, żeby testy były deterministyczne na każdej maszynie. `formatOffsetDays` używa znaku `−` (U+2212) dla wartości ujemnych, a `formatDaysRemaining(null)` zwraca `—` (dostęp bez terminu, np. `admin`).
+`daysRemaining` liczy `Math.ceil((Date.parse(expires_at) - Date.parse(now)) / DAY_MS)`. `formatDateTimePl` używa `Intl.DateTimeFormat('pl-PL', { timeZone: DISPLAY_TIME_ZONE, dateStyle: 'long', timeStyle: 'short' })` — strefa na sztywno, żeby testy były deterministyczne na każdej maszynie. `formatOffsetDays` używa znaku `−` (U+2212) dla wartości ujemnych, a `formatDaysRemaining(null)` zwraca `—` (dzierżawa bez terminu, np. `admin`).
 
 - [ ] **Krok 4: Uruchom testy `dateTime` i potwierdź PASS.**
 
@@ -298,7 +297,7 @@ import { getAppealStatusBadge, getRecommendationLabel, getRoleLabel, getStatusBa
 
 it('maps every status to a distinct Polish label and class', () => {
   const badges = (['ACTIVE', 'WARNING', 'EXPIRED'] as const).map(getStatusBadge);
-  expect(badges.map((b) => b.label)).toEqual(['Aktywny', 'Wygasa wkrótce', 'Wygasł']);
+  expect(badges.map((b) => b.label)).toEqual(['Aktywna', 'Wygasa wkrótce', 'Wygasła']);
   expect(new Set(badges.map((b) => b.className)).size).toBe(3);
 });
 
@@ -324,7 +323,7 @@ git commit -m "feat(frontend): add single sources of truth for date formatting a
 
 ---
 
-### Zadanie 3 (PR 5.3): Fixture'y, tabela dostępów i strona Dostępy
+### Zadanie 3 (PR 5.3): Fixture'y, tabela dzierżaw i strona Dzierżawy
 
 **Pliki:**
 - Utwórz: `frontend/src/api/config.ts`, `frontend/src/api/fixtures/{leases.ts,index.ts}`
@@ -339,7 +338,7 @@ git commit -m "feat(frontend): add single sources of truth for date formatting a
 
 - [ ] **Krok 1: Utwórz fixture'y zgodne z kontraktem.**
 
-`backend/app/core/time_provider.py` kotwiczy seed na `2026-10-03T00:00:00Z`, więc fixture'y używają tej samej daty bazowej. **Fixture'y trzymamy jako literały TS z jawnym typem (`leases.ts`), nie jako `.json`** — dzięki temu brak pola, literówka i literał spoza unii (`Role`, `LeaseStatus`, `Recommendation`) są błędem kompilacji, a nie pustą kolumną na demo. Gdy 6.1 dostarczy surowe JSON-y, opakowujemy je w tym samym pliku. `leasesFixture: LeaseOverview[]` — cztery dostępy o stabilnych identyfikatorach, na których opierają się kolejne zadania i test integracyjny: `id: 1` kamil/DEV/`write`/`expires_at: 2026-11-02…`/`ACTIVE`/`days_remaining: 30`/`KEEP`, `id: 2` marta/QA/`read`/`2026-10-08…`/`WARNING`/`5`/`DOWNSCOPE`, `id: 3` piotr/DEV/`write`/`2026-09-30…`/`EXPIRED`/`-3`/`REVOKE`, `id: 4` tomasz-admin (bez zespołu)/`admin`/`expires_at: null`/`days_remaining: null`/`ACTIVE`/`DOWNSCOPE`. `last_activity_at` wypełnione dla trzech, `null` dla jednej.
+`backend/app/core/time_provider.py` kotwiczy seed na `2026-10-03T00:00:00Z`, więc fixture'y używają tej samej daty bazowej. **Fixture'y trzymamy jako literały TS z jawnym typem (`leases.ts`), nie jako `.json`** — dzięki temu brak pola, literówka i literał spoza unii (`Role`, `LeaseStatus`, `Recommendation`) są błędem kompilacji, a nie pustą kolumną na demo. Gdy 6.1 dostarczy surowe JSON-y, opakowujemy je w tym samym pliku. `leasesFixture: LeaseOverview[]` — cztery dzierżawy o stabilnych identyfikatorach, na których opierają się kolejne zadania i test integracyjny: `id: 1` kamil/DEV/`write`/`expires_at: 2026-11-02…`/`ACTIVE`/`days_remaining: 30`/`KEEP`, `id: 2` marta/QA/`read`/`2026-10-08…`/`WARNING`/`5`/`DOWNSCOPE`, `id: 3` piotr/DEV/`write`/`2026-09-30…`/`EXPIRED`/`-3`/`REVOKE`, `id: 4` tomasz-admin (bez zespołu)/`admin`/`expires_at: null`/`days_remaining: null`/`ACTIVE`/`DOWNSCOPE`. `last_activity_at` wypełnione dla trzech, `null` dla jednej.
 
 - [ ] **Krok 2: Napisz failing test `renders_lease_rows_sorted_by_urgency`.**
 
@@ -347,18 +346,18 @@ git commit -m "feat(frontend): add single sources of truth for date formatting a
 renderWithProviders(<LeasesPage />);
 
 const rows = await screen.findAllByRole('row');
-expect(rows).toHaveLength(5); // nagłówek + 4 dostępy
-expect(within(rows[1]).getByText('Wygasł')).toBeInTheDocument();   // EXPIRED pierwszy
+expect(rows).toHaveLength(5); // nagłówek + 4 dzierżawy
+expect(within(rows[1]).getByText('Wygasła')).toBeInTheDocument();   // EXPIRED pierwszy
 expect(within(rows[2]).getByText('Wygasa wkrótce')).toBeInTheDocument();
 expect(within(rows[2]).getByText('Pozostało 5 dni')).toBeInTheDocument();
-expect(within(rows[4]).getByText('Aktywny')).toBeInTheDocument();
+expect(within(rows[4]).getByText('Aktywna')).toBeInTheDocument();
 ```
 
 - [ ] **Krok 3: Napisz failing test stanu pustego `renders_empty_state_where_there_are_no_leases`.**
 
 ```tsx
 renderWithProviders(<LeaseTable leases={[]} />);
-expect(screen.getByText('Brak dostępów do wyświetlenia')).toBeInTheDocument();
+expect(screen.getByText('Brak dzierżaw do wyświetlenia')).toBeInTheDocument();
 ```
 Stan pusty na poziomie całej strony jest sprawdzany w zadaniu 4, gdy odczyty przechodzą już przez MSW.
 
@@ -373,9 +372,9 @@ Oczekiwane: FAIL — brak strony, tabeli i hooków.
 
 - [ ] **Krok 6: Zaimplementuj `LeaseStatusBadge` i `LeaseTable`.**
 
-Kolumny: Użytkownik (`user.name` + `user.login`), Zespół (`user.team?.name ?? '—'`), Repozytorium (`repository.owner/name`), Poziom (`getRoleLabel(current_role)`), Ostatnia aktywność (`formatDateTimePl(last_activity_at)` albo `—`), Pozostało (`formatDaysRemaining(days_remaining)`), Status (`LeaseStatusBadge(status)`), Rekomendacja (`getRecommendationLabel(recommendation)`). Sortowanie: ranga `EXPIRED → WARNING → ACTIVE`, w grupie rosnąco po `days_remaining`, dostępy z `days_remaining === null` (rola `admin`) na końcu. Kolumny tekstowe mają `max-w-*` i `break-words`, żeby długie loginy i nazwy repozytoriów nie rozsadzały tabeli. Kolumna akcji pojawi się w zadaniu 7 — wtedy `LeaseTable` dostanie prop `onDecide`.
+Kolumny: Użytkownik (`user.name` + `user.login`), Zespół (`user.team?.name ?? '—'`), Repozytorium (`repository.owner/name`), Poziom (`getRoleLabel(current_role)`), Ostatnia aktywność (`formatDateTimePl(last_activity_at)` albo `—`), Pozostało (`formatDaysRemaining(days_remaining)`), Status (`LeaseStatusBadge(status)`), Rekomendacja (`getRecommendationLabel(recommendation)`). Sortowanie: ranga `EXPIRED → WARNING → ACTIVE`, w grupie rosnąco po `days_remaining`, dzierżawy z `days_remaining === null` (rola `admin`) na końcu. Kolumny tekstowe mają `max-w-*` i `break-words`, żeby długie loginy i nazwy repozytoriów nie rozsadzały tabeli. Kolumna akcji pojawi się w zadaniu 7 — wtedy `LeaseTable` dostanie prop `onDecide`.
 
-- [ ] **Krok 7: Zaimplementuj `LeasesPage`** (nagłówek `<h1>Dostępy</h1>`, stany: Skeleton podczas ładowania, komunikat błędu z przyciskiem „Odśwież" wywołującym `refetch`, pusty stan).
+- [ ] **Krok 7: Zaimplementuj `LeasesPage`** (nagłówek `<h1>Dzierżawy</h1>`, stany: Skeleton podczas ładowania, komunikat błędu z przyciskiem „Odśwież" wywołującym `refetch`, pusty stan).
 
 - [ ] **Krok 8: Uruchom testy, build i lint.**
 
@@ -403,7 +402,7 @@ git commit -m "feat(frontend): render lease inventory from contract fixtures"
 - Produkuje: `class ApiError extends Error { status: number }`; `getJson<T>(path: string): Promise<T>`; `postJson<TResponse, TBody>(path: string, body: TBody): Promise<TResponse>`; w `test/msw/state.ts`: `resetMswState()`, `getSimulatedNow()`, `setSimulatedNow(iso)`, `getSimulatedOffsetDays()`, `getLastTimeTravelRequest()`, `getDemoResetCount()`, `getLastDecisionRequest()` oraz `withComputedFields(lease: LeaseOverview, now: string): LeaseOverview` (testowa emulacja `LeaseService`).
 - Konsumuje: istniejące `fetchLeases` (podmieniane ciałem, bez zmiany sygnatury).
 
-- [ ] **Krok 1: Utwórz `test/msw/state.ts` i handlery dla dostępów oraz zegara.**
+- [ ] **Krok 1: Utwórz `test/msw/state.ts` i handlery dla dzierżaw oraz zegara.**
 
 ```ts
 let simulatedNow = '2026-10-03T00:00:00Z';
@@ -451,7 +450,7 @@ it('fetches live data when VITE_USE_FIXTURES is not set', async () => {
 it('renders the page-level empty state through MSW', async () => {
   server.use(http.get('/api/v1/leases', () => HttpResponse.json({ leases: [] })));
   renderWithProviders(<LeasesPage />);
-  expect(await screen.findByText('Brak dostępów do wyświetlenia')).toBeInTheDocument();
+  expect(await screen.findByText('Brak dzierżaw do wyświetlenia')).toBeInTheDocument();
 });
 ```
 
@@ -565,7 +564,7 @@ git commit -m "feat(frontend): add simulated clock bar with time travel controls
 
 ---
 
-### Zadanie 6 (PR 5.5a): Decyzja o dostępie — API i obsługa błędów
+### Zadanie 6 (PR 5.5a): Decyzja o dzierżawie — API i obsługa błędów
 
 **Pliki:**
 - Zmień: `frontend/src/api/leases.ts` (dodaj `postLeaseDecision`), `frontend/src/test/msw/handlers.ts`, `frontend/src/test/msw/state.ts`
@@ -607,9 +606,9 @@ it('surfaces the last-admin 403 as ApiError', async () => {
 Run: `cd frontend && npm test -- --run src/api/leases.test.ts`
 Oczekiwane: FAIL — brak `postLeaseDecision` i handlera.
 
-- [ ] **Krok 4: Zaimplementuj handler decyzji w MSW (z przypadkiem 403 dla dostępu `admin`) oraz `postLeaseDecision`.**
+- [ ] **Krok 4: Zaimplementuj handler decyzji w MSW (z przypadkiem 403 dla dzierżawy `admin`) oraz `postLeaseDecision`.**
 
-Handler zapisuje żądanie w stanie, aktualizuje kopię fixture'ów (`EXTEND` przesuwa `expires_at`, `DOWNSCOPE`/`REVOKE` zmieniają `current_role`), a dla dostępu z `current_role === 'admin'` przy akcji `REVOKE` zwraca `403` z ciałem `{ message: 'Cannot remove the last administrator of the repository/organization', documentation_url: '...' }`.
+Handler zapisuje żądanie w stanie, aktualizuje kopię fixture'ów (`EXTEND` przesuwa `expires_at`, `DOWNSCOPE`/`REVOKE` zmieniają `current_role`), a dla dzierżawy z `current_role === 'admin'` przy akcji `REVOKE` zwraca `403` z ciałem `{ message: 'Cannot remove the last administrator of the repository/organization', documentation_url: '...' }`.
 
 - [ ] **Krok 5: Zaimplementuj `useLeaseDecision`** z inwalidacją `['leases']`, `['dashboard']`, `['audit']`, `['appeals']`, `['graph']` po sukcesie.
 
@@ -724,7 +723,7 @@ git commit -m "feat(frontend): add decision modal with extend, revoke and downsc
 it('renders the four KPI counters', async () => {
   renderWithProviders(<DashboardPage />);
 
-  expect(await screen.findByText('Aktywne dostępy')).toBeInTheDocument();
+  expect(await screen.findByText('Aktywne dzierżawy')).toBeInTheDocument();
   expect(screen.getByText('Ostrzeżenia')).toBeInTheDocument();
   expect(screen.getByText('Wygaśnięte')).toBeInTheDocument();
   expect(screen.getByText('Rekomendacje deeskalacji')).toBeInTheDocument();
@@ -844,7 +843,7 @@ git commit -m "feat(frontend): add team baseline view with one-click onboarding"
 - Test: `frontend/src/pages/AppealsPage.test.tsx`
 
 **Interfejsy:**
-- Produkuje: `fetchAppeals(): Promise<AppealRead[]>`; `postAppeal(lease_id: number, justification: string): Promise<AppealRead>`; `useAppeals()`, `useSubmitAppeal()`; `AppealForm({ leases, onSubmit }: { leases: LeaseOverview[]; onSubmit: (lease_id: number, justification: string) => void }): React.JSX.Element`; `getLastAppealRequest(): { lease_id: number; justification: string } | null`. Ponieważ `AppealRead` ma tylko `user_id` i `lease_id`, osobę wyświetlamy, łącząc odwołanie z listą dostępów po `lease_id`.
+- Produkuje: `fetchAppeals(): Promise<AppealRead[]>`; `postAppeal(lease_id: number, justification: string): Promise<AppealRead>`; `useAppeals()`, `useSubmitAppeal()`; `AppealForm({ leases, onSubmit }: { leases: LeaseOverview[]; onSubmit: (lease_id: number, justification: string) => void }): React.JSX.Element`; `getLastAppealRequest(): { lease_id: number; justification: string } | null`. Ponieważ `AppealRead` ma tylko `user_id` i `lease_id`, osobę wyświetlamy, łącząc odwołanie z listą dzierżaw po `lease_id`.
 - Konsumuje: `useLeases` (zadanie 3), `postJson`/`ApiError` (zadanie 4).
 
 - [ ] **Krok 1: Napisz failing test walidacji uzasadnienia.**
@@ -854,7 +853,7 @@ it('requires a justification and does not call the API when empty', async () => 
   const user = userEvent.setup();
   renderWithProviders(<AppealsPage />);
 
-  await user.selectOptions(await screen.findByLabelText('Dostęp'), '2');
+  await user.selectOptions(await screen.findByLabelText('Dzierżawa'), '2');
   await user.click(screen.getByRole('button', { name: 'Złóż odwołanie' }));
 
   expect(await screen.findByText('Uzasadnienie jest wymagane')).toBeInTheDocument();
@@ -869,7 +868,7 @@ it('submits a justification and refreshes the list', async () => {
   const user = userEvent.setup();
   renderWithProviders(<AppealsPage />);
 
-  await user.selectOptions(await screen.findByLabelText('Dostęp'), '2');
+  await user.selectOptions(await screen.findByLabelText('Dzierżawa'), '2');
   await user.type(screen.getByLabelText('Uzasadnienie'), 'Prowadzę release v2.1 w przyszłym tygodniu');
   await user.click(screen.getByRole('button', { name: 'Złóż odwołanie' }));
 
@@ -883,7 +882,7 @@ it('shows the API error when the justification is a duplicate', async () => {
   const user = userEvent.setup();
   renderWithProviders(<AppealsPage />);
 
-  await user.selectOptions(await screen.findByLabelText('Dostęp'), '2');
+  await user.selectOptions(await screen.findByLabelText('Dzierżawa'), '2');
   await user.type(screen.getByLabelText('Uzasadnienie'), 'To samo uzasadnienie');
   await user.click(screen.getByRole('button', { name: 'Złóż odwołanie' }));
 
@@ -898,7 +897,7 @@ Oczekiwane: FAIL — brak widoku, formularza i API.
 
 - [ ] **Krok 4: Zaimplementuj API, fixture'y, hooki, `AppealForm` i stronę.**
 
-`AppealsPage` pokazuje listę dostępów w `WARNING`/`EXPIRED` (z `useLeases`), formularz odwołania oraz listę złożonych odwołań ze statusem; pozycja `PENDING` ma przycisk `Rozpatrz`, który otwiera modal decyzji (kontekst odwołania dochodzi w zadaniu 11). Uzasadnienie: `trim()` niepuste, w przeciwnym razie komunikat `Uzasadnienie jest wymagane` i brak żądania. Po sukcesie: toast `Odwołanie złożone` i inwalidacja `['appeals']`.
+`AppealsPage` pokazuje listę dzierżaw w `WARNING`/`EXPIRED` (z `useLeases`), formularz odwołania oraz listę złożonych odwołań ze statusem; pozycja `PENDING` ma przycisk `Rozpatrz`, który otwiera modal decyzji (kontekst odwołania dochodzi w zadaniu 11). Uzasadnienie: `trim()` niepuste, w przeciwnym razie komunikat `Uzasadnienie jest wymagane` i brak żądania. Po sukcesie: toast `Odwołanie złożone` i inwalidacja `['appeals']`.
 
 - [ ] **Krok 5: Uruchom testy, build i lint.**
 
@@ -957,7 +956,7 @@ Oczekiwane: FAIL — brak komponentów.
 
 - [ ] **Krok 4: Zaimplementuj komponenty i podłącz je do modala.**
 
-`DecisionModal` przyjmuje opcjonalny `appeal`; gdy jest podany, pokazuje uzasadnienie wniosku, `AppealHistory` oraz `ActivityStats` (dane z `useActivityStats(lease_id)` → `GET /api/v1/leases/{id}/activity-stats`, ścieżkę potwierdza krok 4.4), a decyzję wysyła przez `POST /api/v1/appeals/{id}/decision` (payload jak w decyzji o dostępie). Po sukcesie: toast `Decyzja zapisana` i inwalidacja `['appeals']`, `['leases']`, `['audit']`, `['dashboard']`.
+`DecisionModal` przyjmuje opcjonalny `appeal`; gdy jest podany, pokazuje uzasadnienie wniosku, `AppealHistory` oraz `ActivityStats` (dane z `useActivityStats(lease_id)` → `GET /api/v1/leases/{id}/activity-stats`, ścieżkę potwierdza krok 4.4), a decyzję wysyła przez `POST /api/v1/appeals/{id}/decision` (payload jak w decyzji o dzierżawie). Po sukcesie: toast `Decyzja zapisana` i inwalidacja `['appeals']`, `['leases']`, `['audit']`, `['dashboard']`.
 
 - [ ] **Krok 5: Uruchom testy, build i lint.**
 
@@ -1108,7 +1107,7 @@ git commit -m "feat(frontend): add audit log view with actor filter"
 
 **Pliki:**
 - Utwórz: `frontend/src/App.integration.test.tsx`
-- Zmień: `frontend/src/test/msw/handlers.ts`, `frontend/src/test/msw/state.ts` (stanowa symulacja: zegar + mutacje dostępów i odwołań)
+- Zmień: `frontend/src/test/msw/handlers.ts`, `frontend/src/test/msw/state.ts` (stanowa symulacja: zegar + mutacje dzierżaw i odwołań)
 - Test: `frontend/src/App.integration.test.tsx`
 
 **Interfejsy:**
@@ -1127,18 +1126,18 @@ it('walks the demo pitch flow over MSW', async () => {
   const user = userEvent.setup();
   renderWithProviders(<App />, { route: '/' });
 
-  // 1. Stan wyjściowy: licznik ostrzeżeń i dostępy
+  // 1. Stan wyjściowy: licznik ostrzeżeń i dzierżawy
   expect(await screen.findByTestId('kpi-warning')).toHaveTextContent('1');
 
-  // 2. Podróż w czasie o 25 dni → dostęp aktywny wchodzi w okno ostrzegawcze
+  // 2. Podróż w czasie o 25 dni → dzierżawa aktywna wchodzi w okno ostrzegawcze
   await user.type(screen.getByLabelText('Własna liczba dni'), '25');
   await user.click(screen.getByRole('button', { name: 'Przesuń' }));
-  await user.click(screen.getByRole('link', { name: 'Dostępy' }));
+  await user.click(screen.getByRole('link', { name: 'Dzierżawy' }));
   expect(await screen.findByText('Pozostało 5 dni')).toBeInTheDocument();
 
   // 3. Odwołanie i decyzja 2x
   await user.click(screen.getByRole('link', { name: 'Odwołania' }));
-  await user.selectOptions(await screen.findByLabelText('Dostęp'), '2');
+  await user.selectOptions(await screen.findByLabelText('Dzierżawa'), '2');
   await user.type(screen.getByLabelText('Uzasadnienie'), 'Prowadzę release v2.1');
   await user.click(screen.getByRole('button', { name: 'Złóż odwołanie' }));
   await user.click(await screen.findByRole('button', { name: 'Rozpatrz' }));
@@ -1149,7 +1148,7 @@ it('walks the demo pitch flow over MSW', async () => {
   // 4. Kolejne +35 dni → wygaśnięcie i próba odebrania uprawnień ostatniemu adminowi
   await user.type(screen.getByLabelText('Własna liczba dni'), '35');
   await user.click(screen.getByRole('button', { name: 'Przesuń' }));
-  await user.click(screen.getByRole('link', { name: 'Dostępy' }));
+  await user.click(screen.getByRole('link', { name: 'Dzierżawy' }));
   const adminRow = await screen.findByRole('row', { name: /tomasz-admin/ });
   await user.click(within(adminRow).getByRole('button', { name: 'Decyzja' }));
   await user.click(screen.getByRole('button', { name: 'Wyłącz' }));

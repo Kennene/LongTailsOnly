@@ -68,7 +68,9 @@ frontend/
     │   └── fixtures/      # Dane demo w kształcie kontraktu + typowany re-export
     ├── components/        # Modułowe komponenty (każdy < 300 linii)
     │   ├── ui/            # Komponenty bazowe (shadcn/ui — kod generowany)
-    │   ├── layout/        # AppShell, Sidebar, TopBar, TimeTravelBar
+    │   ├── common/        # Klocki wspólne dla widoków (ExpandToggle: rozwijane grupy list)
+    │   ├── layout/        # AppShell, Sidebar, TopBar
+    │   ├── mocks/         # TimeTravelBar, MockSystemCard (widok „Mocki”)
     │   ├── dashboard/     # Karty KPI
     │   ├── leases/        # Tabela dostępów, modal decyzji
     │   ├── appeals/       # Formularz i historia odwołań
@@ -76,7 +78,8 @@ frontend/
     │   ├── graph/         # Graf uprawnień (@xyflow/react)
     │   └── audit/         # Dziennik audytu
     ├── hooks/             # Custom hooks (TanStack Query)
-    ├── lib/               # dateTime, statusBadges, graphLayout, utils (cn)
+    ├── lib/               # dateTime, statusBadges, graphLayout, grouping, utils (cn)
+    ├── lib/               # dateTime, statusBadges, graphLayout, graphForceLayout, graphHighlight, utils (cn)
     ├── pages/             # Widoki składane z hooków i komponentów
     ├── test/              # setup, renderWithProviders, handlery MSW
     ├── types/api.ts       # GENEROWANY z backend/contract/schema.json (ADR 0009) — nie edytować
@@ -86,7 +89,7 @@ frontend/
 
 #### Standardy frontendu
 - **Architektura SPA**:
-  - Całość działa jako Single Page Application z płynną nawigacją modułową (Dashboard, Leases, Baseline, Graph, Audit).
+  - Całość działa jako Single Page Application z płynną nawigacją modułową (Dashboard, Leases, Baseline, Graph, Audit, Mocks).
 - **React 19 & React Compiler**:
   - Korzystamy z automatycznej memoizacji zapewnianej przez React Compiler — **nie używamy ręcznie `useMemo` i `useCallback`**, chyba że w skrajnych przypadkach integracji z zewnętrznymi bibliotekami.
 - **Komponenty shadcn/ui**:
@@ -94,6 +97,7 @@ frontend/
 - **Konsolidacja Utilów (`src/lib/`)**:
   - `src/lib/dateTime.ts`: Wszystkie operacje na datach i porównaniach z czasem symulowanym.
   - `src/lib/statusBadges.ts`: Mapowanie statusów (`ACTIVE`, `WARNING`, `EXPIRED`) na kolory i etykiety.
+  - `src/lib/grouping.ts`: `groupBy` i polska odmiana liczebników (`formatCountPl`) dla list grupowanych po osobie/aktorze.
   - `src/lib/utils.ts`: `cn()` dla klas Tailwind.
 - **Kontrakt typów**:
   - `src/types/api.ts` jest **generowany** z backendu (`backend/contract/schema.json`, ADR 0009) — nie edytujemy go ręcznie. Brakujące DTO dodajemy w `backend/app/schemas/` i regenerujemy kontrakt.

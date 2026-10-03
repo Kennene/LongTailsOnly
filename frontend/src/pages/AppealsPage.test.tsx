@@ -5,8 +5,11 @@ import { toast } from 'sonner';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { appealsFixture, leasesFixture } from '@/api/fixtures';
+import { fetchLeases } from '@/api/leases';
+import { groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { AppealsPage } from '@/pages/AppealsPage';
 import {
+  getLastAppealDecision,
   getLastAppealRejection,
   getLastAppealRequest,
   resetAppealsMswState,
@@ -72,6 +75,12 @@ function renderAppealsPage(): void {
   renderWithProviders(<AppealsPage />);
 }
 
+/** Rozwija wszystkie grupy w karcie (osoby są domyślnie zwinięte, jak w tabeli dostępów). */
+async function expandAll(user: UserEvent, cardName: string): Promise<void> {
+  const card: HTMLElement = await screen.findByRole('region', { name: cardName });
+  await user.click(await within(card).findByRole('button', { name: 'Rozwiń wszystkie' }));
+}
+
 /** Wybiera pierwszego kandydata z listy i zwraca jego dostęp (do asercji na wierszu). */
 async function selectFirstCandidate(user: UserEvent): Promise<LeaseOverview> {
   const [candidate] = appealCandidates();
@@ -121,8 +130,9 @@ describe('AppealsPage', () => {
     });
     expect(await screen.findByText('Odwołanie złożone')).toBeInTheDocument();
 
+    await expandAll(user, SUBMITTED_LIST);
     const submitted = await screen.findByRole('list', { name: SUBMITTED_LIST });
-    expect(within(submitted).getByText(UNIQUE_JUSTIFICATION)).toBeInTheDocument();
+    expect(await within(submitted).findByText(UNIQUE_JUSTIFICATION)).toBeInTheDocument();
     // Osoba i repozytorium pochodzą z `AppealOverview` zwróconego przez `POST /api/v1/appeals`,
     // a nie z łączenia z listą dostępów — dlatego wystarczy, że są w tym samym wierszu co wniosek.
     expect(within(submitted).getAllByText(candidate.user.name).length).toBeGreaterThan(0);
@@ -145,8 +155,10 @@ describe('AppealsPage', () => {
   });
 
   it('renderuje osobę, repozytorium i pozostałe dni z overview, bez łączenia z dostępami', async () => {
+    const user = userEvent.setup();
     renderAppealsPage();
 
+    await expandAll(user, SUBMITTED_LIST);
     const submitted = await screen.findByRole('list', { name: SUBMITTED_LIST });
 
     // Dostępu 5 nie ma wśród kandydatów (a `GET /api/v1/leases` nawet nie istnieje),
@@ -160,6 +172,7 @@ describe('AppealsPage', () => {
     const user = userEvent.setup();
     renderAppealsPage();
 
+    await expandAll(user, SUBMITTED_LIST);
     const resolveButton = await screen.findByRole('button', { name: 'Rozpatrz' });
     expect(resolveButton).toBeEnabled();
     await user.click(resolveButton);
@@ -172,10 +185,41 @@ describe('AppealsPage', () => {
     expect(getLastAppealRejection()).toBeNull();
   });
 
+  it('zatwierdza odwołanie przedłużeniem i pokazuje wniosek oraz dzierżawę po decyzji', async () => {
+    const user = userEvent.setup();
+    renderAppealsPage();
+
+    await expandAll(user, SUBMITTED_LIST);
+    await user.click(await screen.findByRole('button', { name: 'Rozpatrz' }));
+    await user.click(await screen.findByRole('button', { name: '+30' }));
+    await user.click(screen.getByRole('button', { name: 'Zatwierdź odwołanie' }));
+
+    await waitFor(() => {
+      expect(getLastAppealDecision()).toEqual({
+        appeal_id: PENDING_APPEAL.id,
+        request: { action: 'EXTEND', extension: { preset_days: 30 } },
+      });
+    });
+    expect(await screen.findByText('Odwołanie zatwierdzone')).toBeInTheDocument();
+
+    // Zatwierdzenie zamyka wniosek jako `APPROVED` — lista odświeża się po unieważnieniu `['appeals']`.
+    const submitted = await screen.findByRole('list', { name: SUBMITTED_LIST });
+    expect(within(submitted).getAllByText('Zatwierdzone')).toHaveLength(2);
+    expect(within(submitted).queryByText('Oczekujące')).not.toBeInTheDocument();
+    expect(within(submitted).queryByRole('button', { name: 'Rozpatrz' })).not.toBeInTheDocument();
+
+    // Decyzja poszła na dzierżawę z odwołania (unieważnione `['leases']`), a nie tylko na wniosek.
+    const extended: LeaseOverview | undefined = (await fetchLeases()).find(
+      (lease: LeaseOverview): boolean => lease.id === PENDING_APPEAL.lease_id,
+    );
+    expect(extended).toMatchObject({ is_active: true, status: 'ACTIVE' });
+  });
+
   it('odrzuca odwołanie z uzasadnieniem i odświeża listę z nowym statusem', async () => {
     const user = userEvent.setup();
     renderAppealsPage();
 
+    await expandAll(user, SUBMITTED_LIST);
     await user.click(await screen.findByRole('button', { name: 'Rozpatrz' }));
     await user.type(
       await screen.findByLabelText('Uzasadnienie odrzucenia'),
@@ -222,6 +266,55 @@ describe('AppealsPage', () => {
     // Kolejność jak z API: najpierw fixture'y, na końcu dołożony dostęp odebrany.
     expect(offered).toEqual(
       [...appealCandidates(), revoked].map((lease: LeaseOverview): string => String(lease.id)),
+    );
+  });
+
+  it('zwija złożone odwołania do jednego wiersza na osobę z liczbą oczekujących', async () => {
+    const user = userEvent.setup();
+    renderAppealsPage();
+
+    const submitted = await screen.findByRole('list', { name: SUBMITTED_LIST });
+    const toggle: HTMLElement = await within(submitted).findByRole('button', {
+      name: `Pokaż odwołania: ${PENDING_APPEAL.user.name}`,
+    });
+    const people: number = new Set(appealsFixture.map((appeal) => appeal.user.id)).size;
+
+    expect(within(submitted).getAllByRole('button', { name: /^Pokaż odwołania: / })).toHaveLength(
+      people,
+    );
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(within(submitted).getByText('1 oczekujące')).toBeInTheDocument();
+    expect(within(submitted).queryByText(PENDING_APPEAL.justification)).not.toBeInTheDocument();
+    expect(within(submitted).queryByRole('button', { name: 'Rozpatrz' })).not.toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(within(submitted).getByText(PENDING_APPEAL.justification)).toBeInTheDocument();
+    expect(within(submitted).getByRole('button', { name: 'Rozpatrz' })).toBeEnabled();
+  });
+
+  it('grupuje dostępy wymagające uwagi po osobie i rozwija jej repozytoria', async () => {
+    const user = userEvent.setup();
+    renderAppealsPage();
+
+    const card: HTMLElement = await screen.findByRole('region', {
+      name: 'Dostępy wymagające uwagi',
+    });
+    const groups = groupLeasesByUser(appealCandidates());
+    const toggles: HTMLElement[] = await within(card).findAllByRole('button', {
+      name: /^Pokaż dostępy: /,
+    });
+
+    expect(toggles.map((toggle: HTMLElement) => toggle.getAttribute('aria-label'))).toEqual(
+      groups.map((group) => `Pokaż dostępy: ${group.user.name}`),
+    );
+    // Nagłówek + jeden wiersz na osobę, dopóki nic nie jest rozwinięte.
+    expect(within(card).getAllByRole('row')).toHaveLength(groups.length + 1);
+
+    await expandAll(user, 'Dostępy wymagające uwagi');
+
+    expect(within(card).getAllByRole('row')).toHaveLength(
+      groups.length + appealCandidates().length + 1,
     );
   });
 
