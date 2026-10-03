@@ -366,6 +366,8 @@ it('collapses the warning window to one row per person with a repository count a
 
   expect(toggle).toHaveAttribute('aria-expanded', 'false');
   expect(within(section).getAllByText(group.user.name)).toHaveLength(1);
+  // Zwinięte okno nie pokazuje statusów — należą do repozytoriów, nie do osoby.
+  expect(within(section).queryByText(getStatusBadge('WARNING').label)).not.toBeInTheDocument();
   expect(
     within(section).getAllByText(formatRepositoryCount(group.leases.length)).length,
   ).toBeGreaterThan(0);

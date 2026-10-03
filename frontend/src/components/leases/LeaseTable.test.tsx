@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { leasesFixture } from '@/api/fixtures';
-import { groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { LeaseTable } from '@/components/leases/LeaseTable';
-import { getRoleBadge, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
+import { getRoleBadge, getRoleLabel } from '@/lib/statusBadges';
 import { initialsFrom } from '@/lib/userInitials';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import type { LeaseOverview } from '@/types/api';
@@ -114,21 +113,14 @@ describe('LeaseTable — jedna osoba, jeden wiersz', () => {
     expect(screen.getAllByRole('row')).toHaveLength(USER_COUNT + 1);
   });
 
-  it('w wierszu osoby podsumowuje liczbę repozytoriów i status najpilniejszego dostępu', () => {
+  it('w wierszu osoby podsumowuje liczbę repozytoriów, a status zostawia repozytoriom', () => {
     renderWithProviders(<LeaseTable leases={leasesFixture} />);
-    const group = groupLeasesByUser(leasesFixture).find(
-      (candidate): boolean => candidate.user.id === DEV_LEASE.user.id,
-    );
-    if (group === undefined) {
-      throw new Error('Brak grupy osoby z DEV_LEASE');
-    }
 
     const row: HTMLElement = groupRow(DEV_LEASE);
 
     expect(cellIn(row, 'Repozytorium')).toHaveTextContent(/repozytori/);
-    expect(
-      within(cellIn(row, 'Status')).getByText(getStatusBadge(group.mostUrgent.status).label),
-    ).toBeInTheDocument();
+    // Status jest cechą dostępu, nie osoby — wiersz osoby go nie powtarza.
+    expect(cellIn(row, 'Status').textContent).toBe('');
   });
 
   it('przekazuje do decyzji dokładnie kliknięty dostęp', async () => {

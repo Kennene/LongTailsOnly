@@ -309,7 +309,12 @@ describe('AppealsPage', () => {
       groups.map((group) => `Pokaż dostępy: ${group.user.name}`),
     );
     // Nagłówek + jeden wiersz na osobę, dopóki nic nie jest rozwinięte.
-    expect(within(card).getAllByRole('row')).toHaveLength(groups.length + 1);
+    const rows: HTMLElement[] = within(card).getAllByRole('row');
+    expect(rows).toHaveLength(groups.length + 1);
+    // Wiersz osoby nie powtarza statusu — ten należy do repozytoriów pod nim.
+    for (const row of rows.slice(1)) {
+      expect(within(row).getAllByRole('cell')[4].textContent).toBe('');
+    }
 
     await expandAll(user, 'Dostępy wymagające uwagi');
 

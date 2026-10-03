@@ -137,7 +137,7 @@ describe('LeasesPage', () => {
     expect(headers).toEqual(COLUMNS);
   });
 
-  it('puts the person with the most urgent lease first, with that lease days and status', async () => {
+  it('puts the person with the most urgent lease first, with that lease days and no status', async () => {
     const rows = await loadLeaseRows();
     const row: HTMLElement = rows[1];
 
@@ -145,17 +145,27 @@ describe('LeasesPage', () => {
     expect(
       within(row).getByText(formatDaysRemaining(MOST_URGENT.days_remaining)),
     ).toBeInTheDocument();
-    expect(within(row).getByText(getStatusBadge(MOST_URGENT.status).label)).toBeInTheDocument();
+    expect(cellsOf(row)[columnIndex(rows, 'Status')].textContent).toBe('');
   });
 
   it('orders people by their worst status: expired, then warning, then active', async () => {
     const rows = await loadLeaseRows();
-    const statusColumn: number = columnIndex(rows, 'Status');
-    const ranks: number[] = groupRows(rows).map((row: HTMLElement): number =>
-      STATUS_ORDER.findIndex((label: string): boolean =>
-        (cellsOf(row)[statusColumn].textContent ?? '').includes(label),
-      ),
-    );
+    // Wiersz osoby nie pokazuje statusu, więc rangę liczymy z jej dostępów w danych.
+    const ranks: number[] = groupRows(rows).map((row: HTMLElement): number => {
+      const label: string =
+        within(row)
+          .getByRole('button', { name: /dostępy: / })
+          .getAttribute('aria-label') ?? '';
+      const name: string = label.replace(/^.*dostępy: /, '');
+
+      return Math.min(
+        ...leasesFixture
+          .filter((lease: LeaseOverview): boolean => lease.user.name === name)
+          .map((lease: LeaseOverview): number =>
+            STATUS_ORDER.indexOf(getStatusBadge(lease.status).label),
+          ),
+      );
+    });
 
     expect(ranks).toEqual(ranks.toSorted((left: number, right: number): number => left - right));
   });
