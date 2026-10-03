@@ -35,7 +35,7 @@ export type Recommendation = "KEEP" | "DOWNSCOPE" | "REVOKE";
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "LeaseStatus".
  */
-export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED";
+export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED" | "PERMANENT" | "REVOKED";
 
 export interface LongTailsOnlyAPIContract {
   [k: string]: unknown;

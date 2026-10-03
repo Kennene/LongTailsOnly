@@ -884,7 +884,9 @@
       "enum": [
         "ACTIVE",
         "WARNING",
-        "EXPIRED"
+        "EXPIRED",
+        "PERMANENT",
+        "REVOKED"
       ],
       "title": "LeaseStatus",
       "type": "string"

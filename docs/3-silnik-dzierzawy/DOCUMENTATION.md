@@ -166,7 +166,7 @@ backend/app/api/v1/       leases.py, enforcement.py
 cd backend
 uv run pytest -q
 uv run python scripts/export_contract.py
-npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false
+npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false --bannerComment "/* AUTO-GENERATED from backend/contract/schema.json - do not edit. Regenerate: see backend/README.md */"
 ```
 
 Na `main` przed rozpoczęciem: `295 passed, 2 failed`. Oba błędy to `tests/repo/test_docs_integrity.py` (dwa ADR-y z numerem 0011);
@@ -176,7 +176,7 @@ nie dotyczą silnika i są zgłoszone jako osobne zadanie.
 
 | Krok | Co | Stan |
 | --- | --- | --- |
-| 3.1 | Status dzierżawy względem zegara | ⏳ |
+| 3.1 | Status dzierżawy względem zegara | ✅ `lease_rules.lease_status`, `LeaseStatus` + `PERMANENT`/`REVOKED` |
 | 3.2 | Macierz odnawiania | ⏳ |
 | 3.3 | Wykrywanie deeskalacji write → read | ⏳ |
 | 3.4 | Ochrona ostatniego admina | ⏳ |

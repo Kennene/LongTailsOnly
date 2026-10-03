@@ -29,6 +29,8 @@ class LeaseStatus(StrEnum):
     ACTIVE = "ACTIVE"
     WARNING = "WARNING"
     EXPIRED = "EXPIRED"
+    PERMANENT = "PERMANENT"  # admin (break-glass) never expires
+    REVOKED = "REVOKED"  # is_active = False
 
 
 class Recommendation(StrEnum):
