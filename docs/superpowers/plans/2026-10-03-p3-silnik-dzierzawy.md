@@ -1,10 +1,10 @@
-# Silnik dzierżawy (Osoba 3, kroki 3.1–3.6) — plan implementacji
+# Silnik dostępów (Osoba 3, kroki 3.1–3.6) — plan implementacji
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 > Na prośbę użytkownika („jak najszybciej”) plan jest zwięzły: dokładne sygnatury, lista testów z oczekiwanymi wartościami,
 > polecenia i commit po każdym kroku. Kod powstaje od razu w commitach (TDD: test → RED → kod → GREEN).
 
-**Goal:** Silnik dzierżawy: status, odnawianie, rekomendacje, ochrona ostatniego admina, tryby i endpointy, z których korzystają Osoby 4, 5 i 6.
+**Goal:** Silnik dostępów: status, odnawianie, rekomendacje, ochrona ostatniego admina, tryby i endpointy, z których korzystają Osoby 4, 5 i 6.
 
 **Architecture:** Czyste reguły w `app/domain/lease_rules.py`, cienkie serwisy async (`lease_service`, `decision_service`,
 `enforcement_service`, `last_admin_guard`) i routery API v1. Dostęp zmienia się wyłącznie przez port `VCSProvider`;
@@ -26,10 +26,10 @@ serwis aktualizuje własny wiersz `Lease` po wywołaniu portu. Audyt tylko przez
 
 ## Review Focus
 
-- Dzierżawa wygasająca dokładnie teraz albo dokładnie za 7 dni → `EXPIRED` / `WARNING` (Task 1).
+- Dostęp wygasający dokładnie teraz albo dokładnie za 7 dni → `EXPIRED` / `WARNING` (Task 1).
 - Zdarzenia z przyszłości względem `now` (po `DELETE /time-travel`) → ignorowane w rekomendacji i `last_activity_at` (Task 3).
-- Decyzja na dzierżawie z odwołaniem `PENDING` → 409, a odwołanie nie zostaje osierocone (Task 6).
-- `EXTEND` na odebranej dzierżawie → dostęp wraca przez port, `is_active = true` (Task 6).
+- Decyzja na dostępie z odwołaniem `PENDING` → 409, a odwołanie nie zostaje osierocone (Task 6).
+- `EXTEND` na odebranym dostępie → dostęp wraca przez port, `is_active = true` (Task 6).
 - Tryb auto uruchomiony dwa razy oraz blokada ostatniego admina w trakcie przebiegu → brak zmian / `LAST_ADMIN_BLOCKED` i dalszy przebieg (Task 5).
 
 ---
@@ -38,7 +38,7 @@ serwis aktualizuje własny wiersz `Lease` po wywołaniu portu. Audyt tylko przez
 
 - [ ] Commit `docs/3-silnik-dzierzawy/DOCUMENTATION.md` i tego planu: `docs(p3): lease engine spec and plan`.
 
-### Task 1 (3.1): Status dzierżawy
+### Task 1 (3.1): Status dostępu
 
 **Files:** Modify `backend/app/domain/enums.py` (`LeaseStatus` + `PERMANENT`, `REVOKED`); Create `backend/app/domain/lease_rules.py`;
 Test `backend/tests/domain/test_lease_status.py`; regenerate `backend/contract/schema.json`, `frontend/src/types/api.ts`.
@@ -65,11 +65,11 @@ Test `backend/tests/domain/test_lease_status.py`; regenerate `backend/contract/s
 
 - [ ] Testy: macierz parametryzowana (push → read ✅ write ✅ admin ❌; review/komentarz → read ✅ write ❌; merge/label/settings ❌);
   `record_activity` zapisuje zdarzenie z `required_permission`; push odnawia `write` do `occurred_at + 30 dni`; review nie odnawia `write`;
-  komentarz odnawia `read`; `max` nie skraca przedłużenia admina; odebrana dzierżawa i admin bez zmian; merge nie odnawia;
-  seed: każda dzierżawa nie-admin ma `expires_at = max(granted_at, odnawiające zdarzenia) + 30 dni` (po `seed_activity_extras`).
+  komentarz odnawia `read`; `max` nie skraca przedłużenia admina; odebrany dostęp i admin bez zmian; merge nie odnawia;
+  seed: każdy dostęp nie-admin ma `expires_at = max(granted_at, odnawiające zdarzenia) + 30 dni` (po `seed_activity_extras`).
 - [ ] RED → implementacja → GREEN → pełny zestaw → §9 → commit `feat(lease): renewal matrix and record_activity (3.2)`.
 
-### Task 3 (3.3): Rekomendacja i przegląd dzierżaw
+### Task 3 (3.3): Rekomendacja i przegląd dostępów
 
 **Files:** Modify `lease_rules.py`, `lease_service.py`; Test `backend/tests/domain/test_recommendation.py`, `backend/tests/services/test_lease_overviews.py`.
 
@@ -97,9 +97,9 @@ Create `backend/app/services/last_admin_guard.py`; Test `backend/tests/services/
 - `VCSProvider.remove_collaborator(owner: str, repo: str, username: str) -> None`; `RecordingVCS.removed`, `RecordingVCS(blocked={login})`.
 
 - [ ] `git switch -c guziol/ochrona-ostatniego-admina main`; skopiować DOCUMENTATION.md i plan z `guziol/silnik-dzierzawy`.
-- [ ] Testy: jedyny właściciel organizacji → `ORG_MESSAGE` (także dla jego dzierżawy `write`); ostatni admin repo → `REPO_MESSAGE`;
-  drugi admin w repo → przechodzi; zwykła dzierżawa → przechodzi; adapter: `remove_collaborator` ustawia `is_active = false`,
-  powtórka i brak dzierżawy nic nie robią, ostatni admin → `LastAdminError`; testy mocka (`tests/api/github_mock`) bez zmian.
+- [ ] Testy: jedyny właściciel organizacji → `ORG_MESSAGE` (także dla jego dostępu `write`); ostatni admin repo → `REPO_MESSAGE`;
+  drugi admin w repo → przechodzi; zwykły dostęp → przechodzi; adapter: `remove_collaborator` ustawia `is_active = false`,
+  powtórka i brak dostępu nic nie robią, ostatni admin → `LastAdminError`; testy mocka (`tests/api/github_mock`) bez zmian.
 - [ ] RED → GREEN → pełny zestaw → §4/§9 → commit `feat(lease): shared Last Admin Protection behind the VCS port (3.4)`.
 - [ ] `git switch guziol/silnik-dzierzawy && git merge --no-ff guziol/ochrona-ostatniego-admina` (konflikt w dokumentacji rozwiązać ręcznie), pełny zestaw.
 

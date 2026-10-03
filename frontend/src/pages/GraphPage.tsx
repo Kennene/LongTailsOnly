@@ -52,7 +52,7 @@ function collectTeams(nodes: GraphNode[]): string[] {
 
 /**
  * Widok zawężony do jednego zespołu: węzeł zespołu, jego osoby i repozytoria, do których te osoby
- * mają czynne dzierżawy. Docelowo backend zrobi to samo po stronie `GET /api/v1/graph?team=…`
+ * mają czynne dostępy. Docelowo backend zrobi to samo po stronie `GET /api/v1/graph?team=…`
  * (`app/domain/insights.py::build_graph_layout`, krok 4.6B) — bez repozytoriów filtr pokazywałby
  * ludzi odciętych od tego, do czego mają dostęp.
  */
@@ -99,8 +99,8 @@ function GraphSkeleton(): React.JSX.Element {
 /**
  * Widok `/graph`: relacje dostępu między osobami i repozytoriami.
  *
- * Węzły i krawędzie pochodzą z `useGraph()`, który w trybie live składa je z listy dzierżaw
- * (`api/graph.ts`) — zespół widać wtedy wyłącznie jako `data.team` osoby, bo lista dzierżaw nie
+ * Węzły i krawędzie pochodzą z `useGraph()`, który w trybie live składa je z listy dostępów
+ * (`api/graph.ts`) — zespół widać wtedy wyłącznie jako `data.team` osoby, bo lista dostępów nie
  * niesie składu zespołów. Węzły zespołów wrócą razem z `GET /api/v1/graph` (krok 4.6B).
  *
  * Układ kolumnowy liczymy raz, na pełnym zbiorze węzłów — dzięki temu zawężenie filtrów nie
@@ -122,7 +122,7 @@ export function GraphPage(): React.JSX.Element {
         <h1 className="text-2xl font-semibold tracking-tight">Graf</h1>
         <p className="text-sm text-muted-foreground">
           Kto ma dostęp do czego: osoby i repozytoria. Kolor węzła oraz krawędzi niesie status
-          dzierżawy, a filtr zespołu zawęża widok do jednej grupy.
+          dostępu, a filtr zespołu zawęża widok do jednej grupy.
         </p>
       </header>
 

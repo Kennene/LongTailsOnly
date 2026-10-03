@@ -20,19 +20,15 @@ const DECISION_CASES: [number, string, string][] = [
   [
     409,
     'Lease has a pending appeal; decide it via /api/v1/appeals/7/decision',
-    'Ta dzierżawa ma nierozpatrzone odwołanie — najpierw je rozpatrz.',
+    'Ten dostęp ma nierozpatrzone odwołanie — najpierw je rozpatrz.',
   ],
-  [409, 'Lease is already revoked', 'Ta dzierżawa jest już odebrana — nie ma czego zmieniać.'],
+  [409, 'Lease is already revoked', 'Ten dostęp jest już odebrany — nie ma czego zmieniać.'],
   [
     422,
     'A justification is required to downscope or revoke access',
     'Uzasadnienie jest wymagane do odebrania lub zdeeskalowania dostępu.',
   ],
-  [
-    422,
-    'Only a read or write lease can be extended',
-    'Tylko dzierżawę read/write można przedłużyć.',
-  ],
+  [422, 'Only a read or write lease can be extended', 'Tylko dostęp read/write można przedłużyć.'],
   [
     422,
     'The new end of the lease must be later than the current one',
@@ -41,7 +37,7 @@ const DECISION_CASES: [number, string, string][] = [
   [
     422,
     'Only an active write lease can be downscoped to read',
-    'Tylko aktywną dzierżawę write można zdeeskalować.',
+    'Tylko aktywny dostęp write można zdeeskalować.',
   ],
 ];
 
@@ -49,9 +45,9 @@ const APPEAL_CASES: [number, string, string][] = [
   [
     409,
     'Appeals are accepted only for revoked leases or leases expiring within 7 days',
-    'Odwołanie można złożyć tylko dla odebranej dzierżawy albo takiej, która wygasa w ciągu 7 dni.',
+    'Odwołanie można złożyć tylko dla odebranego dostępu albo takiego, który wygasa w ciągu 7 dni.',
   ],
-  [409, 'This lease already has a pending appeal', 'Ta dzierżawa ma już nierozpatrzone odwołanie.'],
+  [409, 'This lease already has a pending appeal', 'Ten dostęp ma już nierozpatrzone odwołanie.'],
   [
     422,
     'Justification must be new; previous justifications cannot be reused',
@@ -60,7 +56,7 @@ const APPEAL_CASES: [number, string, string][] = [
   [422, 'Justification is required', 'Uzasadnienie jest wymagane'],
 ];
 
-describe('describeEngineError — decyzja o dzierżawie', () => {
+describe('describeEngineError — decyzja o dostępie', () => {
   it.each(DECISION_CASES)('tłumaczy %i: %s', (status, detail, message) => {
     expect(describeEngineError(new ApiError(status, detail), 'LEASE_DECISION', FALLBACK)).toEqual({
       message,

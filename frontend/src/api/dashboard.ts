@@ -25,8 +25,8 @@ import { fetchClock } from './simulation';
  * zamienia się na jedno `getJson<DashboardStats>('/api/v1/dashboard/stats')` — **bez** try-404
  * i cichego fallbacku, bo dwie ścieżki danych to dwa różne pulpitery.
  *
- * `onboarding_candidates` zostaje przy wspólnym fixture'cie użytkowników: lista dzierżaw niesie
- * wyłącznie osoby, które dzierżawę mają, a API nie ma odczytu „wszystkie osoby z zespołem”
+ * `onboarding_candidates` zostaje przy wspólnym fixture'cie użytkowników: lista dostępów niesie
+ * wyłącznie osoby, które dostęp mają, a API nie ma odczytu „wszystkie osoby z zespołem”
  * (jest tylko `GET /api/v1/onboarding/{login}` per osoba). Tę jedną liczbę rozstrzygnie 4.6B.
  */
 export async function fetchDashboard(): Promise<DashboardStats> {

@@ -13,7 +13,7 @@ import { getLeases, getSimulatedNow } from '../state';
  * - `POST /api/v1/appeals` odpowiada `201` i zwraca `AppealOverview` (z osobą i repozytorium),
  * - `POST /api/v1/appeals/{id}/reject` odrzuca wniosek (`REJECTED`, `resolved_at` z zegara
  *   symulowanego), `404` dla nieznanego id i `409` dla już rozstrzygniętego,
- * - endpointu `/decision` **nie ma** — zatwierdzenie czeka na decyzję o dzierżawie (3.6/5.5).
+ * - endpointu `/decision` **nie ma** — zatwierdzenie czeka na decyzję o dostępie (3.6/5.5).
  *
  * Stan trzymamy w tym module (a nie w `../state.ts`). Ponieważ `setup.ts` czyści wyłącznie
  * `state.ts`, test woła `resetAppealsMswState()` w `beforeEach`.

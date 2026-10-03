@@ -23,7 +23,7 @@ const COLUMNS: string[] = [
   'Akcje',
 ];
 
-/** Najpilniejsza dzierżawa: wygasła i z najmniejszą liczbą dni — pierwszy wiersz tabeli. */
+/** Najpilniejszy dostęp: wygasły i z najmniejszą liczbą dni — pierwszy wiersz tabeli. */
 const MOST_URGENT: LeaseOverview = expiredLeasesFixture.reduce(
   (left: LeaseOverview, right: LeaseOverview): LeaseOverview =>
     (right.days_remaining ?? 0) < (left.days_remaining ?? 0) ? right : left,
@@ -33,7 +33,7 @@ const WARNING_LEASES: LeaseOverview[] = leasesFixture.filter(
   (lease: LeaseOverview): boolean => lease.status === 'WARNING',
 );
 
-/** Pierwsza dzierżawa aktywna: z najmniejszą liczbą dni w swojej grupie. */
+/** Pierwszy aktywny dostęp: z najmniejszą liczbą dni w swojej grupie. */
 const FIRST_ACTIVE: LeaseOverview = leasesFixture
   .filter((lease: LeaseOverview): boolean => lease.status === 'ACTIVE')
   .reduce((left: LeaseOverview, right: LeaseOverview): LeaseOverview =>
@@ -43,13 +43,13 @@ const FIRST_ACTIVE: LeaseOverview = leasesFixture
       : left,
   );
 
-/** Dzierżawy stałe (bez terminu) — tabela trzyma je na końcu, z myślnikiem zamiast dni. */
+/** Dostępy stałe (bez terminu) — tabela trzyma je na końcu, z myślnikiem zamiast dni. */
 const PERMANENT_LEASES: LeaseOverview[] = leasesFixture.filter(
   (lease: LeaseOverview): boolean => lease.expires_at === null,
 );
 const LAST_PERMANENT: LeaseOverview = PERMANENT_LEASES[PERMANENT_LEASES.length - 1];
 
-/** Renderuje stronę i zwraca wiersze tabeli: nagłówek + dzierżawy z MSW. */
+/** Renderuje stronę i zwraca wiersze tabeli: nagłówek + dostępy z MSW. */
 async function loadLeaseRows(): Promise<HTMLElement[]> {
   renderWithProviders(<LeasesPage />);
   await screen.findByRole('table');
@@ -72,7 +72,7 @@ function cellsOf(row: HTMLElement): HTMLElement[] {
   return within(row).getAllByRole('cell');
 }
 
-/** Wiersz konkretnej dzierżawy — pary (login, repozytorium) są w fixture'ach unikalne. */
+/** Wiersz konkretnego dostępu — pary (login, repozytorium) są w fixture'ach unikalne. */
 function rowFor(rows: HTMLElement[], lease: LeaseOverview): HTMLElement {
   const row: HTMLElement | undefined = rows
     .slice(1)
@@ -101,7 +101,7 @@ describe('LeasesPage', () => {
   it('renders the whole shared inventory in urgency order', async () => {
     const rows = await loadLeaseRows();
 
-    // 15 dzierżaw z `shared/fixtures` (8 bieżących + 7 wygasłych) plus wiersz nagłówka.
+    // 15 dostępów z `shared/fixtures` (8 bieżących + 7 wygasłych) plus wiersz nagłówka.
     expect(rows).toHaveLength(leasesFixture.length + 1);
     expect(within(rows[rows.length - 1]).getByText(LAST_PERMANENT.user.name)).toBeInTheDocument();
   });
@@ -158,7 +158,7 @@ describe('LeasesPage', () => {
   it('replaces the table with the loading state until the inventory arrives', async () => {
     renderWithProviders(<LeasesPage />);
 
-    expect(screen.getByRole('status')).toHaveTextContent('Wczytywanie dzierżaw…');
+    expect(screen.getByRole('status')).toHaveTextContent('Wczytywanie dostępów…');
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
 
     await screen.findByRole('table');
@@ -176,7 +176,7 @@ describe('LeasesPage', () => {
     renderWithProviders(<LeasesPage />);
 
     const alert: HTMLElement = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Nie udało się pobrać dzierżaw');
+    expect(alert).toHaveTextContent('Nie udało się pobrać dostępów');
 
     server.resetHandlers();
     await user.click(within(alert).getByRole('button', { name: 'Odśwież' }));
@@ -188,7 +188,7 @@ describe('LeasesPage', () => {
     server.use(http.get('/api/v1/leases', () => HttpResponse.json([])));
     renderWithProviders(<LeasesPage />);
 
-    expect(await screen.findByText('Brak dzierżaw do wyświetlenia')).toBeInTheDocument();
+    expect(await screen.findByText('Brak dostępów do wyświetlenia')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 });
@@ -197,7 +197,7 @@ describe('LeaseTable', () => {
   it('renders the empty state when there are no leases', () => {
     renderWithProviders(<LeaseTable leases={[]} />);
 
-    expect(screen.getByText('Brak dzierżaw do wyświetlenia')).toBeInTheDocument();
+    expect(screen.getByText('Brak dostępów do wyświetlenia')).toBeInTheDocument();
   });
 
   it('omits the decision column without a handler', () => {
@@ -222,7 +222,7 @@ describe('LeaseTable', () => {
     const rows: HTMLElement[] = screen.getAllByRole('row');
     await user.click(within(rows[1]).getByRole('button', { name: 'Decyzja' }));
 
-    expect(decided).toEqual([MOST_URGENT.id]); // pierwszy wiersz to najpilniejsza dzierżawa
+    expect(decided).toEqual([MOST_URGENT.id]); // pierwszy wiersz to najpilniejszy dostęp
   });
 
   it('sorts by urgency regardless of the payload order', () => {

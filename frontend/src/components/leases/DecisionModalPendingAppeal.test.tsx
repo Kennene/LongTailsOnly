@@ -10,35 +10,35 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import type { LeaseOverview } from '@/types/api';
 
 /**
- * Konflikt `409` przy decyzji o dzierżawie (kontrakt 3.6, decyzja D13): backend odmawia
- * decyzji na dzierżawie z odwołaniem `PENDING` i odsyła na `POST /api/v1/appeals/{id}/decision`.
+ * Konflikt `409` przy decyzji o dostępie (kontrakt 3.6, decyzja D13): backend odmawia
+ * decyzji na dostępie z odwołaniem `PENDING` i odsyła na `POST /api/v1/appeals/{id}/decision`.
  *
  * Backend odpowiada wtedy **po angielsku** (`Lease has a pending appeal; decide it via …`),
  * a panel jest w całości polski — modal musi więc podmienić `detail` na własne zdanie, nie
  * gubiąc przy tym komunikatu serwera, który wskazuje drogę wyjścia z konfliktu.
  *
- * Drugi `409` z tego samego endpointu to `REVOKE` na dzierżawie już odebranej — inne zdanie,
- * bo inna przyczyna; rozróżniamy je po stanie dzierżawy, którym dysponuje frontend.
+ * Drugi `409` z tego samego endpointu to `REVOKE` na dostępie już odebranym — inne zdanie,
+ * bo inna przyczyna; rozróżniamy je po stanie dostępu, którym dysponuje frontend.
  */
 
 const DECISION_URL = '/api/v1/leases/:leaseId/decision';
-const PENDING_APPEAL_MESSAGE = 'Ta dzierżawa ma nierozpatrzone odwołanie — najpierw je rozpatrz.';
-const REVOKED_LEASE_MESSAGE = 'Ta dzierżawa jest już odebrana — nie ma czego zmieniać.';
+const PENDING_APPEAL_MESSAGE = 'Ten dostęp ma nierozpatrzone odwołanie — najpierw je rozpatrz.';
+const REVOKED_LEASE_MESSAGE = 'Ten dostęp jest już odebrany — nie ma czego zmieniać.';
 const REVOKED_DETAIL = 'Lease is already revoked';
 
-const pendingAppeal = appealsFixture[0]; // dzierżawa 5, marta, status PENDING
+const pendingAppeal = appealsFixture[0]; // dostęp 5, marta, status PENDING
 const pendingAppealDetail = `Lease has a pending appeal; decide it via /api/v1/appeals/${String(pendingAppeal.id)}/decision`;
 
 function findLease(predicate: (lease: LeaseOverview) => boolean): LeaseOverview {
   const lease: LeaseOverview | undefined = leasesFixture.find(predicate);
   if (lease === undefined) {
-    throw new Error('Fixture dzierżaw nie zawiera dzierżawy o oczekiwanym kształcie');
+    throw new Error('Fixture dostępów nie zawiera dostępu o oczekiwanym kształcie');
   }
 
   return lease;
 }
 
-/** Dzierżawa, której dotyczy oczekujące odwołanie — ta sama, którą widzi administrator. */
+/** Dostęp, którego dotyczy oczekujące odwołanie — ten sam, który widzi administrator. */
 const leaseWithAppeal: LeaseOverview = findLease(
   (lease: LeaseOverview): boolean => lease.id === pendingAppeal.lease_id,
 );
@@ -58,7 +58,7 @@ async function submitExtension(): Promise<void> {
   await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
 }
 
-describe('DecisionModal — 409 przy decyzji o dzierżawie', () => {
+describe('DecisionModal — 409 przy decyzji o dostępie', () => {
   it('zastępuje angielski detail zdaniem o nierozpatrzonym odwołaniu', async () => {
     server.use(
       http.post(DECISION_URL, () =>
@@ -77,7 +77,7 @@ describe('DecisionModal — 409 przy decyzji o dzierżawie', () => {
     expect(screen.getByRole('button', { name: 'Zatwierdź decyzję' })).toBeEnabled();
   });
 
-  it('nazywa przyczynę po polsku, gdy 409 dotyczy dzierżawy już odebranej', async () => {
+  it('nazywa przyczynę po polsku, gdy 409 dotyczy dostępu już odebranego', async () => {
     const revokedLease: LeaseOverview = { ...leasesFixture[0], is_active: false };
     server.use(
       http.post(DECISION_URL, () => HttpResponse.json({ detail: REVOKED_DETAIL }, { status: 409 })),

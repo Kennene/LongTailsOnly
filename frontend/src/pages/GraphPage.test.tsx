@@ -25,14 +25,14 @@ beforeAll(() => {
 const RISK_STATUSES: readonly LeaseStatus[] = ['WARNING', 'EXPIRED'];
 
 /**
- * Zespół, po którym filtrujemy. W trybie live graf nie ma węzłów `team` — lista dzierżaw nie
+ * Zespół, po którym filtrujemy. W trybie live graf nie ma węzłów `team` — lista dostępów nie
  * niesie składu zespołów (patrz `api/graph.ts`) — więc opcje filtra to slugi z `user.team`.
  */
 const TEAM = 'qa';
 
 /**
  * Oczekiwany graf: ten sam builder, którym `fetchGraph()` składa węzły z `GET /api/v1/leases`
- * (MSW oddaje dokładnie ten stan dzierżaw, który widzi widok).
+ * (MSW oddaje dokładnie ten stan dostępów, który widzi widok).
  */
 function liveGraph(): PermissionGraph {
   return buildLeaseGraph(getLeases());
@@ -59,7 +59,7 @@ function userNodesInTeam(graph: PermissionGraph, team: string): GraphNode[] {
   return nodesOfType(graph, 'user').filter((node: GraphNode): boolean => node.data.team === team);
 }
 
-/** Krawędzie dzierżaw wychodzące z podanych osób — filtr zespołu zostawia dokładnie je. */
+/** Krawędzie dostępów wychodzące z podanych osób — filtr zespołu zostawia dokładnie je. */
 function leaseEdgesOfUsers(graph: PermissionGraph, users: GraphNode[]): GraphEdge[] {
   const userIds = new Set<string>(users.map((node: GraphNode): string => node.id));
 
@@ -68,7 +68,7 @@ function leaseEdgesOfUsers(graph: PermissionGraph, users: GraphNode[]): GraphEdg
   );
 }
 
-/** Repozytoria, do których zespół ma dzierżawy — filtr zespołu zostawia je razem z osobami. */
+/** Repozytoria, do których zespół ma dostępy — filtr zespołu zostawia je razem z osobami. */
 function reposOfUsers(graph: PermissionGraph, users: GraphNode[]): string[] {
   return [
     ...new Set<string>(
@@ -117,7 +117,7 @@ it('filters the visible nodes by team', async () => {
 
   await user.selectOptions(await screen.findByLabelText('Zespół'), TEAM);
 
-  // Zespół: jego osoby i repozytoria z ich dzierżaw; krawędzie to same dzierżawy tych osób
+  // Zespół: jego osoby i repozytoria z ich dostępów; krawędzie to same dostępy tych osób
   // (krawędzi członkostwa nie ma, bo graf nie ma węzłów zespołów).
   expect(teamUsers.length).toBeGreaterThan(0);
   expectCounter('graph-nodes', teamUsers.length + teamRepos.length);

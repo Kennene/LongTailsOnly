@@ -14,19 +14,19 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import type { DashboardStats, LeaseOverview } from '@/types/api';
 
 const KPI_LABELS: string[] = [
-  'Aktywne dzierżawy',
+  'Aktywne dostępy',
   'Ostrzeżenia',
   'Wygaśnięte',
   'Rekomendacje deeskalacji',
 ];
 
 const WARNING_EMPTY =
-  'Brak dzierżaw w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.';
+  'Brak dostępów w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.';
 
 const KPI_TEST_IDS: string[] = ['kpi-active', 'kpi-warning', 'kpi-expired', 'kpi-downscope'];
 
 /**
- * Oczekiwane liczniki liczymy z żywego stanu dzierżaw i zegara symulowanego — dokładnie z tego,
+ * Oczekiwane liczniki liczymy z żywego stanu dostępów i zegara symulowanego — dokładnie z tego,
  * co widzi handler MSW. Żadna liczba nie jest przepisana drugi raz (audyt: „Aktywne 12”
  * przy czterech wierszach), a fixture pochodzi ze wspólnego `shared/fixtures/leases*.json`.
  */
@@ -42,7 +42,7 @@ function forbidRoute(path: string, calls: string[]): HttpHandler {
   });
 }
 
-/** Dzierżawy w oknie ostrzegawczym w kolejności listy: najpilniejsze (najmniej dni) pierwsze. */
+/** Dostępy w oknie ostrzegawczym w kolejności listy: najpilniejsze (najmniej dni) pierwsze. */
 function warningLeases(leases: LeaseOverview[]): LeaseOverview[] {
   return leases
     .filter((lease: LeaseOverview): boolean => lease.status === 'WARNING')
@@ -58,7 +58,7 @@ function fullName(lease: LeaseOverview): string {
 
 /**
  * Tożsamość wiersza to para (osoba, repozytorium), nie sama osoba: ta sama osoba może mieć
- * jedną dzierżawę w oknie ostrzegawczym, a drugą zupełnie zdrową — i tak jest w fixture'ach.
+ * jeden dostęp w oknie ostrzegawczym, a drugi zupełnie zdrowy — i tak jest w fixture'ach.
  */
 function pairOf(lease: LeaseOverview): string {
   return `${lease.user.login}@${lease.repository.name}`;
@@ -77,7 +77,7 @@ function expectKpi(testId: string, value: number): void {
   expect(kpiValue(testId).textContent).toBe(String(value));
 }
 
-/** Wiersze okna ostrzegawczego muszą zgadzać się z dzierżawami `WARNING` co do treści i kolejności. */
+/** Wiersze okna ostrzegawczego muszą zgadzać się z dostępami `WARNING` co do treści i kolejności. */
 async function expectWarningWindow(section: HTMLElement, leases: LeaseOverview[]): Promise<void> {
   const expected: LeaseOverview[] = warningLeases(leases);
 
@@ -231,7 +231,7 @@ describe('DashboardPage', () => {
 
     const section: HTMLElement = await screen.findByTestId('warning-window');
 
-    // Po skoku okno zawiera inne dzierżawy: te, którym zostało 1–7 dni.
+    // Po skoku okno zawiera inne dostępy: te, którym zostało 1–7 dni.
     await expectWarningWindow(section, getLeases());
     expect(warningLeases(getLeases())[0].id).not.toBe(warningLeases(leasesFixture)[0].id);
   });
@@ -261,7 +261,7 @@ describe('DashboardPage', () => {
     // Liczniki i okno ostrzegawcze czytają ten sam zasób osobnymi zapytaniami, więc każda sekcja
     // mówi o błędzie własnym alertem i własnym „Odśwież” — liczniki nie znikają po cichu.
     const section: HTMLElement = await screen.findByTestId('warning-window');
-    expect(await within(section).findByText('Nie udało się pobrać dzierżaw')).toBeInTheDocument();
+    expect(await within(section).findByText('Nie udało się pobrać dostępów')).toBeInTheDocument();
 
     const countersError: HTMLElement = await screen.findByTestId('kpi-error');
     expect(countersError).toHaveTextContent('Nie udało się pobrać liczników');

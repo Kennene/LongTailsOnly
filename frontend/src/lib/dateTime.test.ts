@@ -68,8 +68,8 @@ describe('formatDaysRemaining', () => {
     [12, 'Pozostało 12 dni'],
     [1, 'Pozostało 1 dzień'],
     [0, 'Wygasa dziś'],
-    [-1, 'Wygasła 1 dzień temu'],
-    [-3, 'Wygasła 3 dni temu'],
+    [-1, 'Wygasł 1 dzień temu'],
+    [-3, 'Wygasł 3 dni temu'],
     [null, '—'],
   ])('formats %s days remaining as "%s"', (days: number | null, expected: string) => {
     expect(formatDaysRemaining(days)).toBe(expected);

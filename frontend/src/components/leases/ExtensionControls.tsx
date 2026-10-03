@@ -27,7 +27,7 @@ export interface ExtensionControlsProps {
   customDays: string;
   simulatedNow: string | null;
   /**
-   * Zdanie zamiast kontrolek, gdy silnik nie przyjmie `EXTEND` (np. dzierżawa administratora);
+   * Zdanie zamiast kontrolek, gdy silnik nie przyjmie `EXTEND` (np. dostęp administratora);
    * `null`/brak = zwykłe przedłużanie. Tryb odwołania nie podaje go wcale.
    */
   disabledReason?: string | null;

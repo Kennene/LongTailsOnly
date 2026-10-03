@@ -6,7 +6,7 @@ import type { DashboardStats } from '@/types/api';
 /**
  * Liczniki KPI pulpitu (`fetchDashboard`, krok 4.6B podmieni je na `GET /api/v1/dashboard/stats`).
  *
- * Do czasu 4.6B liczniki powstają po stronie frontendu z listy dzierżaw, zegara i odwołań
+ * Do czasu 4.6B liczniki powstają po stronie frontendu z listy dostępów, zegara i odwołań
  * (patrz `api/dashboard.ts`), więc klucz `['dashboard']` unieważniany po decyzji, odwołaniu,
  * onboardingu i podróży w czasie odświeża całą trójkę odczytów.
  */

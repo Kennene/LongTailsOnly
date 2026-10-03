@@ -24,7 +24,7 @@ git ls-tree -r --name-only origin/main -- docs/adr
 | Nr | Tytuł | Status | Dotyczy |
 | --- | --- | --- | --- |
 | [0001](0001-tech-stack-and-spa-architecture.md) | Wybór stosu technologicznego i architektury SPA | Accepted | Backend, Frontend, komunikacja |
-| [0002](0002-zero-standing-privileges-and-lease-hierarchy.md) | Model dzierżawy dostępu i hierarchia uprawnień (MVP) | Accepted | Domena, `write`/`read`, `admin` break-glass |
+| [0002](0002-zero-standing-privileges-and-lease-hierarchy.md) | Model dostępu czasowego i hierarchia uprawnień (MVP) | Accepted | Domena, `write`/`read`, `admin` break-glass |
 | [0003](0003-simulated-clock-and-time-travel.md) | Zegar symulowany (`TimeProvider`) i sterowanie czasem | Accepted | Zegar, `time-travel` |
 | [0004](0004-github-mock-and-last-admin-protection.md) | Emulacja GitHub REST API i reguła Last Admin Protection | Accepted | `api/github_mock`, kody HTTP |
 | [0005](0005-team-baseline-and-intentional-friction.md) | Standard zespołu i elastyczne decyzje administratora | Accepted | `BaselineService`, odwołania, TTL |

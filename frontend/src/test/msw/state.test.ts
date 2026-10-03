@@ -17,14 +17,14 @@ function leaseOf(leases: LeaseOverview[], login: string, repository: string): Le
   );
 
   if (lease === undefined) {
-    throw new Error(`Brak dzierżawy ${login}@${repository} w fixture`);
+    throw new Error(`Brak dostępu ${login}@${repository} w fixture`);
   }
 
   return lease;
 }
 
-describe('symulacja dzierżaw (MSW)', () => {
-  it('na kotwicy demo oddaje dokładnie wspólne fixture’y dzierżaw', () => {
+describe('symulacja dostępów (MSW)', () => {
+  it('na kotwicy demo oddaje dokładnie wspólne fixture’y dostępów', () => {
     // `status`, `days_remaining` i `recommendation` z shared/fixtures/leases*.json są
     // wartościami na kotwicę — symulacja nie może ich nadpisać własnym przeliczeniem.
     expect(getLeases()).toEqual(leasesFixture);
@@ -74,7 +74,7 @@ describe('symulacja dzierżaw (MSW)', () => {
     expect(extended).toMatchObject({ days_remaining: 58, status: 'ACTIVE' });
   });
 
-  it('przedłużenie dzierżawy stałej liczy dni od czasu symulowanego', () => {
+  it('przedłużenie stałego dostępu liczy dni od czasu symulowanego', () => {
     advanceSimulatedClock(25);
     const permanent: LeaseOverview = leaseOf(getLeases(), 'tomasz-admin', 'core-api');
 
@@ -88,7 +88,7 @@ describe('symulacja dzierżaw (MSW)', () => {
     expect(extended).toMatchObject({ expires_at: expect.any(String), days_remaining: 30 });
   });
 
-  it('wyłączenie dzierżawy zostawia ją w stanie jako nieaktywną', () => {
+  it('wyłączenie dostępu zostawia go w stanie jako nieaktywny', () => {
     const updated: LeaseOverview | null = applyDecision(1, { action: 'REVOKE' });
 
     expect(updated).toMatchObject({ is_active: false });

@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 describe('fetchDashboard', () => {
-  it('liczy liczniki z listy dzierżaw, zegara i jednej strony odwołań', async () => {
+  it('liczy liczniki z listy dostępów, zegara i jednej strony odwołań', async () => {
     const appealsRequests: string[] = [];
     server.use(
       http.get('/api/v1/appeals', ({ request }) => {

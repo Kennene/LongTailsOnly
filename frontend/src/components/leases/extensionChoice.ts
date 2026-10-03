@@ -16,14 +16,14 @@ export const CUSTOM_DAYS_MIN = 1;
 export const CUSTOM_DAYS_MAX = 365;
 export const CUSTOM_DAYS_ERROR = 'Podaj liczbę dni z zakresu 1–365';
 export const ADMIN_EXTENSION_BLOCKED =
-  'Dzierżawa administratora nie wygasa — nie można jej przedłużyć.';
+  'Dostęp administratora nie wygasa — nie można go przedłużyć.';
 
 /**
  * Powód, dla którego sekcja przedłużania jest niedostępna, albo `null`, gdy `EXTEND` przejdzie.
  *
- * Silnik odrzuca `EXTEND` na dzierżawie administratora (`decision_service.extend_lease`:
+ * Silnik odrzuca `EXTEND` na dostępie administratora (`decision_service.extend_lease`:
  * `lease.current_role is Role.ADMIN` → 422 `Only a read or write lease can be extended`), a taka
- * dzierżawa nigdy nie wygasa (ADR 0002). Reguła jest **rolowa**, nie statusowa: `PERMANENT` bez
+ * dostęp nigdy nie wygasa (ADR 0002). Reguła jest **rolowa**, nie statusowa: `PERMANENT` bez
  * roli admina (brak terminu) silnik nadal przedłuża, bo liczy nowy koniec od `now`.
  */
 export function extensionBlockedReason(lease: LeaseOverview): string | null {

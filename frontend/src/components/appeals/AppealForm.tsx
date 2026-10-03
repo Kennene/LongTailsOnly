@@ -46,7 +46,7 @@ export function AppealForm({
   return (
     <form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="appeal-lease">Dzierżawa</Label>
+        <Label htmlFor="appeal-lease">Dostęp</Label>
         <select
           className={SELECT_CLASSES}
           id="appeal-lease"

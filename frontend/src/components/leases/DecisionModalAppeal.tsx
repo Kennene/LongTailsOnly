@@ -33,7 +33,7 @@ const REJECTION_ERROR_ID = 'appeal-rejection-error';
 const SUCCESS_MESSAGE = 'Odwołanie odrzucone';
 
 /**
- * Zatwierdzenie odwołania rozstrzyga się w domenie odwołań: backend odsyła dzierżawy z odwołaniem
+ * Zatwierdzenie odwołania rozstrzyga się w domenie odwołań: backend odsyła dostępy z odwołaniem
  * `PENDING` na `POST /api/v1/appeals/{id}/decision` (409, decyzja D13), a tego endpointu jeszcze nie
  * ma (zadanie 4.3C). Domena odwołań wystawia dziś wyłącznie `/reject`, więc przycisk zostaje
  * wyłączony, a nie udaje działającej akcji. Wybór przedłużenia zostaje jako szkic: pokazuje,
@@ -57,9 +57,7 @@ function buildLeaseContext(appeal: AppealOverview): LeaseContext {
     repository: `${appeal.repository.owner}/${appeal.repository.name}`,
     requested_role: getRoleLabel(appeal.requested_role),
     lease_role: getRoleLabel(appeal.lease_role),
-    days: appeal.lease_is_active
-      ? formatDaysRemaining(appeal.days_remaining)
-      : 'Dzierżawa nieaktywna',
+    days: appeal.lease_is_active ? formatDaysRemaining(appeal.days_remaining) : 'Dostęp nieaktywny',
     previous_appeals: appeal.previous_appeals,
     status: getAppealStatusBadge(appeal.status).label,
   };
@@ -67,7 +65,7 @@ function buildLeaseContext(appeal: AppealOverview): LeaseContext {
 
 /**
  * Rozpatrzenie odwołania (UC-3). Osoba, repozytorium, rola i pozostałe dni pochodzą
- * z `AppealOverview`, więc modal **nie potrzebuje** propa `lease` ani listy dzierżaw —
+ * z `AppealOverview`, więc modal **nie potrzebuje** propa `lease` ani listy dostępów —
  * decyzję można podjąć także wtedy, gdy `GET /api/v1/leases` jeszcze nie istnieje.
  */
 export function DecisionModalAppeal({
@@ -120,7 +118,7 @@ export function DecisionModalAppeal({
         <dd className="font-medium">{context.repository}</dd>
         <dt className="text-muted-foreground">Wnioskowana rola</dt>
         <dd className="font-medium">{context.requested_role}</dd>
-        <dt className="text-muted-foreground">Rola w dzierżawie</dt>
+        <dt className="text-muted-foreground">Rola w dostępie</dt>
         <dd className="font-medium">{context.lease_role}</dd>
         <dt className="text-muted-foreground">Status wniosku</dt>
         <dd className="font-medium">{context.status}</dd>

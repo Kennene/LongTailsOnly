@@ -44,7 +44,7 @@ Wartości skopiowane dosłownie ze specyfikacji. Wymagania każdego zadania obej
 Klasy danych i tryby awarii, których specyfikacja wprost nie rozstrzyga, a które najpewniej uderzą użytkownika. Każda pozycja ma test w zadaniu będącym właścicielem danego kodu.
 
 1. **Dryf fixtures wobec kontraktu** — Osoba 1 zmienia nazwę pola lub wartość enuma, kontrakt się regeneruje, a fixtures zostają na starych wartościach; frontend dostaje `undefined` w komórce zamiast błędu. → Task 2: `test_every_fixture_validates_against_its_contract_model`.
-2. **Niespójny graf fixtures** — dzierżawa wskazuje `user.id` spoza `users.json`; JSON jest poprawny składniowo, więc nic nie krzyczy, a tabela i graf renderują puste komórki. → Task 2: `test_fixture_references_resolve_inside_fixture_set`.
+2. **Niespójny graf fixtures** — dostęp wskazuje `user.id` spoza `users.json`; JSON jest poprawny składniowo, więc nic nie krzyczy, a tabela i graf renderują puste komórki. → Task 2: `test_fixture_references_resolve_inside_fixture_set`.
 3. **Wyciek zegara systemowego do wyniku scenariusza** — status policzony z `datetime.now()` zamiast `TimeProvider` sprawia, że ten sam scenariusz przechodzi dziś, a pada za miesiąc. → Task 4: `test_scenario_results_do_not_depend_on_wall_clock`.
 4. **Polskie znaki i BOM** — nazwy i uzasadnienia zawierają `ż/ó/ś/ę` (`Rafał`, `Sylwia`); plik z BOM wywala `JSON.parse` we Vite i `json.load`, a zapisany w Windows-1252 zamienia znaki na `?`. → Task 2: `test_fixtures_are_utf8_without_bom`, Task 3: `test_scenarios_are_utf8_without_bom`.
 5. **Pusty scenariusz Last Admin** — UC-5 zaczyna się od jednego administratora, więc próba odebrania i tak musiałaby zostać odrzucona; test przechodzi nawet gdy straż ostatniego admina jest zepsuta. → Task 3: `test_last_admin_scenario_starts_with_two_admins`.
@@ -228,7 +228,7 @@ Expected: FAIL — `shared/fixtures/manifest.json` nie istnieje.
 
 - [ ] **Step 3: Napisz `manifest.json` i 11 plików fixtures**
 
-Dane odwzorowują `app/db/seed_data.py`: `tomasz-admin` (admin w 10 repo), `kamil` (DEV — `write` w `core-api` i `auth-service` z codziennymi pushami; `write` w `payment-service` z pushem 25 dni temu i review 2 dni temu → `DOWNSCOPE`; `write` w `frontend-app` i `notifications` tylko review/comment → `DOWNSCOPE`; `write` w 5 repozytoriach bez zdarzeń → `REVOKE`), `marta` (QA — `read` w `qa-automation` i `frontend-app`), `nowy-dev` (bez dzierżaw), 10 repozytoriów z `REPOSITORIES`.
+Dane odwzorowują `app/db/seed_data.py`: `tomasz-admin` (admin w 10 repo), `kamil` (DEV — `write` w `core-api` i `auth-service` z codziennymi pushami; `write` w `payment-service` z pushem 25 dni temu i review 2 dni temu → `DOWNSCOPE`; `write` w `frontend-app` i `notifications` tylko review/comment → `DOWNSCOPE`; `write` w 5 repozytoriach bez zdarzeń → `REVOKE`), `marta` (QA — `read` w `qa-automation` i `frontend-app`), `nowy-dev` (bez dostępów), 10 repozytoriów z `REPOSITORIES`.
 `decision-requests.json` (`kind: "request"`, `model: "DecisionRequest"`) pokrywa każdy wariant `Extension`: `preset_days: 30`, `multiplier: 2.0`, `custom_days: 45`, `until_date: "2026-12-31"` oraz akcje `DOWNSCOPE` i `REVOKE`.
 `README.md` zawiera opis `manifest.json` oraz gotowy fragment konfiguracji Vite:
 ```ts
@@ -327,10 +327,10 @@ Expected: FAIL — `shared/scenarios/` nie istnieje, zbieranie testów nie znajd
 - [ ] **Step 3: Napisz pięć scenariuszy**
 
 Wypełnij treścią z `PRODUKT.md` §3:
-- **UC-1**: `nowy-dev` bez dzierżaw → standard zespołu DEV bez `admin`, proponowane role z `BaselineEntry`.
+- **UC-1**: `nowy-dev` bez dostępów → standard zespołu DEV bez `admin`, proponowane role z `BaselineEntry`.
 - **UC-2**: `kamil` w `payment-service` z `write`, brak `PushEvent` w oknie, obecne `PullRequestReviewEvent` → `WARNING` + `DOWNSCOPE`.
-- **UC-3**: dzierżawa `marta` w oknie ostrzegawczym, odwołanie z uzasadnieniem z polskimi znakami, decyzja `EXTEND` z `preset_days: 30` oraz odrzucenie pustego uzasadnienia.
-- **UC-4**: jedna dzierżawa obserwowana po `reset`, `+15`, `+30`, `+60` → `ACTIVE`, `WARNING`, `EXPIRED`.
+- **UC-3**: dostęp `marta` w oknie ostrzegawczym, odwołanie z uzasadnieniem z polskimi znakami, decyzja `EXTEND` z `preset_days: 30` oraz odrzucenie pustego uzasadnienia.
+- **UC-4**: jeden dostęp obserwowany po `reset`, `+15`, `+30`, `+60` → `ACTIVE`, `WARNING`, `EXPIRED`.
 - **UC-5**: repozytorium i organizacja z dwoma adminami, próba odebrania jednego → `403`, a następnie udane odebranie przy dwóch adminach.
 
 - [ ] **Step 4: Uruchom testy ponownie**
@@ -340,7 +340,7 @@ Expected: PASS — 9 testów.
 
 - [ ] **Step 5: Opisz interfejs dla Osoby 2 w `shared/scenarios/README.md`**
 
-Opisz, że generator 2.6 czyta wyłącznie `given`, materializuje dzierżawy i zdarzenia względem `anchor` z ADR 0008 i nie interpretuje `when` ani `then`.
+Opisz, że generator 2.6 czyta wyłącznie `given`, materializuje dostępy i zdarzenia względem `anchor` z ADR 0008 i nie interpretuje `when` ani `then`.
 
 - [ ] **Step 6: Commit**
 

@@ -20,15 +20,15 @@ import type { AppealOverview, LeaseOverview } from '@/types/api';
  *
  * Backend ma dziś wyłącznie `POST /api/v1/appeals/{id}/reject` — rozstrzygnięcie odwołania
  * (`POST /api/v1/appeals/{id}/decision`, zadanie 4.3C) jeszcze nie istnieje, a decyzja
- * o dzierżawie odsyła dzierżawy z odwołaniem `PENDING` właśnie tam (409, D13). Modal musi więc
+ * o dostępie odsyła dostępy z odwołaniem `PENDING` właśnie tam (409, D13). Modal musi więc
  * odrzucać wniosek realnym żądaniem, a ścieżkę zatwierdzenia zostawiać wyłączoną z wyjaśnieniem.
  *
- * Osobny plik od `DecisionModal.test.tsx`: tamten pilnuje ścieżki dzierżawy
+ * Osobny plik od `DecisionModal.test.tsx`: tamten pilnuje ścieżki dostępu
  * (`POST /api/v1/leases/{id}/decision`) i ma zostać nietknięty.
  */
 
-const pendingAppeal: AppealOverview = appealsFixture[0]; // dzierżawa 5, marta, status PENDING
-const otherLease: LeaseOverview = leasesFixture[0]; // dzierżawa 1 z fixture'ów, ACTIVE
+const pendingAppeal: AppealOverview = appealsFixture[0]; // dostęp 5, marta, status PENDING
+const otherLease: LeaseOverview = leasesFixture[0]; // dostęp 1 z fixture'ów, ACTIVE
 const REJECTION_JUSTIFICATION = 'Brak konkretnego planu użycia dostępu w tym tygodniu.';
 const REJECTION_REQUIRED = 'Uzasadnienie odrzucenia jest wymagane';
 const APPROVE_UNAVAILABLE =
@@ -45,7 +45,7 @@ beforeEach(() => {
 
 /**
  * Tryb odwołania nie potrzebuje już propa `lease` (wszystko niesie `AppealOverview`),
- * więc renderujemy go bez dzierżawy — to jest właśnie regresja, której pilnujemy.
+ * więc renderujemy go bez dostępu — to jest właśnie regresja, której pilnujemy.
  */
 async function renderAppealModal(onOpenChange: (open: boolean) => void = () => {}): Promise<void> {
   renderWithProviders(
@@ -59,7 +59,7 @@ async function renderAppealModal(onOpenChange: (open: boolean) => void = () => {
 }
 
 describe('DecisionModal w trybie odwołania', () => {
-  it('pokazuje kontekst odwołania z pól overview, bez udziału listy dzierżaw', async () => {
+  it('pokazuje kontekst odwołania z pól overview, bez udziału listy dostępów', async () => {
     await renderAppealModal();
 
     expect(screen.getByText('Rozpatrzenie odwołania')).toBeInTheDocument();
@@ -75,19 +75,19 @@ describe('DecisionModal w trybie odwołania', () => {
     expect(context).toHaveTextContent(/Poprzednie odwołania\s*0/);
   });
 
-  it('pokazuje historię odwołań tej dzierżawy i statystyki aktywności', async () => {
+  it('pokazuje historię odwołań tego dostępu i statystyki aktywności', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     await renderAppealModal();
 
     // Historia jest filtrowana po `lease_id` (zarówno zapytaniem, jak i fixture'ami),
-    // więc odwołania innych dzierżaw nie wchodzą.
+    // więc odwołania innych dostępów nie wchodzą.
     const history = await screen.findByTestId(HISTORY_TEST_ID);
     expect(within(history).getByText(pendingAppeal.justification)).toBeInTheDocument();
     expect(within(history).getByText('Oczekujące')).toBeInTheDocument();
     expect(within(history).queryByText(appealsFixture[1].justification)).not.toBeInTheDocument();
     expect(within(history).queryByText(appealsFixture[2].justification)).not.toBeInTheDocument();
 
-    // Liczniki pochodzą z `GET /api/v1/leases/{lease_id}/activity-stats` dla **tej** dzierżawy;
+    // Liczniki pochodzą z `GET /api/v1/leases/{lease_id}/activity-stats` dla **tego** dostępu;
     // liczby bierzemy z tego samego źródła zamiast wpisywać je na sztywno (shared/activity.json).
     const stats = await fetchActivityStats(pendingAppeal.lease_id);
     const activity = screen.getByTestId(ACTIVITY_TEST_ID);
@@ -118,7 +118,7 @@ describe('DecisionModal w trybie odwołania', () => {
         justification: REJECTION_JUSTIFICATION,
       });
     });
-    // Odrzucenie nie może iść żadną inną ścieżką (decyzja o odwołaniu ani o dzierżawie).
+    // Odrzucenie nie może iść żadną inną ścieżką (decyzja o odwołaniu ani o dostępie).
     expect(getLastDecisionRequest()).toBeNull();
     expect(getLastAppealRequest()).toBeNull();
 
@@ -153,7 +153,7 @@ describe('DecisionModal w trybie odwołania', () => {
     expect(getLastAppealRejection()).toBeNull();
   });
 
-  it('wyłącza zatwierdzenie odwołania i wyjaśnia brak endpointu decyzji o dzierżawie', async () => {
+  it('wyłącza zatwierdzenie odwołania i wyjaśnia brak endpointu decyzji o dostępie', async () => {
     const user = userEvent.setup();
     await renderAppealModal();
 
@@ -162,7 +162,7 @@ describe('DecisionModal w trybie odwołania', () => {
     expect(approve).toBeDisabled();
 
     // Szkic przedłużenia zostaje wybieralny (modal pokazuje, co odwołanie by dało),
-    // ale bez endpointu decyzji o dzierżawie nie może wysłać żadnego żądania.
+    // ale bez endpointu decyzji o dostępie nie może wysłać żadnego żądania.
     await user.click(screen.getByRole('button', { name: '2x' }));
     expect(approve).toBeDisabled();
     expect(getLastDecisionRequest()).toBeNull();

@@ -72,7 +72,7 @@ async def test_until_date_must_be_after_the_current_end(session: AsyncSession) -
 async def test_downscope_and_revoke_are_dispatched(session: AsyncSession) -> None:
     lease = await lease_of(session, Role.WRITE)
     vcs = RecordingVCS()
-    why = "Brak pushy w oknie dzierżawy"
+    why = "Brak pushy w oknie dostępu"
     await apply_lease_decision(session, vcs, lease=lease, now=NOW, actor_id=7,
                                decision=DecisionRequest(action=DecisionAction.DOWNSCOPE, justification=why))
     await apply_lease_decision(session, vcs, lease=lease, now=NOW, actor_id=7,

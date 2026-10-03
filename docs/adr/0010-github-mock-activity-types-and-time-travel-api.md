@@ -7,15 +7,15 @@
 ## Kontekst
 
 Zadanie 2 (mock GitHuba i aktywność) wymaga zdarzeń: push, merge, review, label i zmiana ustawień. ADR 0006 zna tylko trzy
-`ActionType` (push, review, komentarz), czyli dokładnie te, które odnawiają dzierżawę (ADR 0002). Mock ma jednak
-wyglądać jak prawdziwy strumień `/events`, a silnik dzierżaw nie może traktować merge'a ani labela jako dowodu użycia dostępu.
+`ActionType` (push, review, komentarz), czyli dokładnie te, które odnawiają dostęp (ADR 0002). Mock ma jednak
+wyglądać jak prawdziwy strumień `/events`, a silnik dostępów nie może traktować merge'a ani labela jako dowodu użycia dostępu.
 
 ## Decyzja
 
 1. `ActionType` dostaje trzy wartości: `PR_MERGE="PullRequestEvent"` (write), `ISSUE_LABEL="IssuesEvent"` (read),
    `REPO_SETTINGS="PublicEvent"` (admin; GitHub nie ma publicznego typu „zmiana ustawień”). Wymagane poziomy są w `_REQUIRED_PERMISSION`.
-2. **Odnawiają dzierżawę wyłącznie** akcje z `domain.roles.RENEWING_ACTIONS` (push, review, komentarz); pomocnik `is_renewing(action)`.
-   Silnik dzierżaw i baseline mają filtrować po tym zbiorze, a nie po „wystarczającym poziomie”.
+2. **Odnawiają dostęp wyłącznie** akcje z `domain.roles.RENEWING_ACTIONS` (push, review, komentarz); pomocnik `is_renewing(action)`.
+   Silnik dostępów i baseline mają filtrować po tym zbiorze, a nie po „wystarczającym poziomie”.
 3. Typy mock-only są dokładane przez `seed_activity_extras` (po `seed_demo_data`, w `prepare_database`), deterministycznie
    (stałe ziarno, godziny względem zegara) i idempotentnie. Seed kocika (scenariusze A–D, liczności baseline) pozostaje nietknięty;
    `legacy-reports` (scenariusz C) zostaje bez zdarzeń.

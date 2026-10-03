@@ -24,7 +24,7 @@ export function LeasesPage(): React.JSX.Element {
 
   return (
     <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">Dzierżawy</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Dostępy</h1>
       <LeaseInventory query={leasesQuery} onDecide={setSelectedLease} />
       <DecisionModal
         lease={selectedLease}
@@ -51,7 +51,7 @@ function LeaseInventory({ query, onDecide }: LeaseInventoryProps): React.JSX.Ele
   if (query.isError) {
     return (
       <Alert variant="destructive">
-        <AlertTitle>Nie udało się pobrać dzierżaw</AlertTitle>
+        <AlertTitle>Nie udało się pobrać dostępów</AlertTitle>
         <AlertDescription>Serwer nie odpowiedział. Spróbuj ponownie.</AlertDescription>
         <AlertAction>
           <Button variant="outline" size="sm" onClick={() => void query.refetch()}>
@@ -103,9 +103,9 @@ interface TeamFilterRowProps {
  * backend doda zespół, chip pojawi się sam. Wybór jedzie w `aria-pressed` (`TeamChip`), więc
  * stanu nie niesie kolor (`DESIGN.md` §6).
  *
- * Dlatego nie ma tu osobnego stanu pustego „brak dzierżaw w tym zespole”: każdy chip pochodzi
+ * Dlatego nie ma tu osobnego stanu pustego „brak dostępów w tym zespole”: każdy chip pochodzi
  * z tych samych wierszy, które filtruje, więc wybrany zespół zawsze ma co najmniej jedną
- * dzierżawę. Filtr nie może opróżnić tabeli — a gdyby kiedyś mógł (reset demo, przebudowa
+ * dostęp. Filtr nie może opróżnić tabeli — a gdyby kiedyś mógł (reset demo, przebudowa
  * inwentarza), chip wybranego zespołu zostaje na miejscu, więc jest czym wrócić do „Wszystkie”.
  */
 function TeamFilterRow({ leases, selected, onSelect }: TeamFilterRowProps): React.JSX.Element {
@@ -144,7 +144,7 @@ function TeamFilterRow({ leases, selected, onSelect }: TeamFilterRowProps): Reac
 function LeaseTableSkeleton(): React.JSX.Element {
   return (
     <div role="status" className="flex flex-col gap-2">
-      <span className="sr-only">Wczytywanie dzierżaw…</span>
+      <span className="sr-only">Wczytywanie dostępów…</span>
       <Skeleton aria-hidden className="h-10 w-full" />
       {SKELETON_ROWS.map((row: number): React.JSX.Element => (
         <Skeleton key={row} aria-hidden className="h-9 w-full" />

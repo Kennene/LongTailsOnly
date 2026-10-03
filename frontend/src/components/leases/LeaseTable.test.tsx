@@ -8,7 +8,7 @@ import { initialsFrom } from '@/lib/userInitials';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import type { LeaseOverview } from '@/types/api';
 
-/** Dzierżawa `kamil-dev` w `payment-service` — reprezentant zespołu DEV. */
+/** Dostęp `kamil-dev` w `payment-service` — reprezentant zespołu DEV. */
 const DEV_LEASE: LeaseOverview = leasesFixture[0];
 const ADMIN_LEASE: LeaseOverview = leasesFixture.filter(
   (lease: LeaseOverview): boolean => lease.current_role === 'admin',
@@ -30,7 +30,7 @@ function columnIndex(name: string): number {
   return headers().findIndex((cell: HTMLElement): boolean => cell.textContent === name);
 }
 
-/** Komórki wiersza konkretnej dzierżawy. */
+/** Komórki wiersza konkretnego dostępu. */
 function cellsFor(lease: LeaseOverview): HTMLElement[] {
   const row: HTMLElement = screen
     .getAllByRole('row')

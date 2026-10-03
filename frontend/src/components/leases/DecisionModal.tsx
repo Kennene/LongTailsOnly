@@ -37,8 +37,8 @@ export interface DecisionModalProps {
   /**
    * Odwołanie do rozpatrzenia (UC-3). Gdy podane, modal wchodzi w tryb odwołania i renderuje
    * `DecisionModalAppeal` — z odrzuceniem przez `POST /api/v1/appeals/{id}/reject`. Cały kontekst
-   * (osoba, repozytorium, rola, pozostałe dni) niesie `AppealOverview`, więc dzierżawa nie jest
-   * wtedy potrzebna. Domyślnie `null` — ścieżka decyzji o dzierżawie bez zmian.
+   * (osoba, repozytorium, rola, pozostałe dni) niesie `AppealOverview`, więc dostęp nie jest
+   * wtedy potrzebna. Domyślnie `null` — ścieżka decyzji o dostępie bez zmian.
    */
   appeal?: AppealOverview | null;
 }
@@ -53,12 +53,12 @@ export function DecisionModal({
   onOpenChange,
   appeal = null,
 }: DecisionModalProps): React.JSX.Element {
-  // Tryb odwołania nie potrzebuje dzierżawy; tryb dzierżawy nie rusza się bez niej.
+  // Tryb odwołania nie potrzebuje dostępu; tryb dostępu nie rusza się bez niego.
   const isOpen: boolean = open && (appeal !== null || lease !== null);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      {/* `key` czyści wybór i błędy przy każdej zmianie dzierżawy/odwołania i ponownym otwarciu. */}
+      {/* `key` czyści wybór i błędy przy każdej zmianie dostępu/odwołania i ponownym otwarciu. */}
       {isOpen && appeal !== null ? (
         <DecisionModalAppeal
           appeal={appeal}
@@ -82,7 +82,7 @@ interface LeaseDecisionFormProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** Tryb dzierżawy: decyzja idzie przez `POST /api/v1/leases/{id}/decision`. */
+/** Tryb dostępu: decyzja idzie przez `POST /api/v1/leases/{id}/decision`. */
 function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): React.JSX.Element {
   const clock = useSimulatedClock();
   const decision = useLeaseDecision();
@@ -143,7 +143,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   return (
     <DialogContent className="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Decyzja o dzierżawie</DialogTitle>
+        <DialogTitle>Decyzja o dostępie</DialogTitle>
         <DialogDescription>{`${lease.user.name} (${lease.user.login})`}</DialogDescription>
       </DialogHeader>
 

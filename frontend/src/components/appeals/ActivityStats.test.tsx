@@ -13,7 +13,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import type { ActivityEventRead, LeaseActivityStats, LeaseOverview } from '@/types/api';
 
 /**
- * Dowód użycia dzierżawy (UC-3) w kształcie **kontraktu** `LeaseActivityStats`
+ * Dowód użycia dostępu (UC-3) w kształcie **kontraktu** `LeaseActivityStats`
  * (`backend/app/schemas/lease.py`, krok 3.6) — nie w kształcie, który frontend wymyślił przed
  * dostarczeniem endpointu. Panel jest prezentacją: nie liczy niczego, tylko pokazuje liczniki
  * `push_count` / `review_count` / `comment_count` oraz okno (`window_days`, `last_activity_at`).
@@ -27,7 +27,7 @@ const LEASE_ID = 1;
 const LAST_ACTIVITY = '2026-10-02T10:00:00Z';
 const OLDER_THAN_WINDOW = '2026-08-01T10:00:00Z';
 const EMPTY_WINDOW_MESSAGE =
-  'Brak pushów, review i komentarzy w ostatnich 30 dniach — ta dzierżawa nie ma żadnej aktywności.';
+  'Brak pushów, review i komentarzy w ostatnich 30 dniach — ten dostęp nie ma żadnej aktywności.';
 const STALE_ACTIVITY_MESSAGE =
   'Ostatnia aktywność jest starsza niż 30 dni — w tym oknie nie ma dowodu użycia.';
 
@@ -62,7 +62,7 @@ function findIdleLease(): LeaseOverview {
       ),
   );
   if (lease === undefined) {
-    throw new Error('Fixture dzierżaw nie zawiera pary (user, repo) bez ani jednego zdarzenia');
+    throw new Error('Fixture dostępów nie zawiera pary (user, repo) bez ani jednego zdarzenia');
   }
 
   return lease;

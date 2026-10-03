@@ -20,9 +20,9 @@ import { leasesFixture } from './leases';
  * a nie z wymyślonej listy osób i repozytoriów.
  *
  * Reguły odwzorowują backend (`app/domain/insights.py::build_graph_layout` +
- * `PermissionGraph.from_layout`), więc graf nie rozjedzie się z tabelą dzierżaw: węzły to
+ * `PermissionGraph.from_layout`), więc graf nie rozjedzie się z tabelą dostępów: węzły to
  * zespoły, osoby i repozytoria, krawędź `membership` łączy osobę z zespołem, a krawędź `lease` —
- * osobę z repozytorium, niosąc rolę, status i rekomendację dzierżawy. `animated` zapala się dla
+ * osobę z repozytorium, niosąc rolę, status i rekomendację dostępu. `animated` zapala się dla
  * statusów wymagających reakcji (`WARNING`, `EXPIRED`).
  *
  * `position` jest w kontrakcie wymagane, więc dokładamy je od razu układem kolumnowym

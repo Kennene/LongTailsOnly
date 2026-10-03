@@ -38,11 +38,11 @@ type BadgeMeta = Omit<BadgeStyle, 'className'> & { colour: string };
 /**
  * Ikony niosą **rangę**, nie dekorację: `Clock` mówi „termin ucieka”, `Ban` jest jedyną akcją
  * nieodwracalną, a `Shield`/`ShieldOff` trzymają razem parę break-glass. `CircleCheck`
- * i `CheckCircle2` są świadomie różne — status mówi, czym dzierżawa *jest*, rekomendacja, co *zrobić*.
+ * i `CheckCircle2` są świadomie różne — status mówi, czym dostęp *jest*, rekomendacja, co *zrobić*.
  */
 const STATUS_META: Record<LeaseStatus, BadgeMeta> = {
   ACTIVE: {
-    label: 'Aktywna',
+    label: 'Aktywny',
     colour: 'border-status-active-border bg-status-active-subtle text-status-active',
     icon: CircleCheck,
     slug: 'circle-check',
@@ -54,20 +54,20 @@ const STATUS_META: Record<LeaseStatus, BadgeMeta> = {
     slug: 'clock',
   },
   EXPIRED: {
-    label: 'Wygasła',
+    label: 'Wygasł',
     colour: 'border-status-expired-border bg-status-expired-subtle text-status-expired',
     icon: CircleX,
     slug: 'circle-x',
   },
   // Admin (break-glass) i odebrany dostęp nie czekają na decyzję, więc zostają neutralne (jak `KEEP`).
   PERMANENT: {
-    label: 'Stała (admin)',
+    label: 'Stały (admin)',
     colour: 'border-border bg-muted text-muted-foreground',
     icon: Shield,
     slug: 'shield',
   },
   REVOKED: {
-    label: 'Odebrana',
+    label: 'Odebrany',
     colour: 'border-border bg-muted text-muted-foreground line-through',
     icon: ShieldOff,
     slug: 'shield-off',
