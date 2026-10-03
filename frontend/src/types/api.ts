@@ -76,6 +76,25 @@ export interface AppealRead {
   user_id: number;
 }
 /**
+ * Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0010 §4).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "AuditEntry".
+ */
+export interface AuditEntry {
+  action: string;
+  actor_id: number | null;
+  actor_login: string | null;
+  actor_type: ActorType;
+  details: {
+    [k: string]: unknown;
+  };
+  id: number;
+  justification: string | null;
+  target: string;
+  timestamp: string;
+}
+/**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "AuditLogRead".
  */

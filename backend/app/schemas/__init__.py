@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 from app.schemas.activity import ActivityEventRead
 from app.schemas.appeal import AppealCreate, AppealRead
-from app.schemas.audit import AuditLogRead
+from app.schemas.audit import AuditEntry, AuditLogRead
 from app.schemas.baseline import BaselineEntry
 from app.schemas.decision import DecisionRequest, Extension
 from app.schemas.lease import LeaseOverview, LeaseRead
@@ -14,10 +14,11 @@ CONTRACT_REQUEST_MODELS: list[type[BaseModel]] = [AppealCreate, DecisionRequest,
 CONTRACT_RESPONSE_MODELS: list[type[BaseModel]] = [
     TeamRead, UserRead, RepositoryRead, LeaseRead, LeaseOverview, ActivityEventRead,
     AppealRead, AuditLogRead, BaselineEntry, ClockRead, DemoResetResult,
+    AuditEntry,
 ]
 
 __all__ = [
-    "ActivityEventRead", "AppealCreate", "AppealRead", "AuditLogRead", "BaselineEntry",
+    "ActivityEventRead", "AppealCreate", "AppealRead", "AuditEntry", "AuditLogRead", "BaselineEntry",
     "ClockRead", "CONTRACT_REQUEST_MODELS", "CONTRACT_RESPONSE_MODELS", "DecisionRequest",
     "DemoResetResult", "Extension", "LeaseOverview", "LeaseRead", "RepositoryRead", "TeamRead",
     "TimeTravelRequest", "UserRead",

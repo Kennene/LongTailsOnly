@@ -134,6 +134,74 @@
       "title": "AppealStatus",
       "type": "string"
     },
+    "AuditEntry": {
+      "description": "Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0010 \u00a74).",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "actor_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_login": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_type": {
+          "$ref": "#/$defs/ActorType"
+        },
+        "details": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "justification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "actor_type",
+        "actor_id",
+        "action",
+        "target",
+        "details",
+        "justification",
+        "actor_login"
+      ],
+      "title": "AuditEntry",
+      "type": "object"
+    },
     "AuditLogRead": {
       "properties": {
         "action": {

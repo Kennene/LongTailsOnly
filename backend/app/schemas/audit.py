@@ -14,3 +14,9 @@ class AuditLogRead(ORMModel):
     target: str
     details: dict[str, Any]
     justification: str | None
+
+
+class AuditEntry(AuditLogRead):
+    """Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0010 §4)."""
+
+    actor_login: str | None
