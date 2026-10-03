@@ -1,4 +1,4 @@
-"""Team baseline (ADR 0005, ADR 0010 §5.1). Pure function: no database, no clock."""
+"""Team baseline (ADR 0005, ADR 0011 §5.1). Pure function: no database, no clock."""
 
 from collections import defaultdict
 from collections.abc import Collection, Iterable

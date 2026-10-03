@@ -56,7 +56,7 @@ class DecisionAction(StrEnum):
 
 
 class AuditAction(StrEnum):
-    """What an audit_logs row records (ADR 0010 §2); the column stays text, writers must use this enum."""
+    """What an audit_logs row records (ADR 0011 §2); the column stays text, writers must use this enum."""
 
     LEASE_EXTENDED = "LEASE_EXTENDED"
     LEASE_DOWNSCOPED = "LEASE_DOWNSCOPED"

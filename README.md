@@ -20,7 +20,7 @@ Projekt na hackathon **Hack Yeah 2026** (kategoria Defence + nagroda Prelint).
 | Osoba | Stan |
 | --- | --- |
 | 1 | ✅ Kroki 1.1–1.6 w `main` (PR #5) |
-| 2 | 🟡 Gałąź `github_mock` — do przeniesienia na model z `main` |
+| 2 | ✅ Mock GitHuba, aktywność i time-travel w `main` (PR #4, ADR 0010) |
 | 3 | ⏳ Nie zaczęte w repo — **blokuje dashboard i graf (linia cięcia demo)** |
 | 4 | ✅ 4.1, 4.2, 4.3 (złożenie i odrzucenie), 4.4, 4.5, 4.6 (logika i typy), zegar symulacji, poprawki po audycie kodu; ⏳ 4.3C i 4.6B czekają na Osobę 3. Szczegóły: [`docs/osoba-4.md`](docs/osoba-4.md) |
 | 5, 6 | ⏳ Nie zaczęte w repo |
@@ -45,7 +45,7 @@ Przy pierwszym starcie serwer sam buduje bazę i wgrywa dane demo (19 osób, 10 
 ```
 backend/            FastAPI + SQLAlchemy + Alembic (app/, tests/, contract/schema.json)
 frontend/src/types/ typy TS generowane z kontraktu backendu (ADR 0009) — nie edytować ręcznie
-docs/adr/           decyzje architektoniczne (ADR 0001–0010)
+docs/adr/           decyzje architektoniczne (ADR 0001–0011)
 docs/superpowers/   plany zadań (plans/) i specyfikacje (specs/)
 docs/osoba-4.md     stan i kontrakty Osoby 4
 ```
@@ -53,5 +53,5 @@ docs/osoba-4.md     stan i kontrakty Osoby 4
 ## Jak pracujemy
 
 - Metodologia i zasady dla agentów: [`AGENTS.md`](AGENTS.md), standardy kodu: [`CODING_STANDARDS.md`](CODING_STANDARDS.md).
-- Decyzje zapisujemy w ADR-ach. Kontrakt API (Pydantic → TypeScript) opisuje ADR 0009, a kontrakty Osoby 4 — ADR 0010.
+- Decyzje zapisujemy w ADR-ach. Kontrakt API (Pydantic → TypeScript) opisuje ADR 0009, a kontrakty Osoby 4 — ADR 0011.
 - Jedno zadanie = jedna gałąź = jeden PR do `main`.

@@ -1,4 +1,4 @@
-"""Appeals with intentional friction (ADR 0005, ADR 0010 §5.3-5.6)."""
+"""Appeals with intentional friction (ADR 0005, ADR 0011 §5.3-5.6)."""
 
 from collections.abc import Sequence
 from datetime import datetime, timedelta
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.appeal_rules import JustificationError, ensure_new_justification, is_appealable
 from app.domain.enums import ActorType, AppealStatus, AuditAction
 from app.domain.lease_window import days_remaining
+from app.domain.roles import RENEWING_ACTIONS
 from app.models import ActivityEvent, Appeal, Lease, User
 from app.schemas.appeal import AppealOverview, AppealRead
 from app.schemas.people import UserRead
@@ -92,7 +93,8 @@ async def _overview(session: AsyncSession, appeal: Appeal, history: Sequence[Row
     window_start = now - timedelta(days=lease.repository.default_lease_duration_days)
     recent = await session.scalar(select(func.count()).select_from(ActivityEvent).where(
         ActivityEvent.user_id == appeal.user_id, ActivityEvent.repo_id == appeal.repo_id,
-        ActivityEvent.timestamp >= window_start, ActivityEvent.timestamp <= now))
+        ActivityEvent.action_type.in_(RENEWING_ACTIONS), ActivityEvent.timestamp >= window_start,
+        ActivityEvent.timestamp <= now))
     order = (appeal.created_at, appeal.id)
     return AppealOverview(
         **AppealRead.model_validate(appeal).model_dump(),

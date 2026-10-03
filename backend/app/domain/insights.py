@@ -1,4 +1,4 @@
-"""Ready-made view data (ADR 0010 §5.9-5.10): dashboard counters and the permission graph layout.
+"""Ready-made view data (ADR 0011 §5.9-5.10): dashboard counters and the permission graph layout.
 
 Pure functions: the service passes in lease and member snapshots, the browser computes nothing.
 """

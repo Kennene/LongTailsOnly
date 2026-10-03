@@ -17,6 +17,6 @@ class AuditLogRead(ORMModel):
 
 
 class AuditEntry(AuditLogRead):
-    """Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0010 §4)."""
+    """Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0011 §4)."""
 
     actor_login: str | None

@@ -1,4 +1,4 @@
-"""Team baseline and onboarding (ADR 0010 §5.1-5.2)."""
+"""Team baseline and onboarding (ADR 0011 §5.1-5.2)."""
 
 from datetime import datetime, timedelta
 
@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.baseline_rules import BASELINE_WINDOW_DAYS, MemberActivity, compute_baseline
 from app.domain.enums import ActorType, AuditAction
+from app.domain.roles import RENEWING_ACTIONS
 from app.models import ActivityEvent, Lease, Repository, Team, User
 from app.ports.vcs_provider import VCSProvider
 from app.schemas.baseline import BaselineEntry, OnboardingProposal
@@ -29,7 +30,8 @@ async def get_team_baseline(
     member_ids = set(await session.scalars(
         select(User.id).where(User.team_id == team.id, User.is_admin.is_(False))))
     events = await session.scalars(select(ActivityEvent).where(
-        ActivityEvent.user_id.in_(member_ids), ActivityEvent.timestamp >= now - timedelta(days=window_days)))
+        ActivityEvent.user_id.in_(member_ids), ActivityEvent.action_type.in_(RENEWING_ACTIONS),
+        ActivityEvent.timestamp >= now - timedelta(days=window_days)))
     activity = [MemberActivity(e.user_id, e.repo_id, e.required_permission, e.timestamp) for e in events]
     candidates = compute_baseline(member_ids, activity, now, window_days)
     repos = {repo.id: repo for repo in await session.scalars(

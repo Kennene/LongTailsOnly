@@ -33,7 +33,7 @@ class AppealRejectRequest(BaseModel):
 
 
 class AppealOverview(AppealRead):
-    """Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0010 §4)."""
+    """Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0011 §4)."""
 
     user: UserRead
     repository: RepositoryRead

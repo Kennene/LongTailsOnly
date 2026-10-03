@@ -1,4 +1,4 @@
-"""Append-only audit trail (M6, ADR 0010 §2, §5.7-5.8): this module only writes and reads."""
+"""Append-only audit trail (M6, ADR 0011 §2, §5.7-5.8): this module only writes and reads."""
 
 from datetime import datetime
 from typing import Any

@@ -1,7 +1,7 @@
-# ADR 0010: Kontrakty Osoby 4 — standard zespołu, onboarding, odwołania, audyt i dane widoków
+# ADR 0011: Kontrakty Osoby 4 — standard zespołu, onboarding, odwołania, audyt i dane widoków
 
 **Status:** Proponowany (do akceptacji zespołu) · **Autor:** Durczkos (Osoba 4) · **Data:** 2026-10-03
-**Doprecyzowuje:** ADR 0005, ADR 0007 (pkt 5, 9), ADR 0009 · **Opiera się na:** kodzie w `main` po PR #5 (kroki 1.1–1.6)
+**Doprecyzowuje:** ADR 0005, ADR 0007 (pkt 5, 9), ADR 0009 · **Opiera się na:** kodzie w `main` po PR #5 (kroki 1.1–1.6) i PR #4 (mock GitHuba Osoby 2, ADR 0010)
 
 ## Kontekst
 
@@ -9,7 +9,7 @@ Osoba 4 odpowiada za kroki 4.1–4.6: standard zespołu, onboarding, odwołania,
 
 Stan `main`:
 - Kontrakt danych z ADR 0006–0009 jest gotowy: `Role`, tabela `teams`, `Lease.is_active`, `AuditLog.actor_id: int`, `details: dict`, migracje Alembic i typy TS generowane z `CONTRACT_*_MODELS`.
-- **Nie ma** portu VCS ani mocka GitHuba. Gałąź `github_mock` Osoby 2 nie jest zrebase'owana na `main` i ma własny model danych.
+- Mock GitHuba Osoby 2 jest w `main` (PR #4, ADR 0010), ale nie implementuje jeszcze portu VCS z §3.
 - **Nie ma** silnika dzierżaw Osoby 3 (statusy, rekomendacje, decyzje).
 - `DecisionAction` nie ma `REJECT`.
 - `Settings` nie zna loginu administratora.
@@ -88,18 +88,18 @@ Nowe DTO (rejestrowane w `CONTRACT_*_MODELS`, typy TS generowane według ADR 000
 - `AppealRejectRequest {justification}` — te same ograniczenia co w `AppealCreate`
 - `AppealOverview` = `AppealRead` + `{user: UserRead, repository: RepositoryRead, lease_role, lease_expires_at, lease_is_active, days_remaining, recent_activity_count, previous_appeals}`
 - `AuditEntry` = `AuditLogRead` + `{actor_login: str | null}`
-- `SimulationClock {simulated_now, offset_days}`, np. `{"simulated_now": "2026-10-18T15:24:00Z", "offset_days": 15}`. Router `app/api/v1/simulation.py` jest wspólny: Osoba 2 dopisuje do niego `POST /simulation/time-travel` (2.5)
+- `SimulationClock {simulated_now, offset_days}`, np. `{"simulated_now": "2026-10-18T15:24:00Z", "offset_days": 15}`. Endpoint jest dopisany do routera Osoby 2 `app/api/v1/simulation.py` (obok jej `GET/POST/DELETE /simulation/time-travel`, ADR 0010)
 - `DashboardStats {generated_at, active, warning, expired, permanent, revoked, downscope_recommendations, revoke_recommendations, pending_appeals, onboarding_candidates}`
 - `PermissionGraph {nodes: GraphNode[], edges: GraphEdge[]}`, `GraphNode {id, type: "team"|"user"|"repo", position: {x, y}, data: {label, team, is_admin}}`, `GraphEdge {id, source, target, label, animated, data: {kind: "membership"|"lease", role, status, recommendation}}` — format wprost do `<ReactFlow nodes edges />`
 
 ### 5. Reguły
 
-1. **Standard zespołu (4.1):** członkowie = `team_id == T` i `is_admin == False`. Okno to `[now - 30 dni, now]`, obie granice włącznie. Repozytorium wchodzi, gdy `2 × aktywni >= członkowie`. Rola: `write`, gdy co najmniej połowa aktywnych ma w oknie zdarzenie `write`; w przeciwnym razie `read`; nigdy `admin` (pilnuje tego też walidator `BaselineEntry`).
+1. **Standard zespołu (4.1):** liczą się wyłącznie akcje odnawiające (`RENEWING_ACTIONS`: push, review, komentarz — ADR 0010 Osoby 2); merge, label i zmiana ustawień z mocka nie są dowodem użycia. Członkowie = `team_id == T` i `is_admin == False`. Okno to `[now - 30 dni, now]`, obie granice włącznie. Repozytorium wchodzi, gdy `2 × aktywni >= członkowie`. Rola: `write`, gdy co najmniej połowa aktywnych ma w oknie zdarzenie `write`; w przeciwnym razie `read`; nigdy `admin` (pilnuje tego też walidator `BaselineEntry`).
 2. **Onboarding (4.2):** zespół wynika z użytkownika. `to_grant` = pozycje standardu bez aktywnej (`is_active`) dzierżawy tej osoby, więc odebrany dostęp wraca do propozycji. Onboarding **nigdy nie podnosi** istniejącej aktywnej dzierżawy (np. `read` → `write`): podniesienie uprawnień to osobna, świadoma decyzja admina. `apply` jest idempotentne i zapisuje `BASELINE_APPLIED` (cel `slug:login`, `details.granted = {repo: rola}`) tylko wtedy, gdy coś nadano.
 3. **Kwalifikacja odwołania (4.3):** odwołanie przysługuje, gdy dzierżawa jest nieaktywna (odebrana) albo gdy nie jest `admin` i do wygaśnięcia zostało `<= WARNING_WINDOW_DAYS` (także już wygasła). Ta reguła liczy na surowych polach `Lease`, więc nie czeka na statusy Osoby 3. Granica 7 dni pochodzi z `lease_window.py`, wspólnego z Osobą 3.
 4. **Uzasadnienie (4.3):** puste po `strip` → 422 (Pydantic oraz serwis). Powtórzone po normalizacji (`strip`, zwinięcie białych znaków, `casefold`) względem **każdego** wcześniejszego odwołania tej osoby → 422 (ADR 0005, celowe tarcie). Najwyżej jedno `PENDING` na dzierżawę: sprawdza to serwis, a przy równoczesnych żądaniach dodatkowo częściowy unikalny indeks `uq_appeals_one_pending_per_lease` (migracja `0003`), co kończy się 409.
 5. **Rozpatrzenie (4.3):** odrzucenie (`/reject`) nie zmienia dzierżawy, ustawia `REJECTED` i zapisuje `APPEAL_REJECTED`. Decyzja (`/decision`, po 3.6): `EXTEND` → `APPROVED`; `DOWNSCOPE`/`REVOKE` → `REJECTED` (użytkownik nie dostał przedłużenia, a akcję zapisuje audyt Osoby 3). Zawsze `resolved_at = now`. Decyzja Osoby 3 na dzierżawie z odwołaniem `PENDING` idzie przez `/appeals/{id}/decision`, bo frontend sprawdza to przez `GET /appeals?lease_id=&status=PENDING`.
-6. **`previous_appeals`** liczy wcześniejsze odwołania tej osoby według `(created_at, id)`, bo przy zamrożonym zegarze symulacji czasy bywają równe. **`recent_activity_count`** to zdarzenia tej osoby w tym repo w oknie `default_lease_duration_days`. **`days_remaining`** w `AppealOverview` jest `null` dla odebranego dostępu.
+6. **`previous_appeals`** liczy wcześniejsze odwołania tej osoby według `(created_at, id)`, bo przy zamrożonym zegarze symulacji czasy bywają równe. **`recent_activity_count`** to akcje odnawiające (`RENEWING_ACTIONS`) tej osoby w tym repo w oknie `default_lease_duration_days`. **`days_remaining`** w `AppealOverview` jest `null` dla odebranego dostępu.
 7. **Audyt tylko do dopisywania (4.5):** migracja `0002` zakłada wyzwalacze SQLite `BEFORE UPDATE`/`BEFORE DELETE` na `audit_logs` z `RAISE(ABORT, 'audit_logs is append-only')`. Działają także na surowy SQL. Reset demo (`downgrade base` → `upgrade head`) działa, bo `downgrade` najpierw usuwa wyzwalacze, a `DROP TABLE` ich nie uruchamia. **Uwaga dla przyszłych migracji:** `batch_alter_table` na `audit_logs` odtwarza tabelę w SQLite i gubi wyzwalacze, więc taka migracja musi je założyć ponownie (pilnuje tego test `test_audit_logs_reject_raw_update_and_delete` na `head`).
 8. **Filtry audytu (4.5):** `actor_type`, `action`, `actor_login` to równość. `target` to fragment bez rozróżniania wielkości liter, a `%` i `_` są dosłowne. `since`/`until` to daty ze strefą (zakres domknięty). `limit` mieści się w przedziale 1–1000, domyślnie 200. Sortowanie: `timestamp DESC, id DESC`.
 9. **Liczniki dashboardu (4.6):** `revoked` = nieaktywne. `permanent` = aktywne `admin`. `active`/`warning`/`expired` = status Osoby 3 dla aktywnych dzierżaw nie-admin. Rekomendacje liczone tylko dla aktywnych dzierżaw nie-admin. `pending_appeals` = `PENDING`. `onboarding_candidates` = osoby z zespołem, bez flagi admina i bez aktywnej dzierżawy.
@@ -121,7 +121,7 @@ Jeśli Osoba 3 wybierze inne nazwy, aktualizuje ten paragraf, a Osoba 4 dostosow
 
 - **O1 (Osoba 3):** świeżo nadana dzierżawa (onboarding) bez zdarzeń nie powinna od razu dostawać rekomendacji `REVOKE`, bo zawyża to licznik i podsuwa „Odbierz” nowej osobie. Propozycja: dla `granted_at > now - lease_days` bez zdarzeń zwracać `KEEP`. Szkic reguł do wykorzystania: `docs/superpowers/specs/archive/2026-10-03-draft-lease-rules-for-person-3.md`.
 - **O2 (Osoba 3):** `LeaseStatus` ma trzy wartości. Status dzierżaw `admin` i nieaktywnych w `LeaseOverview` należy do Osoby 3. Liczniki z §5.9 go nie potrzebują.
-- **O3 (Osoba 2):** `github_mock` musi zostać zrebase'owany na model z `main` (`Role`, `is_active` zamiast `DELETE`) i implementować `VCSProvider` z §3.
+- **O3 (Osoba 2):** mock jest w `main`; zostało dodać adapter `VCSProvider` (§3) na bazie `GitHubCollaboratorService` i podmienić `get_vcs_provider`. Do tego czasu działa adapter tymczasowy.
 - **O4 (zespół):** ADR 0007 pkt 5 deklaruje append-only także dla `activity_events`. Wyzwalacze z §5.7 obejmują na razie tylko `audit_logs`, bo `activity_events` są w gestii Osoby 2.
 
 ## Konsekwencje

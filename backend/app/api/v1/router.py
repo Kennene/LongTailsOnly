@@ -1,4 +1,4 @@
-"""API v1 router (ADR 0010 §1): each feature adds one include_router line here."""
+"""API v1 router (ADR 0011 §1): each feature adds one include_router line here."""
 
 from fastapi import APIRouter
 

@@ -1,4 +1,4 @@
-"""at most one PENDING appeal per lease (ADR 0010 §5.4)
+"""at most one PENDING appeal per lease (ADR 0011 §5.4)
 
 Revision ID: 0003
 Revises: 0002

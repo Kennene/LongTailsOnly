@@ -1,7 +1,7 @@
 # Osoba 4 (Durczkos) — standard zespołu, onboarding, odwołania, audyt, dane dla widoków
 
-> **Stan na: 2026-10-03.** Testy backendu: `166 passed` (z poprawkami po audycie kodu). Kontrakt TS aktualny.
-> Kontrakty: [ADR 0010](adr/0010-person-4-baseline-appeals-audit-insights.md) · Plany: [`superpowers/plans/2026-10-03-p4-*.md`](superpowers/plans/2026-10-03-p4-overview.md)
+> **Stan na: 2026-10-03.** Testy backendu: `256 passed` (cały `main` z mockiem Osoby 2 + moje kroki + poprawki po audycie). Kontrakt TS aktualny.
+> Kontrakty: [ADR 0011](adr/0011-person-4-baseline-appeals-audit-insights.md) · Plany: [`superpowers/plans/2026-10-03-p4-*.md`](superpowers/plans/2026-10-03-p4-overview.md)
 
 ## 1. Stan kroków
 
@@ -17,6 +17,7 @@
 | 4.6B | Endpointy `GET /dashboard/stats`, `GET /graph` | ⏳ czeka na Osobę 3 (3.6) — **linia cięcia demo** | — |
 | + | Zegar symulacji: który dzień demo | ✅ | `feat/simulation-clock` |
 | + | Poprawki po audycie kodu (wyścig odwołań, odebrany dostęp, ochrona admina w adapterze) | ✅ | `fix/p4-review` |
+| + | Dopasowanie do mocka Osoby 2: tylko akcje odnawiające, zegar w jej routerze, ADR 0010 → 0011 | ✅ | `fix/p4-align-github-mock` |
 
 Gałęzie tworzą stos: każda wyrasta z poprzedniej, w kolejności z tabeli. PR-y scalamy w tej samej kolejności, a po scaleniu jednego następny ma już czysty diff.
 
@@ -36,15 +37,16 @@ Gałęzie tworzą stos: każda wyrasta z poprzedniej, w kolejności z tabeli. PR
 
 Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `OnboardingProposal`, `AppealOverview`, `AppealRejectRequest`, `AuditEntry`, `DashboardStats`, `PermissionGraph`.
 
-## 3. Najważniejsze decyzje (pełna treść: ADR 0010)
+## 3. Najważniejsze decyzje (pełna treść: ADR 0011)
 
 1. **Wpisów audytu nie da się zmienić ani usunąć.** Pilnuje tego baza (wyzwalacze w migracji `0002`), także przy surowym SQL. Reset demo dalej działa.
 2. **Wpisy do audytu tylko przez `write_audit_event`**, a opis celu dzierżawy przez `lease_target`.
-3. **Dostęp nadajemy tylko przez port `VCSProvider`.** Do czasu mocka Osoby 2 działa tymczasowy adapter, w którym dzierżawa = kolaborator.
+3. **Dostęp nadajemy tylko przez port `VCSProvider`.** Mock Osoby 2 jest w `main`, ale jeszcze nie implementuje portu, więc działa tymczasowy adapter (dzierżawa = kolaborator).
 4. **Odwołanie przysługuje**, gdy dostęp odebrano albo wygasa w ciągu 7 dni (także już wygasł). Każde odwołanie wymaga **nowego** uzasadnienia: wielkość liter i spacje się nie liczą. Na jedną dzierżawę może czekać tylko jedno odwołanie; pilnuje tego też baza (migracja `0003`), więc podwójne kliknięcie daje 409.
 5. **Status odwołania:** przedłużenie → `APPROVED`; deeskalacja, odebranie albo odrzucenie → `REJECTED`.
 6. **Liczba 7 dni i „ile dni zostało”** są w jednym miejscu: `app/domain/lease_window.py`. Osoba 3 korzysta z tego samego.
 7. **Aktor „admin”** to konto z `Settings.admin_login` (domyślnie `tomasz-admin`), bo MVP nie ma logowania.
+8. **Jako dowód użycia liczą się tylko akcje odnawiające** (push, review, komentarz — `RENEWING_ACTIONS` z ADR 0010 Osoby 2); merge, label i zmiana ustawień z mocka nie.
 
 ## 4. Na co czekam
 
@@ -52,7 +54,7 @@ Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `Onboarding
 | --- | --- | --- |
 | Osoba 3 | `list_lease_overviews(session, now) -> list[LeaseOverview]` w `app/services/lease_service.py` | **Tak:** dashboard i graf (4.6B), czyli linia cięcia demo |
 | Osoba 3 | `apply_lease_decision(session, vcs, *, lease, decision, now, actor_id) -> Lease` w `app/services/decision_service.py` | **Tak:** rozpatrzenie odwołania decyzją (4.3C) |
-| Osoba 2 | mock GitHuba przeniesiony na model z `main`, z metodą `set_permission(owner, repo, username, role)` | Nie: mam adapter tymczasowy |
+| Osoba 2 | adapter `VCSProvider` na bazie jej `GitHubCollaboratorService` + podmiana `get_vcs_provider`; audyt `TIME_TRAVEL` | Nie: mam adapter tymczasowy |
 
 Gotowy kod i testy 4.3C i 4.6B są w planach (sprawdzone na zaślepkach: `169 passed`). Po 3.6 to około godziny pracy.
 
@@ -79,15 +81,12 @@ Szkic reguł: `docs/superpowers/specs/archive/2026-10-03-draft-lease-rules-for-p
 
 **Do Osoby 2 (Dawid)**
 
-Cześć! Twoja gałąź `github_mock` jest zbudowana na innym modelu danych niż `main`. Trzeba ją przenieść na `main`, czyli:
-- role z `Role` (`read`/`write`/`admin`), a nie zwykłe stringi;
-- **odebranie dostępu = `lease.is_active = False`**, a nie usuwanie wiersza;
-- zespoły są w tabeli `teams`.
+Cześć! Twój mock jest już w `main`, super. Z mojej strony zostały dwie małe rzeczy:
 
-Potem:
-- Twój mock ma mieć metodę `async def set_permission(owner, repo, username, role: Role) -> None` (port `app/ports/vcs_provider.py`). W `app/api/v1/deps.py` podmieniasz jedną funkcję, `get_vcs_provider`, żeby zwracała Twój mock zamiast mojego tymczasowego.
-- **`POST /api/v1/simulation/time-travel` dopisz do istniejącego routera** `app/api/v1/simulation.py`. Jest już tam `GET /api/v1/simulation/clock` zwracający `{"simulated_now", "offset_days"}`; zwracaj to samo.
-- **Time-travel zapisuj w audycie** przez `write_audit_event` z akcją `AuditAction.TIME_TRAVEL`.
+1. **Podepnij mock pod mój onboarding.** W `app/ports/vcs_provider.py` jest port z jedną metodą: `async def set_permission(owner, repo, username, role: Role) -> None`. Zrób mały adapter, który woła Twój `GitHubCollaboratorService` (rola domenowa → `to_github(role)`), a potem w `app/api/v1/deps.py` podmień **jedną funkcję**, `get_vcs_provider`, żeby zwracała Twój adapter zamiast mojego tymczasowego `DatabaseVCSAdapter`. Uwaga: Twój serwis robi `commit` w środku, a mój onboarding zapisuje audyt w tej samej transakcji. Nic się nie zepsuje, ale fajnie by było, gdyby adapter tylko robił `flush`.
+2. **Zapisuj time-travel w audycie:** `write_audit_event(..., action=AuditAction.TIME_TRAVEL, ...)` z `app/services/audit_service.py`.
+
+Dopisałem do Twojego routera `app/api/v1/simulation.py` jeden endpoint: `GET /api/v1/simulation/clock` → `{"simulated_now", "offset_days"}` (który dzień demo pokazać w panelu). Twoje `GET/POST/DELETE /time-travel` są nietknięte. Mój standard zespołu i licznik aktywności w odwołaniach filtrują Twoje `RENEWING_ACTIONS`, czyli merge'e, labele i zmiany ustawień się nie liczą (Twój ADR 0010).
 
 **Do Osoby 1 (Kocik)**
 
@@ -122,7 +121,7 @@ backend/app/domain/      baseline_rules.py, appeal_rules.py, lease_window.py, in
 backend/app/services/    errors.py, audit_service.py, baseline_service.py, appeal_service.py
 backend/app/ports/       vcs_provider.py
 backend/app/adapters/    database_vcs.py              (tymczasowy, do podmiany przez Osobę 2)
-backend/app/api/v1/      deps.py, errors.py, router.py, audit.py, baseline.py, onboarding.py, appeals.py, simulation.py
+backend/app/api/v1/      deps.py, errors.py, router.py, audit.py, baseline.py, onboarding.py, appeals.py (+ GET /clock w simulation.py Osoby 2)
 backend/app/schemas/     insights.py + dopiski w audit.py, baseline.py, appeal.py, simulation.py, __init__.py
 backend/alembic/versions/0002_audit_logs_append_only.py, 0003_one_pending_appeal_per_lease.py
 backend/tests/           factories.py, fakes.py + testy domain/ services/ api/ adapters/ db/ schemas/
