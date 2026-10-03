@@ -1,6 +1,6 @@
 # Osoba 4 (Durczkos) — standard zespołu, onboarding, odwołania, audyt, dane dla widoków
 
-> **Stan na: 2026-10-03.** Testy backendu: `158 passed` po krokach 4.x, `160 passed` z endpointem zegara. Kontrakt TS aktualny.
+> **Stan na: 2026-10-03.** Testy backendu: `166 passed` (z poprawkami po audycie kodu). Kontrakt TS aktualny.
 > Kontrakty: [ADR 0010](adr/0010-person-4-baseline-appeals-audit-insights.md) · Plany: [`superpowers/plans/2026-10-03-p4-*.md`](superpowers/plans/2026-10-03-p4-overview.md)
 
 ## 1. Stan kroków
@@ -16,6 +16,7 @@
 | 4.6A | Liczniki dashboardu, układ grafu, typy dla frontu | ✅ | `feat/4-6-insights-core` |
 | 4.6B | Endpointy `GET /dashboard/stats`, `GET /graph` | ⏳ czeka na Osobę 3 (3.6) — **linia cięcia demo** | — |
 | + | Zegar symulacji: który dzień demo | ✅ | `feat/simulation-clock` |
+| + | Poprawki po audycie kodu (wyścig odwołań, odebrany dostęp, ochrona admina w adapterze) | ✅ | `fix/p4-review` |
 
 Gałęzie tworzą stos: każda wyrasta z poprzedniej, w kolejności z tabeli. PR-y scalamy w tej samej kolejności, a po scaleniu jednego następny ma już czysty diff.
 
@@ -37,10 +38,10 @@ Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `Onboarding
 
 ## 3. Najważniejsze decyzje (pełna treść: ADR 0010)
 
-1. **Audyt nie da się zmienić ani usunąć.** Pilnuje tego baza (wyzwalacze w migracji `0002`), także przy surowym SQL. Reset demo dalej działa.
+1. **Wpisów audytu nie da się zmienić ani usunąć.** Pilnuje tego baza (wyzwalacze w migracji `0002`), także przy surowym SQL. Reset demo dalej działa.
 2. **Wpisy do audytu tylko przez `write_audit_event`**, a opis celu dzierżawy przez `lease_target`.
 3. **Dostęp nadajemy tylko przez port `VCSProvider`.** Do czasu mocka Osoby 2 działa tymczasowy adapter, w którym dzierżawa = kolaborator.
-4. **Odwołanie przysługuje**, gdy dostęp odebrano albo wygasa w ciągu 7 dni (także już wygasł). Każde odwołanie wymaga **nowego** uzasadnienia: wielkość liter i spacje się nie liczą.
+4. **Odwołanie przysługuje**, gdy dostęp odebrano albo wygasa w ciągu 7 dni (także już wygasł). Każde odwołanie wymaga **nowego** uzasadnienia: wielkość liter i spacje się nie liczą. Na jedną dzierżawę może czekać tylko jedno odwołanie; pilnuje tego też baza (migracja `0003`), więc podwójne kliknięcie daje 409.
 5. **Status odwołania:** przedłużenie → `APPROVED`; deeskalacja, odebranie albo odrzucenie → `REJECTED`.
 6. **Liczba 7 dni i „ile dni zostało”** są w jednym miejscu: `app/domain/lease_window.py`. Osoba 3 korzysta z tego samego.
 7. **Aktor „admin”** to konto z `Settings.admin_login` (domyślnie `tomasz-admin`), bo MVP nie ma logowania.
@@ -123,7 +124,7 @@ backend/app/ports/       vcs_provider.py
 backend/app/adapters/    database_vcs.py              (tymczasowy, do podmiany przez Osobę 2)
 backend/app/api/v1/      deps.py, errors.py, router.py, audit.py, baseline.py, onboarding.py, appeals.py, simulation.py
 backend/app/schemas/     insights.py + dopiski w audit.py, baseline.py, appeal.py, simulation.py, __init__.py
-backend/alembic/versions/0002_audit_logs_append_only.py
+backend/alembic/versions/0002_audit_logs_append_only.py, 0003_one_pending_appeal_per_lease.py
 backend/tests/           factories.py, fakes.py + testy domain/ services/ api/ adapters/ db/ schemas/
 ```
 

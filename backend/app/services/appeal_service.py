@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from datetime import datetime, timedelta
 
 from sqlalchemy import Row, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.appeal_rules import JustificationError, ensure_new_justification, is_appealable
@@ -17,6 +18,9 @@ from app.services.audit_service import lease_target, write_audit_event
 from app.services.errors import ServiceError
 
 
+PENDING_EXISTS = "This lease already has a pending appeal"
+
+
 def appeal_target(lease: Lease) -> str:
     return lease_target(lease.repository.owner, lease.repository.name, lease.user.login)
 
@@ -27,10 +31,8 @@ async def submit_appeal(session: AsyncSession, *, lease_id: int, justification: 
         raise ServiceError(404, f"Lease {lease_id} not found")
     if not is_appealable(lease.current_role, lease.expires_at, lease.is_active, now):
         raise ServiceError(409, "Appeals are accepted only for revoked leases or leases expiring within 7 days")
-    pending = await session.scalar(
-        select(Appeal.id).where(Appeal.lease_id == lease_id, Appeal.status == AppealStatus.PENDING))
-    if pending is not None:
-        raise ServiceError(409, "This lease already has a pending appeal")
+    if await _has_pending_appeal(session, lease_id):
+        raise ServiceError(409, PENDING_EXISTS)
     previous = (await session.scalars(select(Appeal.justification).where(Appeal.user_id == lease.user_id))).all()
     try:
         text = ensure_new_justification(justification, previous)
@@ -40,10 +42,21 @@ async def submit_appeal(session: AsyncSession, *, lease_id: int, justification: 
     appeal = Appeal(lease=lease, user_id=lease.user_id, repo_id=lease.repo_id, requested_role=lease.current_role,
                     justification=text, status=AppealStatus.PENDING, created_at=now)
     session.add(appeal)
+    try:
+        await session.flush()
+    except IntegrityError as error:  # a concurrent request inserted its PENDING appeal first
+        await session.rollback()
+        raise ServiceError(409, PENDING_EXISTS) from error
     await write_audit_event(session, now=now, actor_type=ActorType.USER, actor_id=lease.user_id,
                             action=AuditAction.APPEAL_SUBMITTED, target=appeal_target(lease),
                             details={"lease_id": lease.id}, justification=text)
     return appeal
+
+
+async def _has_pending_appeal(session: AsyncSession, lease_id: int) -> bool:
+    pending = await session.scalar(
+        select(Appeal.id).where(Appeal.lease_id == lease_id, Appeal.status == AppealStatus.PENDING))
+    return pending is not None
 
 
 async def reject_appeal(session: AsyncSession, *, appeal_id: int, now: datetime, actor_id: int,
@@ -88,7 +101,7 @@ async def _overview(session: AsyncSession, appeal: Appeal, history: Sequence[Row
         lease_role=lease.current_role,
         lease_expires_at=lease.expires_at,
         lease_is_active=lease.is_active,
-        days_remaining=days_remaining(lease.expires_at, now),
+        days_remaining=days_remaining(lease.expires_at, now) if lease.is_active else None,
         recent_activity_count=int(recent or 0),
         previous_appeals=sum(1 for user_id, created_at, appeal_id in history
                              if user_id == appeal.user_id and (created_at, appeal_id) < order),

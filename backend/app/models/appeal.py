@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Text
+from sqlalchemy import ForeignKey, Index, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -11,6 +11,9 @@ from app.models.lease import Lease
 
 class Appeal(Base):
     __tablename__ = "appeals"
+    # At most one PENDING appeal per lease, also under concurrent requests (ADR 0010 §5.4).
+    __table_args__ = (Index("uq_appeals_one_pending_per_lease", "lease_id", unique=True,
+                            sqlite_where=text("status = 'PENDING'")),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     lease_id: Mapped[int] = mapped_column(ForeignKey("leases.id"), index=True)

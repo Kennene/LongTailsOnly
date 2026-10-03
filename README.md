@@ -22,7 +22,7 @@ Projekt na hackathon **Hack Yeah 2026** (kategoria Defence + nagroda Prelint).
 | 1 | ✅ Kroki 1.1–1.6 w `main` (PR #5) |
 | 2 | 🟡 Gałąź `github_mock` — do przeniesienia na model z `main` |
 | 3 | ⏳ Nie zaczęte w repo — **blokuje dashboard i graf (linia cięcia demo)** |
-| 4 | ✅ 4.1, 4.2, 4.3 (złożenie i odrzucenie), 4.4, 4.5, 4.6 (logika i typy), zegar symulacji; ⏳ 4.3C i 4.6B czekają na Osobę 3. Szczegóły: [`docs/osoba-4.md`](docs/osoba-4.md) |
+| 4 | ✅ 4.1, 4.2, 4.3 (złożenie i odrzucenie), 4.4, 4.5, 4.6 (logika i typy), zegar symulacji, poprawki po audycie kodu; ⏳ 4.3C i 4.6B czekają na Osobę 3. Szczegóły: [`docs/osoba-4.md`](docs/osoba-4.md) |
 | 5, 6 | ⏳ Nie zaczęte w repo |
 
 Który dzień demo pokazuje panel: `GET /api/v1/simulation/clock` → `{"simulated_now": "2026-10-18T15:24:00Z", "offset_days": 15}`.

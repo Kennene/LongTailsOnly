@@ -32,6 +32,8 @@ class DatabaseVCSAdapter:
         if lease is None:
             self._session.add(Lease(user=user, repository=repository, current_role=role, granted_at=now,
                                     expires_at=expires_at))
+        elif lease.current_role is Role.ADMIN and role is not Role.ADMIN:
+            raise ServiceError(409, "The temporary adapter cannot demote an admin (no Last Admin Protection)")
         else:
             lease.current_role, lease.granted_at, lease.expires_at, lease.is_active = role, now, expires_at, True
         await self._session.flush()
