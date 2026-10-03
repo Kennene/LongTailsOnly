@@ -5,7 +5,7 @@ from app.api.github_mock.http import PageParams, paginate
 from app.schemas.github_payloads import GHRepo, GHTeam, GHUser
 from app.services.github_mock_service import GitHubMockService
 
-router = APIRouter()
+router = APIRouter(tags=["GitHub · Organizacja i repozytoria"])
 
 
 def _base(request: Request) -> str:
