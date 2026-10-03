@@ -102,6 +102,25 @@ describe('getRoleLabel', () => {
     expect(new Set(slugs).size).toBe(ROLES.length);
   });
 
+  it('gives every level its own colour family from the role-* tokens', () => {
+    const families: string[] = ROLES.map((role: Role): string => {
+      const match: RegExpExecArray | null = /text-role-([a-z]+)/.exec(getRoleBadge(role).className);
+
+      return match?.[1] ?? '';
+    });
+
+    expect(families).toEqual(['admin', 'write', 'read']);
+    ROLES.forEach((role: Role): void => {
+      const className: string = getRoleBadge(role).className;
+
+      expect(className).toContain(`bg-role-${role}-subtle`);
+      expect(className).toContain(`border-role-${role}-border`);
+      expect(className).not.toMatch(RAW_PALETTE_COLOUR);
+      // Poziom to nie stan dostępu — nie pożycza rodzin `status-*`.
+      expect(className).not.toContain('status-');
+    });
+  });
+
   it('marks the level icons so a reader can tell the eye from the pencil', () => {
     expect(getRoleBadge('read').slug).toBe('eye');
     expect(getRoleBadge('write').slug).toBe('pencil');

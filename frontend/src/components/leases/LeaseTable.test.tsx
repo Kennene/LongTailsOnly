@@ -241,17 +241,23 @@ describe('LeaseTable — kolumna „Akcje” i wyrównanie', () => {
     expect(cellIn(groupRow(DEV_LEASE), 'Akcje')).toHaveTextContent('Akcje');
   });
 
-  it('centres every column header and every lease cell', async () => {
+  it('keeps the user column left-aligned and centres every other column', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LeaseTable leases={leasesFixture} onDecide={vi.fn()} />);
     await user.click(toggleFor(DEV_LEASE));
 
-    for (const header of screen.getAllByRole('columnheader')) {
-      expect(header).toHaveClass('text-center');
-    }
-    for (const cell of within(leaseRow(DEV_LEASE)).getAllByRole('cell')) {
-      expect(cell).toHaveClass('text-center');
-    }
+    const userColumn: number = columnIndex('Użytkownik');
+
+    screen.getAllByRole('columnheader').forEach((header: HTMLElement, index: number): void => {
+      expect(header).toHaveClass(index === userColumn ? 'text-left' : 'text-center');
+    });
+    expect(cellIn(groupRow(DEV_LEASE), 'Użytkownik')).not.toHaveClass('text-center');
+    within(leaseRow(DEV_LEASE))
+      .getAllByRole('cell')
+      .filter((_cell: HTMLElement, index: number): boolean => index !== userColumn)
+      .forEach((cell: HTMLElement): void => {
+        expect(cell).toHaveClass('text-center');
+      });
   });
 });
 

@@ -22,7 +22,7 @@ import { initialsFrom } from '@/lib/userInitials';
 import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
 
-/** Każda komórka tabeli dostępów jest wyśrodkowana — tak samo jak nagłówki (`LeaseTable`). */
+/** Komórki tabeli dostępów są wyśrodkowane jak nagłówki (`LeaseTable`); tylko „Użytkownik” trzyma lewą. */
 const CENTER = 'text-center';
 
 export interface LeaseGroupRowsProps {
@@ -74,10 +74,10 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
 
   return (
     <TableRow className="cursor-pointer" onClick={onToggle}>
-      <TableCell className={cn(COLUMN_WIDTH.user, CENTER)}>
+      <TableCell className={COLUMN_WIDTH.user}>
         {/* Jedna linia: strzałka, nazwa i awatar (pasmo 36–40 px, DESIGN.md §3). Klik w cały
             wiersz też rozwija, ale stan niesie przycisk z `aria-expanded`, nie kolor ani kursor. */}
-        <div className="flex items-center justify-center gap-1.5">
+        <div className="flex items-center gap-1.5">
           <ExpandToggle
             expanded={expanded}
             onToggle={onToggle}
@@ -141,7 +141,7 @@ interface LeaseRowProps {
 function LeaseRow({ lease, onDecide }: LeaseRowProps): React.JSX.Element {
   return (
     <TableRow className="group bg-muted/20" data-lease-id={lease.id}>
-      <TableCell className={cn(COLUMN_WIDTH.user, CENTER)} />
+      <TableCell className={COLUMN_WIDTH.user} />
       <TableCell className={cn(COLUMN_WIDTH.team, SECONDARY_COLUMN, CENTER)} />
       <TableCell className={cn(COLUMN_WIDTH.repository, CENTER, 'font-mono')}>
         <span className="block truncate">{`${lease.repository.owner}/${lease.repository.name}`}</span>
