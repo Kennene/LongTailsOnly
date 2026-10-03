@@ -53,5 +53,5 @@ docs/osoba-4.md     stan i kontrakty Osoby 4
 ## Jak pracujemy
 
 - Metodologia i zasady dla agentów: [`AGENTS.md`](AGENTS.md), standardy kodu: [`CODING_STANDARDS.md`](CODING_STANDARDS.md).
-- Decyzje zapisujemy w ADR-ach. Kontrakt API (Pydantic → TypeScript) opisuje ADR 0009, a kontrakty Osoby 4 — ADR 0011.
+- Decyzje zapisujemy w ADR-ach. Kontrakt API (Pydantic → TypeScript) opisuje ADR 0009, a kontrakty Osoby 4 — ADR 0014.
 - Jedno zadanie = jedna gałąź = jeden PR do `main`.

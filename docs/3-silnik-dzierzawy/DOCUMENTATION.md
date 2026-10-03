@@ -3,7 +3,7 @@
 > **Stan na: 2026-10-03.** Kroki 3.1–3.6. Gałęzie: `guziol/silnik-dzierzawy` (3.1–3.3, 3.5, 3.6) i `guziol/ochrona-ostatniego-admina`
 > (3.4, wycięta z `main`, zmergowana lokalnie przed 3.5). Plan: [`2026-10-03-p3-silnik-dzierzawy.md`](../superpowers/plans/2026-10-03-p3-silnik-dzierzawy.md).
 > Dokument zastępuje szkic [`archive/2026-10-03-draft-lease-rules-for-person-3.md`](../superpowers/specs/archive/2026-10-03-draft-lease-rules-for-person-3.md)
-> i zamyka otwarte kwestie O1 i O2 z [ADR 0011](../adr/0011-person-4-baseline-appeals-audit-insights.md).
+> i zamyka otwarte kwestie O1 i O2 z [ADR 0014](../adr/0014-person-4-baseline-appeals-audit-insights.md).
 
 ## 1. Zakres i odbiorcy
 
@@ -33,7 +33,7 @@ administratora (przedłuż / zdeeskaluj / odbierz), pilnuje ostatniego admina i 
 | D10 | Szkic: `revoked_at`; model: `is_active` | `is_active` | ADR 0007 |
 | D11 | Tryb auto a odwołanie `PENDING` | Auto **nie pomija** takich dzierżaw | Żaden dostęp nie jest wieczny; `EXTEND` na odwołaniu przywraca dostęp |
 | D12 | Mnożnik: szkic liczy `expires_at − granted_at`; GLOSSARY: TTL = okres dzierżawy | Mnożnik od TTL repozytorium: `+ round(lease_days × M)` dni | W seedzie `granted_at` jest 90 dni wstecz, więc szkic dawałby 2× ≈ 240 dni |
-| D13 | Decyzja na dzierżawie z odwołaniem `PENDING` | `/leases/{id}/decision` → 409; decyzja idzie przez `/appeals/{id}/decision` | Odwołanie nie zostaje bez rozstrzygnięcia (ADR 0011 §5.5) |
+| D13 | Decyzja na dzierżawie z odwołaniem `PENDING` | `/leases/{id}/decision` → 409; decyzja idzie przez `/appeals/{id}/decision` | Odwołanie nie zostaje bez rozstrzygnięcia (ADR 0014 §5.5) |
 | D14 | `until_date` jest datą, nie czasem | Dostęp do końca dnia D (UTC): `expires_at = (D + 1 dzień) 00:00Z` | Jednoznaczne dla admina i testów |
 
 D12–D14 to decyzje sekcji 3.6 przyjęte według rekomendacji, do zgłoszenia uwag przed scaleniem 3.6.
@@ -102,7 +102,7 @@ Reguła (jak w mocku Osoby 2, ADR 0004):
 | `LastAdminError(ServiceError)` w `app/services/errors.py` | 403 z komunikatem jak w mocku (`...of the organization` / `...of the repository`) |
 | `ensure_not_last_admin(session, *, repository, user, lease)` w `app/services/last_admin_guard.py` | jedyne źródło reguły; tylko sprawdza, audytu nie zapisuje |
 | `GitHubCollaboratorService` (mock Osoby 2) | woła wspólną regułę i tłumaczy błąd na `GitHubError(403)` |
-| `VCSProvider.remove_collaborator(owner, repo, username)` | nowa metoda portu (ADR 0011 §3) |
+| `VCSProvider.remove_collaborator(owner, repo, username)` | nowa metoda portu (ADR 0014 §3) |
 | `DatabaseVCSAdapter.remove_collaborator` | `is_active = false` za strażnikiem; ponowne wywołanie nic nie zmienia |
 
 Wpis `LAST_ADMIN_BLOCKED` w audycie zapisuje ten, kto próbował odebrać dostęp (decyzja admina albo tryb auto).
@@ -191,13 +191,13 @@ nie dotyczą silnika i są zgłoszone jako osobne zadanie.
 ## 10. Notatki dla zespołu
 
 **Osoba 4 (Durczkos).**
-- Oba punkty styku z ADR 0011 §6 istnieją pod tymi samymi nazwami. `list_lease_overviews(session, now)` ma dodatkowo
+- Oba punkty styku z ADR 0014 §6 istnieją pod tymi samymi nazwami. `list_lease_overviews(session, now)` ma dodatkowo
   opcjonalny argument `mode` (domyślnie bieżący tryb), a `apply_lease_decision` przyjmuje też `actor_id=None` (aktor `SYSTEM`).
 - `LeaseStatus` ma teraz `PERMANENT` i `REVOKED`; Twoje zerowanie statusu dla admina i nieaktywnych w `_snapshot` dalej działa.
 - `apply_lease_decision` przy blokadzie ostatniego admina zapisuje (flush) wpis `LAST_ADMIN_BLOCKED` i rzuca `LastAdminError` (403).
   Żeby wpis został w bazie, router musi zrobić `commit` przed ponownym rzuceniem błędu (tak robi `POST /api/v1/leases/{id}/decision`).
 - `DOWNSCOPE`/`REVOKE` bez uzasadnienia → 422 (D8); `/leases/{id}/decision` odsyła dzierżawy z odwołaniem `PENDING` na `/appeals/{id}/decision` (409).
-- O1 i O2 z ADR 0011 są rozstrzygnięte (D2, D3).
+- O1 i O2 z ADR 0014 są rozstrzygnięte (D2, D3).
 
 **Osoba 2 (Dawid).** `_guard_last_admin` w `GitHubCollaboratorService` woła teraz wspólne `ensure_not_last_admin`
 (odpowiedzi i testy mocka bez zmian). `POST /api/v1/simulation/time-travel` w trybie `auto` uruchamia `run_auto_enforcement`.

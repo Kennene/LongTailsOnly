@@ -1,4 +1,4 @@
-# ADR 0011: Kontrakty Osoby 4 — standard zespołu, onboarding, odwołania, audyt i dane widoków
+# ADR 0014: Kontrakty Osoby 4 — standard zespołu, onboarding, odwołania, audyt i dane widoków
 
 **Status:** Proponowany (do akceptacji zespołu) · **Autor:** Durczkos (Osoba 4) · **Data:** 2026-10-03
 **Doprecyzowuje:** ADR 0005, ADR 0007 (pkt 5, 9), ADR 0009 · **Opiera się na:** kodzie w `main` po PR #5 (kroki 1.1–1.6) i PR #4 (mock GitHuba Osoby 2, ADR 0010)

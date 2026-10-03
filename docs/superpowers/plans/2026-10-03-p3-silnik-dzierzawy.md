@@ -136,7 +136,7 @@ Create `backend/app/api/v1/leases.py`; Test `backend/tests/domain/test_extension
 
 **Produces:**
 - `extension_base(expires_at, is_active, now) -> datetime`, `extension_expiry(base, *, lease_days, days=None, multiplier=None, until=None) -> datetime`.
-- `apply_lease_decision(session, vcs, *, lease: Lease, decision: DecisionRequest, now: datetime, actor_id: int | None) -> Lease` (ADR 0011 §6).
+- `apply_lease_decision(session, vcs, *, lease: Lease, decision: DecisionRequest, now: datetime, actor_id: int | None) -> Lease` (ADR 0014 §6).
 - `decide_lease(session, vcs, *, lease_id, decision, now, actor_id) -> Lease` (404, 409 przy `PENDING`).
 - `lease_activity_stats(session, lease_id, now) -> LeaseActivityStats`.
 - `GET /api/v1/leases`, `GET /api/v1/leases/{id}`, `POST /api/v1/leases/{id}/decision`, `GET /api/v1/leases/{id}/activity-stats`.

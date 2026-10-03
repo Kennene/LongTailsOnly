@@ -1,7 +1,7 @@
 # Osoba 4 (Durczkos) — standard zespołu, onboarding, odwołania, audyt, dane dla widoków
 
 > **Stan na: 2026-10-03.** Testy backendu: `256 passed` (cały `main` z mockiem Osoby 2 + moje kroki + poprawki po audycie). Kontrakt TS aktualny.
-> Kontrakty: [ADR 0011](adr/0011-person-4-baseline-appeals-audit-insights.md) · Plany: [`superpowers/plans/2026-10-03-p4-*.md`](superpowers/plans/2026-10-03-p4-overview.md)
+> Kontrakty: [ADR 0014](adr/0014-person-4-baseline-appeals-audit-insights.md) · Plany: [`superpowers/plans/2026-10-03-p4-*.md`](superpowers/plans/2026-10-03-p4-overview.md)
 
 ## 1. Stan kroków
 
@@ -37,7 +37,7 @@ Gałęzie tworzą stos: każda wyrasta z poprzedniej, w kolejności z tabeli. PR
 
 Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `OnboardingProposal`, `AppealOverview`, `AppealRejectRequest`, `AuditEntry`, `DashboardStats`, `PermissionGraph`.
 
-## 3. Najważniejsze decyzje (pełna treść: ADR 0011)
+## 3. Najważniejsze decyzje (pełna treść: ADR 0014)
 
 1. **Wpisów audytu nie da się zmienić ani usunąć.** Pilnuje tego baza (wyzwalacze w migracji `0002`), także przy surowym SQL. Reset demo dalej działa.
 2. **Wpisy do audytu tylko przez `write_audit_event`**, a opis celu dzierżawy przez `lease_target`.

@@ -58,7 +58,7 @@ Przydatne: `uv run alembic upgrade head` (zastosuj), `uv run alembic current` (a
 
 ## API v1 (stan 2026-10-03)
 
-Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; nowy router = jedna linia `include_router`). Błędy: kod HTTP + `{"detail": "..."}` (`ServiceError` w `app/services/errors.py`). Szczegóły kontraktu: ADR 0011, opis kroków Osoby 4: [`docs/osoba-4.md`](../docs/osoba-4.md).
+Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; nowy router = jedna linia `include_router`). Błędy: kod HTTP + `{"detail": "..."}` (`ServiceError` w `app/services/errors.py`). Szczegóły kontraktu: ADR 0014, opis kroków Osoby 4: [`docs/osoba-4.md`](../docs/osoba-4.md).
 
 | Endpoint | Co zwraca |
 | --- | --- |

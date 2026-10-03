@@ -3,7 +3,7 @@
 **Data:** 2026-10-03 (rewizja po PR #5 — kontrakt z kroku 1.2 już istnieje)
 **Autor:** Osoba 5 (KUBUŚ) — cały frontend (`frontend/`)
 **Status:** do przeglądu przed planem implementacji
-**Powiązane dokumenty:** `PRODUKT.md`, `PLAN.md`, `GLOSSARY.md`, `CODING_STANDARDS.md`, ADR 0001–0010, `docs/superpowers/plans/2026-10-03-frontend-spa.md`
+**Powiązane dokumenty:** `PRODUKT.md`, `PLAN.md`, `GLOSSARY.md`, `CODING_STANDARDS.md`, ADR 0001–0010, ADR 0015, `docs/superpowers/plans/2026-10-03-frontend-spa.md`
 
 ---
 
@@ -53,7 +53,7 @@ Dzięki temu rozjazd nazw pól jest błędem kompilacji, a nie pustą kolumną n
 
 ## 3. Decyzje architektoniczne
 
-Pełne uzasadnienie i konsekwencje: **ADR 0010**.
+Pełne uzasadnienie i konsekwencje: **ADR 0015**.
 
 1. **Nawigacja:** `react-router-dom` v7 w trybie **deklaratywnym** — `App.tsx` definiuje `<Routes>`, a `BrowserRouter` zakłada `main.tsx` (testy podstawiają `MemoryRouter`), więc trasy mają jedno źródło i nie ma zagnieżdżania routerów. Trasy: `/`, `/leases`, `/appeals`, `/baseline`, `/graph`, `/audit`; `*` przekierowuje na `/`. `AppShell` pełni rolę layout route. Etykiety nawigacji: `Pulpit`, `Dzierżawy`, `Odwołania`, `Standard zespołu`, `Graf`, `Audyt`.
 2. **Stan serwerowy:** TanStack Query v5 — cache, stany ładowania/błędu i jednopunktowa inwalidacja po podróży w czasie. Bez globalnego store'a (Redux/Zustand).

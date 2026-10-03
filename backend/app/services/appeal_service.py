@@ -1,4 +1,4 @@
-"""Appeals with intentional friction (ADR 0005, ADR 0011 §5.3-5.6)."""
+"""Appeals with intentional friction (ADR 0005, ADR 0014 §5.3-5.6)."""
 
 from collections.abc import Sequence
 from datetime import datetime, timedelta

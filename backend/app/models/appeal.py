@@ -11,7 +11,7 @@ from app.models.lease import Lease
 
 class Appeal(Base):
     __tablename__ = "appeals"
-    # At most one PENDING appeal per lease, also under concurrent requests (ADR 0011 §5.4).
+    # At most one PENDING appeal per lease, also under concurrent requests (ADR 0014 §5.4).
     __table_args__ = (Index("uq_appeals_one_pending_per_lease", "lease_id", unique=True,
                             sqlite_where=text("status = 'PENDING'")),)
 

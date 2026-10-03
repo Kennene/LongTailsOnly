@@ -22,7 +22,7 @@ class BaselineEntry(ORMModel):
 
 
 class OnboardingProposal(BaseModel):
-    """Team baseline split for one person: what approval would grant and what they already have (ADR 0011 §4)."""
+    """Team baseline split for one person: what approval would grant and what they already have (ADR 0014 §4)."""
 
     user: UserRead
     team: TeamRead

@@ -1,4 +1,4 @@
-"""Shared FastAPI dependencies for API v1 (ADR 0011 §2)."""
+"""Shared FastAPI dependencies for API v1 (ADR 0014 §2)."""
 
 from typing import Annotated
 
@@ -29,7 +29,7 @@ async def get_admin_id(session: SessionDep, settings: SettingsDep) -> int:
 
 
 def get_vcs_provider(session: SessionDep, clock: ClockDep) -> VCSProvider:
-    """Swap for the GitHub mock adapter once step 2.3 lands (ADR 0011 §3)."""
+    """Swap for the GitHub mock adapter once step 2.3 lands (ADR 0014 §3)."""
     return DatabaseVCSAdapter(session, clock)
 
 

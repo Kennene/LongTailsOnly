@@ -12,7 +12,7 @@ export async function fetchClock(): Promise<ClockRead> {
   return getJson<ClockRead>('/api/v1/simulation/clock');
 }
 
-// Mutacje zawsze idą do API — tryb fixture'ów jest tylko odczytowym fallbackiem (ADR 0010).
+// Mutacje zawsze idą do API — tryb fixture'ów jest tylko odczytowym fallbackiem (ADR 0015).
 export async function postTimeTravel(request: TimeTravelRequest): Promise<ClockRead> {
   return postJson<ClockRead, TimeTravelRequest>('/api/v1/simulation/time-travel', request);
 }
