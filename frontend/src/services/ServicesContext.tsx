@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { createContext, useContext, useState } from 'react';
 
 import { useServices } from '@/hooks/useServices';
+import { getServiceConfig } from '@/services/serviceRegistry';
 import type { ServiceRead } from '@/types/api';
 
 /**
@@ -86,14 +87,28 @@ export function ServicesProvider({ children }: { children: ReactNode }): React.J
   const activeService = resolveActiveService(services, storedId);
 
   function selectService(id: string): void {
-    // Wybór ignorujemy tylko wtedy, gdy katalog **już się wypowiedział** i tego identyfikatora w nim
-    // nie ma (spec §5.6). Dopóki `/api/v1/services` jest w drodze, katalog milczy, a nie przeczy —
-    // a picker renderuje wtedy wpisy z rejestru frontendu, więc odrzucenie wyboru byłoby martwym
-    // kliknięciem. Zapis zostaje przy tym nietknięty: nieznany identyfikator w `localStorage` nie
-    // może zostać po cichu nadpisany przez fallback.
-    const isKnown = services.some((service: ServiceRead): boolean => service.id === id);
+    // Zapisany identyfikator zostaje nietknięty, gdy wybór odrzucamy: nieznana wartość
+    // w `localStorage` nie może zostać po cichu nadpisana przez fallback.
+    //
+    // Dwa źródła prawdy i trzy stany katalogu:
+    // 1. Katalog rozstrzygnięty — obowiązuje **wyłącznie jego zawartość**. Wpis, którego rejestr
+    //    frontendu nie zna, jest wybieralny (picker oferuje go z katalogu, a dalej degradują go
+    //    `fallbackIcon` i trasa domyślna — Ruling 12); wpis, który katalog pomija, jest ignorowany
+    //    nawet wtedy, gdy rejestr go zna.
+    // 2. `isPending` — katalog **milczy**, bo jeszcze nie dotarł, a picker renderuje wtedy wpisy
+    //    z rejestru frontendu. Przyjmujemy więc to, co rejestr umie pokazać, żeby widoczna opcja
+    //    nie była martwym kliknięciem; katalog, który dotrze, zweryfikuje wybór albo go zdegraduje.
+    // 3. `isError` — katalog **nie wypowie się** już w tej sesji, więc reguła jest ta sama co
+    //    w punkcie 2 (użytkownik na nieaktualnym zapisie może się przełączyć), a rozwiązanie i tak
+    //    zawodzi bezpiecznie na placeholderze.
+    // Wspólny mianownik stanów 2 i 3: identyfikator spoza rejestru frontendu nie jest wybieralny
+    // nigdy — picker takiej opcji nie oferuje, więc nie ma czego przyjmować, a literówka nie trafia
+    // do `localStorage`.
+    const isInCatalog = services.some((service: ServiceRead): boolean => service.id === id);
+    const isInRegistry = getServiceConfig(id) !== undefined;
+    const isSelectable = isInCatalog || (isInRegistry && (isPending || isError));
 
-    if (!isPending && !isKnown) {
+    if (!isSelectable) {
       return;
     }
 

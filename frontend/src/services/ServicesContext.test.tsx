@@ -12,6 +12,21 @@ import type { ServiceRead } from '@/types/api';
 /** Zapisany wybór to goły identyfikator, nie JSON (spec §5.2). */
 const STORAGE_KEY = 'lease-governor.service';
 
+/**
+ * Katalog z usługą, której **nie zna rejestr frontendu** — dokładnie ten przypadek, dla którego
+ * istnieją `fallbackIcon` i `getServiceConfig → undefined` (Ruling 12). Picker oferuje ją jako
+ * opcję, więc wybór musi być możliwy.
+ */
+const UNREGISTERED_ON_FRONTEND: ServiceRead[] = [
+  {
+    id: 'linkedin-sourced',
+    name: 'LinkedIn Sourced',
+    kind: 'cloud_iam',
+    capabilities: ['dashboard'],
+    is_available: true,
+  },
+];
+
 /** Katalog, w którym backend nie zna `github` — przypadek „integracja wyrejestrowana”. */
 const DEMO_TRACKER_ONLY: ServiceRead[] = [
   {
@@ -61,16 +76,30 @@ function ServiceSwitcherProbe(): React.JSX.Element {
   );
 }
 
-/** Sonda do wyboru w oknie, w którym katalog jeszcze nie dotarł (opcje z rejestru frontendu). */
-function PendingSwitcherProbe(): React.JSX.Element {
+/**
+ * Sonda z zaszytymi opcjami: przyciski **nie** pochodzą z `services`, więc da się nią klikać także
+ * wtedy, gdy katalog jest pusty, w drodze albo martwy. Każdy przycisk reprezentuje inną komórkę
+ * macierzy „rejestr frontendu × katalog”: `github` i `demo-tracker` zna rejestr, `linkedin-sourced`
+ * zna tylko katalog, a `decommissioned` nie zna żadne z nich.
+ */
+function FixedSwitcherProbe(): React.JSX.Element {
   const { activeService, isPending, isError, setActiveService } = useActiveService();
 
   return (
     <div>
       <span data-testid="active-service">{activeService.id}</span>
       <span data-testid="catalog-state">{catalogStateLabel(isPending, isError)}</span>
+      <button type="button" onClick={() => setActiveService('github')}>
+        Przełącz na github
+      </button>
       <button type="button" onClick={() => setActiveService('demo-tracker')}>
         Przełącz na demo-tracker
+      </button>
+      <button type="button" onClick={() => setActiveService('linkedin-sourced')}>
+        Przełącz na linkedin-sourced
+      </button>
+      <button type="button" onClick={() => setActiveService('decommissioned')}>
+        Wybierz nieznaną usługę
       </button>
     </div>
   );
@@ -178,7 +207,7 @@ describe('ServicesProvider', () => {
         return HttpResponse.json(servicesFixture);
       }),
     );
-    renderWithProviders(<PendingSwitcherProbe />);
+    renderWithProviders(<FixedSwitcherProbe />);
 
     // Warunek wstępny: klikamy, gdy katalog jeszcze nie dotarł — inaczej test nie bada tego okna.
     expect(screen.getByTestId('catalog-state')).toHaveTextContent('wczytywanie');
@@ -190,6 +219,84 @@ describe('ServicesProvider', () => {
     await waitForCatalog();
 
     expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
+  });
+
+  it('does not persist a registry-unknown selection while the catalog is pending', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/v1/services', async () => {
+        await delay(300);
+
+        return HttpResponse.json(servicesFixture);
+      }),
+    );
+    renderWithProviders(<FixedSwitcherProbe />);
+
+    expect(screen.getByTestId('catalog-state')).toHaveTextContent('wczytywanie');
+
+    await user.click(screen.getByRole('button', { name: 'Wybierz nieznaną usługę' }));
+
+    // Katalogu nie ma czym potwierdzić, a picker takiej opcji nigdy nie oferuje — literówka
+    // nie może trafić do `localStorage` tylko dlatego, że katalog jest w drodze.
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it('accepts a registry-known selection when the catalog request fails', async () => {
+    const user = userEvent.setup();
+    server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
+    renderWithProviders(<FixedSwitcherProbe />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('catalog-state')).toHaveTextContent('błąd');
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Przełącz na demo-tracker' }));
+
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe('demo-tracker');
+    // Katalog nie wypowie się w tej sesji, więc wybór nie zostaje aktywowany: rozwiązanie
+    // zawodzi bezpiecznie na placeholderze, a nie na niepotwierdzonym identyfikatorze.
+    expect(screen.getByTestId('active-service')).toBeEmptyDOMElement();
+  });
+
+  it('does not persist a registry-unknown selection when the catalog request fails', async () => {
+    const user = userEvent.setup();
+    server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
+    renderWithProviders(<FixedSwitcherProbe />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('catalog-state')).toHaveTextContent('błąd');
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Wybierz nieznaną usługę' }));
+
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(screen.getByTestId('active-service')).toBeEmptyDOMElement();
+  });
+
+  it('ignores a registry-known selection that the settled catalog omits', async () => {
+    const user = userEvent.setup();
+    server.use(http.get('/api/v1/services', () => HttpResponse.json(DEMO_TRACKER_ONLY)));
+    renderWithProviders(<FixedSwitcherProbe />);
+
+    await waitForCatalog();
+    await user.click(screen.getByRole('button', { name: 'Przełącz na github' }));
+
+    // Rozstrzygnięty katalog jest jedynym autorytetem — rejestr frontendu nie może go przebić.
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
+  });
+
+  it('accepts a catalog service that the frontend registry does not know', async () => {
+    const user = userEvent.setup();
+    server.use(http.get('/api/v1/services', () => HttpResponse.json(UNREGISTERED_ON_FRONTEND)));
+    renderWithProviders(<FixedSwitcherProbe />);
+
+    await waitForCatalog();
+    await user.click(screen.getByRole('button', { name: 'Przełącz na linkedin-sourced' }));
+
+    // Picker oferuje wpisy z katalogu, więc opcja spoza rejestru frontendu musi być wybieralna:
+    // dalej degraduje się przez `fallbackIcon` i trasę domyślną (Ruling 12).
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe('linkedin-sourced');
   });
 
   it('ignores a selection that is not in the catalog', async () => {
