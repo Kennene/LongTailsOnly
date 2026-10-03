@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  type BadgeStyle,
   getAppealStatusBadge,
+  getRecommendationBadge,
   getRecommendationLabel,
   getRoleLabel,
   getStatusBadge,
@@ -65,6 +67,45 @@ describe('getRecommendationLabel', () => {
   });
 });
 
+describe('getRecommendationBadge', () => {
+  it('labels every recommendation exactly like getRecommendationLabel', () => {
+    expect(
+      RECOMMENDATIONS.map((value: Recommendation): string => getRecommendationBadge(value).label),
+    ).toEqual(
+      RECOMMENDATIONS.map((value: Recommendation): string => getRecommendationLabel(value)),
+    );
+  });
+
+  it('gives every recommendation a distinct, non-empty class name', () => {
+    const classNames: string[] = RECOMMENDATIONS.map(
+      (value: Recommendation): string => getRecommendationBadge(value).className,
+    );
+
+    expect(new Set(classNames).size).toBe(3);
+    expect(classNames.filter((className: string): boolean => className.length === 0)).toEqual([]);
+  });
+
+  it('paints KEEP with the neutral muted tokens', () => {
+    expect(getRecommendationBadge('KEEP').className).toBe(
+      'border-border bg-muted text-muted-foreground',
+    );
+  });
+
+  it.each<[Recommendation, string]>([
+    ['DOWNSCOPE', 'downscope'],
+    ['REVOKE', 'revoke'],
+  ])(
+    'styles %s with the status-%s family tokens',
+    (recommendation: Recommendation, token: string) => {
+      const { className }: BadgeStyle = getRecommendationBadge(recommendation);
+
+      expect(className).toContain(`bg-status-${token}-subtle`);
+      expect(className).toContain(`text-status-${token}`);
+      expect(className).toContain(`border-status-${token}-border`);
+    },
+  );
+});
+
 describe('getAppealStatusBadge', () => {
   it('maps every appeal status to its Polish label', () => {
     expect(
@@ -88,6 +129,9 @@ describe('semantic status tokens', () => {
       ...STATUSES.map((status: LeaseStatus): string => getStatusBadge(status).className),
       ...APPEAL_STATUSES.map(
         (status: AppealStatus): string => getAppealStatusBadge(status).className,
+      ),
+      ...RECOMMENDATIONS.map(
+        (value: Recommendation): string => getRecommendationBadge(value).className,
       ),
     ];
 

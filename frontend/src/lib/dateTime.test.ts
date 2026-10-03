@@ -5,6 +5,7 @@ import {
   daysRemaining,
   DISPLAY_TIME_ZONE,
   formatDateTimePl,
+  formatDateTimeShortPl,
   formatDaysRemaining,
   formatOffsetDays,
 } from '@/lib/dateTime';
@@ -29,6 +30,19 @@ describe('formatDateTimePl', () => {
   it('applies the winter offset of the display time zone', () => {
     expect(formatDateTimePl('2026-01-05T08:05:00Z')).toBe('5 stycznia 2026, 09:05');
   });
+});
+
+describe('formatDateTimeShortPl', () => {
+  it('formats an ISO timestamp as a compact Polish date and time in the display time zone', () => {
+    expect(formatDateTimeShortPl('2026-10-03T13:24:00Z')).toBe('3 paź 2026, 15:24');
+  });
+
+  it.each(['', 'not-a-date', '2026-13-45T99:99:99Z'])(
+    'returns an em dash for the malformed timestamp "%s" instead of throwing',
+    (iso: string) => {
+      expect(formatDateTimeShortPl(iso)).toBe('—');
+    },
+  );
 });
 
 describe('daysRemaining', () => {
