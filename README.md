@@ -10,7 +10,7 @@ Projekt na hackathon **Hack Yeah 2026** (kategoria Defence + nagroda Prelint).
 | --- | --- | --- |
 | 1 | Fundament backendu: szkielet, schematy + kontrakt TS, modele, zegar, seed, reset demo | Kocik |
 | 2 | Mock GitHuba i aktywność, time-travel | Dawid |
-| 3 | Silnik dzierżawy: statusy, odnawianie, deeskalacja, ostatni admin, tryby, decyzje | Guziol |
+| 3 | Silnik dzierżawy: statusy, odnawianie, deeskalacja, ostatni admin, tryby, decyzje | Guziol — [`docs/3-silnik-dzierzawy/DOCUMENTATION.md`](docs/3-silnik-dzierzawy/DOCUMENTATION.md) |
 | 4 | Standard zespołu, onboarding, odwołania, audyt, dane dla dashboardu i grafu | Durczkos — [`docs/osoba-4.md`](docs/osoba-4.md) |
 | 5 | Frontend (React + React Flow) | Kubuś |
 | 6 | Scenariusze, testy E2E, Prelint, slajdy, zgłoszenie | Sydor |
@@ -21,7 +21,7 @@ Projekt na hackathon **Hack Yeah 2026** (kategoria Defence + nagroda Prelint).
 | --- | --- |
 | 1 | ✅ Kroki 1.1–1.6 w `main` (PR #5) |
 | 2 | ✅ Mock GitHuba, aktywność i time-travel w `main` (PR #4, ADR 0010) |
-| 3 | ⏳ Nie zaczęte w repo — **blokuje dashboard i graf (linia cięcia demo)** |
+| 3 | ✅ 3.1–3.6 na gałęzi `guziol/silnik-dzierzawy` (3.4 osobno: `guziol/ochrona-ostatniego-admina`), jeszcze nie w `main`. Odblokowuje 4.3C i 4.6B. Szczegóły: [`docs/3-silnik-dzierzawy/DOCUMENTATION.md`](docs/3-silnik-dzierzawy/DOCUMENTATION.md) |
 | 4 | ✅ 4.1, 4.2, 4.3 (złożenie i odrzucenie), 4.4, 4.5, 4.6 (logika i typy), zegar symulacji, poprawki po audycie kodu; ⏳ 4.3C i 4.6B czekają na Osobę 3. Szczegóły: [`docs/osoba-4.md`](docs/osoba-4.md) |
 | 5, 6 | ⏳ Nie zaczęte w repo |
 

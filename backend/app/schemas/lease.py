@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from pydantic import BaseModel
+
 from app.domain.enums import LeaseStatus, Recommendation, Role
 from app.schemas.base import ORMModel
 from app.schemas.people import UserRead
@@ -23,3 +25,16 @@ class LeaseOverview(LeaseRead):
     days_remaining: int | None
     last_activity_at: datetime | None
     recommendation: Recommendation
+
+
+class LeaseActivityStats(BaseModel):
+    """Evidence of use for the decision modal: renewing actions in the lease window (docs/3-silnik-dzierzawy §6)."""
+
+    lease_id: int
+    window_days: int
+    window_start: datetime
+    window_end: datetime
+    push_count: int
+    review_count: int
+    comment_count: int
+    last_activity_at: datetime | None
