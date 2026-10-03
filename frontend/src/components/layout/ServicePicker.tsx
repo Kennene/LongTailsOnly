@@ -90,16 +90,18 @@ export function ServicePicker(): React.JSX.Element {
       <Label className="sr-only" htmlFor={PICKER_ID}>
         Usługa
       </Label>
-      <span className="text-muted-foreground">
+      <span className="text-muted-foreground" data-testid="service-picker-icon">
         <ActiveIcon className="size-4" aria-hidden="true" />
       </span>
       <select
-        // Rozmiar `h-8` i widoczny fokus pochodzą ze wspólnego rdzenia (spec §6); różnice tego
-        // pola to tło chrome, padding (`pr-7` robi miejsce na strzałkę) i rozmiar tekstu chrome.
+        // Rozmiar `h-8`, tło i widoczny fokus pochodzą ze wspólnego rdzenia (spec §6); różnice tego
+        // pola to padding (`pr-7` robi miejsce na strzałkę) i rozmiar tekstu chrome. Tła nie
+        // nadpisujemy: dwie wykluczające się klasy (`bg-transparent` z rdzenia i `bg-background`)
+        // zostawiałyby wybór scalaczowi klas, a nie kodowi.
         // Natywnej strzałki nie ukrywamy (`appearance-none`) — przy `h-8` to ona daje afordancję
         // bez nowej zależności.
         aria-busy={isPending}
-        className={cn(SELECT_CLASSES, 'bg-background py-1 pr-7 pl-2 text-xs')}
+        className={cn(SELECT_CLASSES, 'py-1 pr-7 pl-2 text-xs')}
         id={PICKER_ID}
         onChange={(event: ChangeEvent<HTMLSelectElement>): void =>
           setActiveService(event.target.value)
@@ -112,10 +114,11 @@ export function ServicePicker(): React.JSX.Element {
           </option>
         ))}
       </select>
-      {/* Alert stoi **obok** kontrolki, nigdy zamiast niej (Ruling 21). Jedna linia, bo pasek
-          górny ma `min-h-14` i nie rośnie dla komunikatu. */}
+      {/* Alert stoi **obok** kontrolki, nigdy zamiast niej (Ruling 21). Jedna linia i `text-xs`
+          jak kontrolka obok: pasek górny ma `min-h-14`, a chrome nie rośnie dla komunikatu
+          (`DESIGN.md:68-70` — dolna granica rozmiaru dotyczy całego paska). */}
       {isError ? (
-        <Alert className="w-auto py-1" variant="destructive">
+        <Alert className="w-auto py-1 text-xs" variant="destructive">
           <AlertTitle>Nie udało się pobrać listy usług</AlertTitle>
         </Alert>
       ) : null}

@@ -117,7 +117,7 @@ describe('ServicePicker', () => {
 
   it('degrades visibly when the catalog request fails, without trapping the user', async () => {
     server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
-    renderWithProviders(<ServicePicker />);
+    renderWithProviders(pickerWithProbe());
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/usług/i);
     // Ruling 21: kontrolka musi przeżyć awarię — użytkownik z nieaktualnym zapisem ma się
@@ -126,7 +126,27 @@ describe('ServicePicker', () => {
 
     await userEvent.selectOptions(screen.getByLabelText('Usługa'), 'github');
 
+    // Przyjęty wybór musi **zadziałać**, nie tylko trafić do `localStorage`: katalog nie wypowie
+    // się już w tej sesji, więc wybór bez efektu byłby martwym klikiem i nie miałby go co poprawić
+    // (Ruling 21, spec §5.6.1 zdanie 3).
+    expect(await screen.findByTestId('active-service')).toHaveTextContent(/^github$/);
     expect(window.localStorage.getItem(STORAGE_KEY)).toBe('github');
+  });
+
+  it('shows the icon of the active service, not a fixed one', async () => {
+    window.localStorage.setItem(STORAGE_KEY, 'demo-tracker');
+    renderWithProviders(pickerWithProbe());
+
+    // Rejestr daje `demo-tracker` ikonę zastępczą, a `github` — znak firmowy, więc podmiana
+    // aktywnej usługi musi podmienić SVG w slocie (spec §7.3).
+    const icon = await screen.findByTestId('service-picker-icon');
+    const demoIcon = icon.innerHTML;
+
+    await userEvent.selectOptions(await screen.findByLabelText('Usługa'), 'github');
+
+    expect(await screen.findByTestId('active-service')).toHaveTextContent(/^github$/);
+    expect(icon).not.toBeEmptyDOMElement();
+    expect(icon.innerHTML).not.toBe(demoIcon);
   });
 
   it('renders registry entries and marks itself busy while the catalog is pending', async () => {

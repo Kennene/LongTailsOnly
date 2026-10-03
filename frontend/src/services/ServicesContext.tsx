@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { createContext, useContext, useState } from 'react';
 
 import { useServices } from '@/hooks/useServices';
-import { getServiceConfig } from '@/services/serviceRegistry';
+import { getServiceConfig, type ServiceRoute } from '@/services/serviceRegistry';
 import type { ServiceRead } from '@/types/api';
 
 /**
@@ -62,11 +62,45 @@ function persistServiceId(id: string): void {
 }
 
 /**
+ * Usługa znana rejestrowi frontendu, której katalog **nie potwierdził** — żądanie jest w drodze
+ * albo padło. Kształt jest ten sam co `NO_SERVICE`, bo to również zastępstwo, ale każda wartość
+ * jest brana z tego, co rejestr naprawdę deklaruje: `name` z identyfikatora (rejestr nie zna nazw
+ * wyświetlanych — te są w katalogu), `capabilities` z tras (dokładnie te identyfikatory, które
+ * katalog zwraca dla znanych usług), a `is_available: false` znaczy „nie potwierdzam dostępności”,
+ * nie „usługa jest wyłączona”.
+ */
+function unconfirmedService(id: string): ServiceRead | null {
+  const config = getServiceConfig(id);
+
+  if (config === undefined) {
+    return null;
+  }
+
+  return {
+    id: config.id,
+    name: config.id,
+    kind: 'vcs',
+    capabilities: config.routes.map((route: ServiceRoute): string => route.id),
+    is_available: false,
+  };
+}
+
+/**
  * Kolejność rozstrzygania (spec §5.2): zapis obecny w katalogu → `github` z katalogu → pierwszy
  * wpis katalogu → placeholder. Zapis spoza katalogu **zostaje** w `localStorage` (nie kasujemy go
  * po cichu), a wybór degraduje się tylko na czas sesji.
+ *
+ * Trzeci argument dotyczy katalogu **nierozstrzygniętego**: gdy żądanie jest w drodze albo padło,
+ * a zapisany identyfikator zna rejestr frontendu, usługa pochodzi z rejestru. Katalog milczy, więc
+ * wybór bez efektu byłby martwym klikiem, a gdy żądanie padło, nie ma już niczego, co mogłoby ten
+ * wybór później poprawić (Ruling 21, spec §5.6.1 zdanie 3). Osiadły katalog — także **pusty** —
+ * jest stwierdzeniem, więc rejestr go nie przebija i placeholder zostaje.
  */
-function resolveActiveService(services: ServiceRead[], storedId: string | null): ServiceRead {
+function resolveActiveService(
+  services: ServiceRead[],
+  storedId: string | null,
+  isCatalogUnresolved: boolean,
+): ServiceRead {
   if (storedId !== null) {
     const stored = services.find((service: ServiceRead): boolean => service.id === storedId);
 
@@ -77,14 +111,26 @@ function resolveActiveService(services: ServiceRead[], storedId: string | null):
 
   const github = services.find((service: ServiceRead): boolean => service.id === 'github');
 
-  return github ?? services[0] ?? NO_SERVICE;
+  if (github !== undefined) {
+    return github;
+  }
+
+  if (services[0] !== undefined) {
+    return services[0];
+  }
+
+  if (isCatalogUnresolved && storedId !== null) {
+    return unconfirmedService(storedId) ?? NO_SERVICE;
+  }
+
+  return NO_SERVICE;
 }
 
 export function ServicesProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const { data, isPending, isError } = useServices();
   const [storedId, setStoredId] = useState<string | null>(readStoredServiceId);
   const services: ServiceRead[] = data ?? [];
-  const activeService = resolveActiveService(services, storedId);
+  const activeService = resolveActiveService(services, storedId, isPending || isError);
 
   function selectService(id: string): void {
     // Zapisany identyfikator zostaje nietknięty, gdy wybór odrzucamy: nieznana wartość
@@ -96,11 +142,12 @@ export function ServicesProvider({ children }: { children: ReactNode }): React.J
     //    `fallbackIcon` i trasa domyślna — Ruling 12); wpis, który katalog pomija, jest ignorowany
     //    nawet wtedy, gdy rejestr go zna.
     // 2. `isPending` — katalog **milczy**, bo jeszcze nie dotarł, a picker renderuje wtedy wpisy
-    //    z rejestru frontendu. Przyjmujemy więc to, co rejestr umie pokazać, żeby widoczna opcja
-    //    nie była martwym kliknięciem; katalog, który dotrze, zweryfikuje wybór albo go zdegraduje.
+    //    z rejestru frontendu. Przyjmujemy więc to, co rejestr umie pokazać, i `resolveActiveService`
+    //    czyni ten wybór aktywnym od razu — katalog, który dotrze, zweryfikuje go albo zdegraduje.
     // 3. `isError` — katalog **nie wypowie się** już w tej sesji, więc reguła jest ta sama co
-    //    w punkcie 2 (użytkownik na nieaktualnym zapisie może się przełączyć), a rozwiązanie i tak
-    //    zawodzi bezpiecznie na placeholderze.
+    //    w punkcie 2 (użytkownik na nieaktualnym zapisie może się przełączyć), a przyjęty wybór
+    //    również **działa**: nie ma już katalogu, który mógłby go później poprawić, więc wybór bez
+    //    efektu byłby martwym klikiem (Ruling 21).
     // Wspólny mianownik stanów 2 i 3: **dopóki katalog nie jest rozstrzygnięty**, identyfikator
     // spoza rejestru frontendu nie jest wybieralny — picker takiej opcji wtedy nie oferuje, więc
     // nie ma czego przyjmować, a literówka nie trafia do `localStorage`. Gdy katalog już osiadł,

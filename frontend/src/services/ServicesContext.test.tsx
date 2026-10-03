@@ -215,6 +215,9 @@ describe('ServicesProvider', () => {
     await user.click(screen.getByRole('button', { name: 'Przełącz na demo-tracker' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBe('demo-tracker');
+    // Katalog jest jeszcze w drodze, ale rejestr frontendu wie, kim jest `demo-tracker` — wybór
+    // działa od razu, a katalog, który dotrze, potwierdzi go albo zdegraduje (Ruling 20/21).
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
 
     await waitForCatalog();
 
@@ -253,9 +256,24 @@ describe('ServicesProvider', () => {
     await user.click(screen.getByRole('button', { name: 'Przełącz na demo-tracker' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBe('demo-tracker');
-    // Katalog nie wypowie się w tej sesji, więc wybór nie zostaje aktywowany: rozwiązanie
-    // zawodzi bezpiecznie na placeholderze, a nie na niepotwierdzonym identyfikatorze.
-    expect(screen.getByTestId('active-service')).toBeEmptyDOMElement();
+    // Ruling 21: katalog nie wypowie się już w tej sesji, więc przyjęty wybór musi **zadziałać**
+    // od razu — inaczej widoczna opcja byłaby martwym klikiem, a użytkownik zostałby uwięziony
+    // na nieaktualnym zapisie.
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
+  });
+
+  it('restores a stored registry-known service when the catalog request fails', async () => {
+    window.localStorage.setItem(STORAGE_KEY, 'demo-tracker');
+    server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
+    renderWithProviders(<ActiveServiceProbe />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('catalog-state')).toHaveTextContent('błąd');
+    });
+
+    // Ten sam mechanizm bez kliknięcia: rejestr frontendu zna zapis, więc użytkownik nie zostaje
+    // uwięziony na placeholderze, gdy backend leży (Ruling 21).
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
   });
 
   it('does not persist a registry-unknown selection when the catalog request fails', async () => {
