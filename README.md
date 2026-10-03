@@ -278,6 +278,12 @@ GLOSSARY.md         słownik pojęć
 
 ---
 
+## Użycie AI i zasobów zewnętrznych
+
+Pracowaliśmy z asystentami kodu (GitHub Copilot, Claude) w zadaniach weryfikowalnych automatycznie lub w review: testy, schematy, komponenty UI, refaktoryzacja, szkice planów. Architektura, model domeny, kontrakty API, zakres MVP i ADR-y powstały w zespole; decyzje projektowe należały do nas, a zmiany trafiały do `main` po testach i review. Produkt nie korzysta z zewnętrznych modeli AI — mocki GitHuba i Jiry działają lokalnie, a dane demo są syntetyczne. Biblioteki open source opisuje sekcja [Stack](#stack), a komendy weryfikacyjne — [Szybki start](#szybki-start).
+
+---
+
 ## Dokumentacja
 
 - [`PRODUKT.md`](PRODUKT.md): wizja, problem, persony, przypadki użycia, zakres
