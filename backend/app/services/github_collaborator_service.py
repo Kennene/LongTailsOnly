@@ -7,7 +7,7 @@ the services that call it (lease/appeal services).
 from datetime import datetime, timedelta
 from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.github_mock.http import GitHubError
@@ -16,7 +16,9 @@ from app.domain.enums import GitHubPermission, Role
 from app.domain.roles import from_github, is_leased
 from app.models import Lease, Repository, User
 from app.ports.clock import ClockPort
+from app.services.errors import LastAdminError
 from app.services.github_mock_service import GitHubMockService, not_found
+from app.services.last_admin_guard import ensure_not_last_admin
 
 DOC = "collaborators/collaborators"
 
@@ -45,18 +47,11 @@ class GitHubCollaboratorService:
         return now + timedelta(days=repository.default_lease_duration_days)
 
     async def _guard_last_admin(self, repo: Repository, user: User, lease: Lease) -> None:
-        owners = await self.session.scalar(select(func.count()).select_from(User).where(User.is_admin))
-        if user.is_admin and owners == 1:
-            raise GitHubError(403, "Cannot remove the last administrator of the organization", DOC)
-        if lease.current_role is not Role.ADMIN:
-            return
-        admins = await self.session.scalar(
-            select(func.count()).select_from(Lease).where(
-                Lease.repo_id == repo.id, Lease.current_role == Role.ADMIN, Lease.is_active
-            )
-        )
-        if admins == 1:
-            raise GitHubError(403, "Cannot remove the last administrator of the repository", DOC)
+        """Shared Last Admin Protection (step 3.4), answered in GitHub's error format."""
+        try:
+            await ensure_not_last_admin(self.session, repository=repo, user=user, lease=lease)
+        except LastAdminError as error:
+            raise GitHubError(403, error.detail, DOC) from error
 
     async def set_permission(
         self, owner: str, repo: str, username: str, permission: str

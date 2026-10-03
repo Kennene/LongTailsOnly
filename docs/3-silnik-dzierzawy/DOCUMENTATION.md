@@ -179,6 +179,6 @@ nie dotyczą silnika i są zgłoszone jako osobne zadanie.
 | 3.1 | Status dzierżawy względem zegara | ✅ `lease_rules.lease_status`, `LeaseStatus` + `PERMANENT`/`REVOKED` |
 | 3.2 | Macierz odnawiania | ✅ `lease_rules.renews`, `lease_service.record_activity`; seed zgodny z macierzą (test) |
 | 3.3 | Wykrywanie deeskalacji write → read | ✅ `lease_rules.recommend`, `lease_service.list_lease_overviews` / `get_lease_overview` |
-| 3.4 | Ochrona ostatniego admina | ⏳ |
+| 3.4 | Ochrona ostatniego admina | ✅ `last_admin_guard.ensure_not_last_admin`, `VCSProvider.remove_collaborator` (gałąź `guziol/ochrona-ostatniego-admina`) |
 | 3.5 | Tryby disabled / warning / auto | ⏳ |
 | 3.6 | Endpointy | ⏳ |
