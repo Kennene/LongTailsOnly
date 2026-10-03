@@ -49,6 +49,11 @@ function shownLogins(): string {
     .join(' ');
 }
 
+/** Tabela pokazuje jedną osobę na wiersz (repozytoria są zwinięte), więc liczymy osoby. */
+function userCount(leases: LeaseOverview[]): number {
+  return new Set(leases.map((lease: LeaseOverview): number => lease.user.id)).size;
+}
+
 function chip(name: string): HTMLElement {
   return screen.getByRole('button', { name });
 }
@@ -64,11 +69,11 @@ describe('LeasesPage team filter', () => {
     expect(chip(NO_TEAM_CHIP)).toBeInTheDocument();
   });
 
-  it('starts on "Wszystkie" with every lease visible', async () => {
+  it('starts on "Wszystkie" with every person visible', async () => {
     const rows = await loadRows();
 
     expect(chip(ALL_CHIP)).toHaveAttribute('aria-pressed', 'true');
-    expect(rows).toHaveLength(leasesFixture.length + 1);
+    expect(rows).toHaveLength(userCount(leasesFixture) + 1);
   });
 
   it('narrows the table to one team and reports the selection in aria-pressed', async () => {
@@ -80,11 +85,11 @@ describe('LeasesPage team filter', () => {
     expect(chip('DEV')).toHaveAttribute('aria-pressed', 'true');
     expect(chip(ALL_CHIP)).toHaveAttribute('aria-pressed', 'false');
 
-    const devCount: number = leasesFixture.filter(
-      (lease: LeaseOverview): boolean => lease.user.team?.name === 'DEV',
-    ).length;
+    const devUsers: number = userCount(
+      leasesFixture.filter((lease: LeaseOverview): boolean => lease.user.team?.name === 'DEV'),
+    );
 
-    expect(tableRows()).toHaveLength(devCount + 1);
+    expect(tableRows()).toHaveLength(devUsers + 1);
     expect(shownLogins()).toContain(DEV_LEASE.user.login);
     expect(shownLogins()).not.toContain(QA_LEASE.user.login);
   });
@@ -99,14 +104,14 @@ describe('LeasesPage team filter', () => {
     expect(shownLogins()).not.toContain(DEV_LEASE.user.login);
   });
 
-  it('brings every lease back when the filter returns to "Wszystkie"', async () => {
+  it('brings every person back when the filter returns to "Wszystkie"', async () => {
     const user = userEvent.setup();
     await loadRows();
 
     await user.click(chip('DEV'));
     await user.click(chip(ALL_CHIP));
 
-    expect(tableRows()).toHaveLength(leasesFixture.length + 1);
+    expect(tableRows()).toHaveLength(userCount(leasesFixture) + 1);
   });
 
   it('can never filter the table away: every chip comes from the rows it filters', async () => {

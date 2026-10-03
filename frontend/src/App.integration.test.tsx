@@ -64,6 +64,8 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
 
   // 3. Dostępy: dostęp, który był zielony, wchodzi w okno ostrzegawcze (UC-2).
   await user.click(screen.getByRole('link', { name: 'Dostępy' }));
+  // Tabela grupuje dostępy po osobie; rozwijamy wszystkie, żeby zobaczyć każdy termin.
+  await user.click(await screen.findByRole('button', { name: 'Rozwiń wszystkie' }));
   const warning: LeaseOverview | undefined = firstWarningAfterJump();
   expect(warning).toBeDefined();
   expect(
@@ -83,9 +85,13 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
   await user.click(screen.getByRole('link', { name: 'Dostępy' }));
 
   // 4. Ochrona ostatniego administratora (UC-5) — próba wyłączenia musi się skończyć 403.
+  // Rozwijamy tylko administratora, więc jego repozytorium jest jedynym wierszem o tej nazwie.
+  await user.click(
+    await screen.findByRole('button', { name: `Pokaż dostępy: ${ADMIN_LEASE?.user.name ?? ''}` }),
+  );
   const adminRow: HTMLElement = await screen.findByRole('row', {
     name: new RegExp(
-      `${ADMIN_LEASE?.user.login ?? ''}[\\s\\S]*${ADMIN_LEASE?.repository.name ?? ''}`,
+      `${ADMIN_LEASE?.repository.owner ?? ''}/${ADMIN_LEASE?.repository.name ?? ''}`,
     ),
   });
   await user.click(within(adminRow).getByRole('button', { name: 'Decyzja' }));
