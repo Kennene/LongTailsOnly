@@ -40,7 +40,7 @@ const SIDEBAR_ROUTES: [ServiceRouteId, string, string][] = [
   ['leases', '/leases', 'Dostępy'],
   ['appeals', '/appeals', 'Odwołania'],
   ['baseline', '/baseline', 'Standard zespołu'],
-  ['graph', '/graph', 'Graf'],
+  ['graph', '/graph', 'Mapa Dostępów'],
   ['audit', '/audit', 'Audyt'],
   ['mocks', '/mocks', 'Mocki'],
 ];

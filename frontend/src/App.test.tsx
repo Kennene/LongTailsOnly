@@ -4,7 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { App } from '@/App';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
-const NAV_LABELS = ['Pulpit', 'Dostępy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt', 'Mocki'];
+const NAV_LABELS = [
+  'Pulpit',
+  'Dostępy',
+  'Odwołania',
+  'Standard zespołu',
+  'Mapa Dostępów',
+  'Audyt',
+  'Mocki',
+];
 
 it('renders navigation for all seven views and switches route', async () => {
   const user = userEvent.setup();
@@ -36,4 +44,15 @@ it('opens the mocks view with the simulated clock from the navigation', async ()
 
   expect(await screen.findByRole('heading', { level: 1, name: 'Mocki' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Przesuń' })).toBeInTheDocument();
+});
+
+it('offers the demo refresh from the top bar and announces the fetched user', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<App />, { route: '/' });
+
+  await user.click(screen.getByRole('button', { name: 'Odśwież dane' }));
+
+  expect(
+    await screen.findByText('Dodano użytkownika Zofia (zofia) do zespołu DEV'),
+  ).toBeInTheDocument();
 });

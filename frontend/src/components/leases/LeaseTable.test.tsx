@@ -142,18 +142,26 @@ describe('LeaseTable — jedna osoba, jeden wiersz', () => {
 });
 
 describe('LeaseTable — komórka tożsamości w wierszu osoby', () => {
-  it('carries the avatar initials after the username, not before it', () => {
+  it('carries the avatar initials after the name, not before it', () => {
     renderWithProviders(<LeaseTable leases={leasesFixture} />);
 
     const userCell: HTMLElement = cellIn(groupRow(DEV_LEASE), 'Użytkownik');
-    const login: HTMLElement = within(userCell).getByText(DEV_LEASE.user.login);
+    const name: HTMLElement = within(userCell).getByText(DEV_LEASE.user.name);
     const initials: string = initialsFrom(DEV_LEASE.user);
 
     expect(within(userCell).getByText(initials)).toBeInTheDocument();
-    // Awatar stoi **za** loginem: `compareDocumentPosition` zwraca FOLLOWING.
-    expect(login.compareDocumentPosition(within(userCell).getByText(initials))).toBe(
+    // Awatar stoi **za** nazwą: `compareDocumentPosition` zwraca FOLLOWING.
+    expect(name.compareDocumentPosition(within(userCell).getByText(initials))).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
+  });
+
+  it('does not repeat the login next to the name („Ania ania”)', () => {
+    renderWithProviders(<LeaseTable leases={leasesFixture} />);
+
+    const userCell: HTMLElement = cellIn(groupRow(DEV_LEASE), 'Użytkownik');
+
+    expect(within(userCell).queryByText(DEV_LEASE.user.login)).not.toBeInTheDocument();
   });
 
   it('hides the avatar from assistive tech: the name and login sit in the same cell', () => {
@@ -177,6 +185,73 @@ describe('LeaseTable — komórka tożsamości w wierszu osoby', () => {
     renderWithProviders(<LeaseTable leases={leasesFixture} />);
 
     expect(cellIn(groupRow(ADMIN_LEASE), 'Zespół')).toHaveTextContent('—');
+  });
+});
+
+describe('LeaseTable — etykiety „Poziom” i „Status” w wierszu osoby', () => {
+  it('keeps them out of sight while the person is collapsed', () => {
+    renderWithProviders(<LeaseTable leases={leasesFixture} />);
+
+    const row: HTMLElement = groupRow(DEV_LEASE);
+
+    expect(cellIn(row, 'Poziom').textContent).toBe('');
+    expect(cellIn(row, 'Status').textContent).toBe('');
+  });
+
+  it('shows them on the person row once it is expanded', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LeaseTable leases={leasesFixture} />);
+    await user.click(toggleFor(DEV_LEASE));
+
+    const row: HTMLElement = groupRow(DEV_LEASE);
+
+    expect(cellIn(row, 'Poziom')).toHaveTextContent('Poziom');
+    expect(cellIn(row, 'Status')).toHaveTextContent('Status');
+  });
+
+  it('leaves them in the table header for screen readers only', () => {
+    renderWithProviders(<LeaseTable leases={leasesFixture} />);
+
+    for (const name of ['Poziom', 'Status']) {
+      expect(screen.getByRole('columnheader', { name })).toBeInTheDocument();
+      expect(within(screen.getByRole('columnheader', { name })).getByText(name)).toHaveClass(
+        'sr-only',
+      );
+    }
+  });
+});
+
+describe('LeaseTable — kolumna „Akcje” i wyrównanie', () => {
+  it('names the actions column for screen readers only, like level and status', () => {
+    renderWithProviders(<LeaseTable leases={leasesFixture} onDecide={vi.fn()} />);
+
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Akcje' })).getByText('Akcje'),
+    ).toHaveClass('sr-only');
+  });
+
+  it('captions the actions column on the person row only after expanding', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LeaseTable leases={leasesFixture} onDecide={vi.fn()} />);
+
+    expect(cellIn(groupRow(DEV_LEASE), 'Akcje').textContent).toBe('');
+
+    await user.click(toggleFor(DEV_LEASE));
+
+    expect(cellIn(groupRow(DEV_LEASE), 'Akcje')).toHaveTextContent('Akcje');
+  });
+
+  it('centres every column header and every lease cell', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LeaseTable leases={leasesFixture} onDecide={vi.fn()} />);
+    await user.click(toggleFor(DEV_LEASE));
+
+    for (const header of screen.getAllByRole('columnheader')) {
+      expect(header).toHaveClass('text-center');
+    }
+    for (const cell of within(leaseRow(DEV_LEASE)).getAllByRole('cell')) {
+      expect(cell).toHaveClass('text-center');
+    }
   });
 });
 

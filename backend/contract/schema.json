@@ -518,6 +518,29 @@
       "title": "DecisionRequest",
       "type": "object"
     },
+    "DemoRefreshResult": {
+      "description": "One demo \"refresh\": the first call finds a new person, every later one brings fresh activity instead.",
+      "properties": {
+        "added_users": {
+          "items": {
+            "$ref": "#/$defs/UserRead"
+          },
+          "type": "array"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/ActivityEventRead"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "added_users",
+        "events"
+      ],
+      "title": "DemoRefreshResult",
+      "type": "object"
+    },
     "DemoResetResult": {
       "properties": {
         "counts": {

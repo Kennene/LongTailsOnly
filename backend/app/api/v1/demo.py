@@ -1,14 +1,17 @@
+import random
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from app.api.v1.deps import ClockDep, SessionDep, SettingsDep
 from app.core.config import Settings, get_settings
 from app.core.enforcement_mode import EnforcementState, get_enforcement_state
 from app.core.time_provider import TimeProvider, get_time_provider
 from app.db.bootstrap import prepare_database
 from app.db.session import get_engine
-from app.schemas import DemoResetResult
+from app.schemas import DemoRefreshResult, DemoResetResult
+from app.services.demo_refresh_service import refresh_demo
 
 router = APIRouter(prefix="/api/v1/demo", tags=["demo"])
 
@@ -26,3 +29,16 @@ async def reset_demo(
     clock.reset()  # before seeding: seed dates are anchored to the clock
     counts = await prepare_database(engine, clock, reset=True)
     return DemoResetResult(now=clock.get_current_time(), offset_days=clock.offset_days, counts=counts)
+
+
+@router.post("/refresh", response_model=DemoRefreshResult)
+async def refresh_demo_data(session: SessionDep, clock: ClockDep, settings: SettingsDep) -> DemoRefreshResult:
+    """Live-demo refresh: the first call brings in one new person, every later call random GitHub activity.
+
+    Guarded by the same switch as the reset (`ENABLE_DEMO_RESET`), which also undoes everything done here.
+    """
+    if not settings.enable_demo_reset:
+        raise HTTPException(status_code=404, detail="Not Found")
+    result = await refresh_demo(session, now=clock.get_current_time(), rng=random.Random())
+    await session.commit()
+    return result

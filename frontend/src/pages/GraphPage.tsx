@@ -83,7 +83,7 @@ export function GraphPage(): React.JSX.Element {
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Graf</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Mapa Dostępów</h1>
         <p className="text-sm text-muted-foreground">
           Kto ma dostęp do czego: osoby, zespoły i repozytoria. Kliknij węzeł albo wybierz osobę,
           żeby podświetlić jej drogi dostępu; obrys węzła i kolor krawędzi niosą status dostępu.
