@@ -4,11 +4,11 @@ import { fetchDashboard } from '@/api/dashboard';
 import type { DashboardStats } from '@/types/api';
 
 /**
- * Liczniki KPI pulpitu (`fetchDashboard`, krok 4.6B podmieni je na `GET /api/v1/dashboard/stats`).
+ * Liczniki KPI pulpitu — `GET /api/v1/dashboard/stats` (jedno żądanie, cała dziewiątka pól).
  *
- * Do czasu 4.6B liczniki powstają po stronie frontendu z listy dzierżaw, zegara i odwołań
- * (patrz `api/dashboard.ts`), więc klucz `['dashboard']` unieważniany po decyzji, odwołaniu,
- * onboardingu i podróży w czasie odświeża całą trójkę odczytów.
+ * Backend liczy je sam (`insights_service.get_dashboard_stats`), więc klucz `['dashboard']`
+ * unieważniamy po każdej zmianie, która może ruszyć liczniki: decyzji o dzierżawie, rozstrzygnięciu
+ * odwołania, onboardingu i podróży w czasie.
  */
 export function useDashboard(): UseQueryResult<DashboardStats> {
   return useQuery({ queryKey: ['dashboard'], queryFn: fetchDashboard });

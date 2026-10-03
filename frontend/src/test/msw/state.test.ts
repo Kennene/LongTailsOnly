@@ -7,7 +7,8 @@ import type { LeaseOverview } from '@/types/api';
  * w teście widoku: symulacja backendu musi oddawać je co do dnia.
  *
  * Scenariusze wygrywają z przeliczeniem: `t0` to dokładnie snapshot z `shared/fixtures/`,
- * a skok zegara tylko go przesuwa.
+ * a skok zegara tylko go przesuwa. Jedyny wyjątek to rekomendacja dzierżawy po terminie —
+ * `shared/scenarios/uc-04-time-travel.json` pinuje dla `EXPIRED` wartość `REVOKE`.
  */
 
 function leaseOf(leases: LeaseOverview[], login: string, repository: string): LeaseOverview {
@@ -24,13 +25,20 @@ function leaseOf(leases: LeaseOverview[], login: string, repository: string): Le
 }
 
 describe('symulacja dzierżaw (MSW)', () => {
-  it('na kotwicy demo oddaje dokładnie wspólne fixture’y dzierżaw', () => {
-    // `status`, `days_remaining` i `recommendation` z shared/fixtures/leases*.json są
-    // wartościami na kotwicę — symulacja nie może ich nadpisać własnym przeliczeniem.
-    expect(getLeases()).toEqual(leasesFixture);
+  it('na kotwicy demo oddaje wspólne fixture’y dzierżaw, przeliczając rekomendację EXPIRED na REVOKE', () => {
+    // `status` i `days_remaining` z shared/fixtures/leases*.json są wartościami na kotwicę —
+    // symulacja nie może ich nadpisać własnym przeliczeniem. Rekomendacja to wyjątek:
+    // `shared/scenarios/uc-04-time-travel.json` pinuje dla `EXPIRED` wartość `REVOKE`, a snapshot
+    // kotwicy trzyma dla dwóch wygasłych dzierżaw `DOWNSCOPE` (shared/fixtures/leases-expired.json).
+    const expected: LeaseOverview[] = leasesFixture.map((lease: LeaseOverview): LeaseOverview =>
+      lease.status === 'EXPIRED' ? { ...lease, recommendation: 'REVOKE' } : lease,
+    );
+
+    expect(getLeases()).toEqual(expected);
   });
 
   it('UC-02: kamil@payment-service jest WARNING z rekomendacją DOWNSCOPE', () => {
+    // shared/scenarios/uc-02-downscope.json: `then[0].expect` pinuje komplet pól tej dzierżawy.
     const lease: LeaseOverview = leaseOf(getLeases(), 'kamil', 'payment-service');
 
     expect(lease).toMatchObject({
@@ -41,7 +49,9 @@ describe('symulacja dzierżaw (MSW)', () => {
     });
   });
 
-  it('UC-04: kamil@core-api przechodzi ACTIVE → WARNING → EXPIRED', () => {
+  it('UC-04: kamil@core-api przechodzi ACTIVE/KEEP → WARNING → EXPIRED/REVOKE', () => {
+    // shared/scenarios/uc-04-time-travel.json: t0 `ACTIVE`+`KEEP`, t25 `WARNING`, t30
+    // `EXPIRED`+`REVOKE`. Rekomendacji dla t25 scenariusz nie pinuje, więc zostaje ze snapshotu.
     expect(leaseOf(getLeases(), 'kamil', 'core-api')).toMatchObject({
       status: 'ACTIVE',
       days_remaining: 28,
@@ -55,13 +65,25 @@ describe('symulacja dzierżaw (MSW)', () => {
     expect(leaseOf(getLeases(), 'kamil', 'core-api')).toMatchObject({
       status: 'WARNING',
       days_remaining: 3,
+      recommendation: 'KEEP',
     });
 
     advanceSimulatedClock(5);
 
     expect(leaseOf(getLeases(), 'kamil', 'core-api')).toMatchObject({
       status: 'EXPIRED',
-      recommendation: 'KEEP',
+      recommendation: 'REVOKE',
+    });
+  });
+
+  it('zamienia DOWNSCOPE na REVOKE dopiero wtedy, gdy dzierżawa przekroczy termin', () => {
+    // Ta sama reguła co w UC-04, pinowana na dzierżawie z UC-02: `DOWNSCOPE` ze snapshotu zostaje
+    // dopóki status jest `WARNING`, a po przekroczeniu terminu wchodzi `REVOKE`.
+    advanceSimulatedClock(25);
+
+    expect(leaseOf(getLeases(), 'kamil', 'payment-service')).toMatchObject({
+      status: 'EXPIRED',
+      recommendation: 'REVOKE',
     });
   });
 

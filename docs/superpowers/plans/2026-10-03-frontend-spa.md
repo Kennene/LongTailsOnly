@@ -72,15 +72,14 @@ nieistniejące: `GET /api/v1/baseline/1` (realnie `/api/v1/teams/{slug}/baseline
 HTTP „gdy powstaną endpointy widokowe" — rozjazd nie jest więc czerwony, ale skrypt demo (6.6)
 musi użyć ścieżek realnych: `/reject`, `/teams/{slug}/baseline`.
 
-**Znane rozjazdy w danych współdzielonych (do decyzji właścicieli plików).**
+**Znane rozjazdy w danych współdzielonych (stan po merge'u PR #16/#17).**
 
-Wiring odsłonił rozjazdy w `shared/`, których frontend nie naprawia po cichu:
-
-1. **Status dzierżaw admina** — `shared/fixtures/leases.json` trzymał `ACTIVE` dla trzech dzierżaw `admin`, a silnik liczy `PERMANENT` (`lease_rules.lease_status`; dowód: `backend/tests/api/test_leases_api.py:47`, `backend/tests/services/test_lease_overviews.py:72`). **Naprawione w tym commicie** (`ACTIVE` → `PERMANENT`, `days_remaining: null`); frontend normalizował to u siebie od merge'u, więc zmiana jest idempotentna.
-2. **Liczba dni przy kotwicy** — dla `kamil@core-api` trzy źródła podają trzy wartości: `uc-04` oczekuje **29**, wspólny fixture ma **28**, a silnik liczący `ceil(expires_at − now)` przy kotwicy `2026-10-03T00:00:00Z` daje **30**. `uc-04` jest wewnętrznie spójny (29 → po +25 dniach 4), więc uzgodnienia wymaga fixture i kotwica, nie scenariusz. Offline frontend pokazuje wartości zamrożone z fixture'u, live — z silnika; **przed demo trzeba to uzgodnić**, inaczej krok „+25 dni” pokaże 3 zamiast 4.
-3. **`uc-03` wskazuje nieistniejącą ścieżkę** — `POST /api/v1/appeals/{id}/decision` (plan 4.3C) z oczekiwaniem `APPROVED`, gdy backend serwuje `POST /api/v1/appeals/{id}/reject`. Scenariusz opisuje intencję (zatwierdzenie odwołania), więc go nie przepisuję: wymaga albo kroku 4.3C, albo świadomej zmiany narracji demo na odrzucenie.
-4. **`docs/osoba-4.md`** podaje baseline DEV `11/7/8`, a `shared/fixtures/baseline.json` (i `uc-01`) `10/6/7`. Frontend czyta fixture'y; która strona jest nieaktualna, rozstrzyga seed.
-5. **`shared/fixtures/manifest.json`** nie wymienia nowych konsumentów (`users.json` czyta też pulpit 5.6, `teams`/`repositories` graf 5.9) i nie ma pliku `dashboard.json`, bo `DashboardStats` jest wyliczany z dzierżaw.
+1. **Status dzierżaw admina** — `shared/fixtures/leases.json` trzymał `ACTIVE` dla trzech dzierżaw `admin`, a silnik liczy `PERMANENT` (`lease_rules.lease_status`; dowód: `backend/tests/api/test_leases_api.py:47`, `backend/tests/services/test_lease_overviews.py:72`). **Naprawione** (`ACTIVE` → `PERMANENT`, `days_remaining: null`); frontend normalizował to u siebie wcześniej, więc zmiana jest idempotentna.
+2. **Liczba dni przy kotwicy — nadal aktualne, ale już nie blokuje scenariusza.** `d097d0e` usunął z `uc-04` liczby dni (scenariusz pinuje teraz tylko statusy i rekomendację), więc rozjazd nie zapala testów. Zostaje różnica **wyświetlanych** wartości: fixture ma dla `kamil@core-api` 28 dni, a silnik liczący `ceil(expires_at − now)` przy kotwicy daje 30. Offline widać 28, live 30 — przed demo warto uzgodnić kotwicę, żeby slajd „+25 dni” nie zaskoczył.
+3. **`uc-03` — rozwiązane upstream.** `d097d0e` przepisał scenariusz na ścieżki, które istnieją (`/leases/{id}/decision`, `/appeals/{id}/reject`), a `6edf1f9` dodał `POST /api/v1/appeals/{id}/decision` (4.3C) dla zatwierdzania odwołania. Frontend przechodzi na te endpointy w gałęzi `feat/frontend-engine-endpoints`.
+4. **`docs/osoba-4.md`** podaje baseline DEV `11/7/8`, a `shared/fixtures/baseline.json` (i `uc-01`) `10/6/7`. Frontend czyta fixture'y; która strona jest nieaktualna, rozstrzyga seed — **do decyzji właściciela**.
+5. **`shared/fixtures/manifest.json`** nie wymienia nowych konsumentów (`users.json` czyta też pulpit 5.6, `teams`/`repositories` graf 5.9) i nie ma pliku `dashboard.json`, bo `DashboardStats` przychodzi z `GET /api/v1/dashboard/stats` — **do decyzji właściciela**.
+6. **Nowy kontekst po merge'u:** `main` ma mock Jiry (ADR 0016, `backend/app/api/jira_mock`) i gałąź `feat/service-picker` buduje dla niego warstwę frontendu (`services/serviceRegistry.ts`, `brandIcons.tsx`, `useServices.ts`) — poza zakresem tego planu.
 
 ## Globalne ograniczenia
 

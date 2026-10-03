@@ -15,13 +15,22 @@ import { leasesFixture } from './leases';
  * dzierżawy stałe (`admin`, `expires_at: null`) idą do `permanent`, wyłączone do `revoked`,
  * a statusy i rekomendacje liczymy wyłącznie po dzierżawach czynnych i nie-stałych.
  *
- * `pending_appeals` i `onboarding_candidates` nie wynikają z samych dzierżaw, więc bierzemy je
- * ze wspólnych fixture'ów (`appeals.json`, `users.json`) zamiast wpisywać liczby z sufitu.
- * Stan odwołań w symulacji MSW żyje w domenie „appeals”, więc te dwa liczniki są na razie stałe.
+ * `pending_appeals` i `onboarding_candidates` nie wynikają z samych dzierżaw: pierwszy bierzemy
+ * z parametru (w trybie MSW to żywy stan domeny „appeals”, domyślnie wspólny `appeals.json`),
+ * drugi liczymy ze wspólnego `users.json` — zamiast wpisywać liczby z sufitu.
  */
 const DEMO_ANCHOR: string = (clockJson as ClockRead).now;
 
-export function countDashboard(leases: LeaseOverview[], generatedAt: string): DashboardStats {
+export function countDashboard(
+  leases: LeaseOverview[],
+  generatedAt: string,
+  /**
+   * `pending_appeals` w backendzie to żywy `count` z tabeli odwołań (`insights_service`), a nie
+   * pochodna dzierżaw — testy podają tu stan domeny odwołań, a domyślnie liczymy ze wspólnego
+   * fixture'u (`appeals.json`), żeby tryb `VITE_USE_FIXTURES` i tryb MSW mówiły to samo.
+   */
+  pendingAppeals: number = countPendingAppeals(),
+): DashboardStats {
   const live: LeaseOverview[] = leases.filter((lease: LeaseOverview): boolean => lease.is_active);
   const leased: LeaseOverview[] = live.filter(
     (lease: LeaseOverview): boolean => lease.current_role !== 'admin',
@@ -42,7 +51,7 @@ export function countDashboard(leases: LeaseOverview[], generatedAt: string): Da
       leased,
       (lease: LeaseOverview): boolean => lease.recommendation === 'REVOKE',
     ),
-    pending_appeals: countPendingAppeals(),
+    pending_appeals: pendingAppeals,
     onboarding_candidates: countOnboardingCandidates(live),
   };
 }

@@ -36,9 +36,10 @@ export interface DecisionModalProps {
   onOpenChange: (open: boolean) => void;
   /**
    * Odwołanie do rozpatrzenia (UC-3). Gdy podane, modal wchodzi w tryb odwołania i renderuje
-   * `DecisionModalAppeal` — z odrzuceniem przez `POST /api/v1/appeals/{id}/reject`. Cały kontekst
-   * (osoba, repozytorium, rola, pozostałe dni) niesie `AppealOverview`, więc dzierżawa nie jest
-   * wtedy potrzebna. Domyślnie `null` — ścieżka decyzji o dzierżawie bez zmian.
+   * `DecisionModalAppeal` — z zatwierdzeniem przedłużeniem albo decyzją o dzierżawie przez
+   * `POST /api/v1/appeals/{id}/decision` i odrzuceniem przez `POST /api/v1/appeals/{id}/reject`.
+   * Cały kontekst (osoba, repozytorium, rola, pozostałe dni) niesie `AppealOverview`, więc
+   * dzierżawa nie jest wtedy potrzebna. Domyślnie `null` — ścieżka decyzji o dzierżawie bez zmian.
    */
   appeal?: AppealOverview | null;
 }

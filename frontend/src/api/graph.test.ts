@@ -1,7 +1,8 @@
 import { http, type HttpHandler, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { graphFixture } from '@/api/fixtures/graph';
+import { ApiError } from '@/api/client';
+import { buildGraphFixture, graphFixture } from '@/api/fixtures/graph';
 import { fetchGraph } from '@/api/graph';
 import { server } from '@/test/msw/server';
 import { advanceSimulatedClock, getLeases } from '@/test/msw/state';
@@ -14,9 +15,9 @@ import type {
 } from '@/types/api';
 
 /**
- * Warstwa danych grafu: backend **nie serwuje** `GET /api/v1/graph` (krok 4.6B), więc
- * `fetchGraph()` składa `PermissionGraph` z listy dzierżaw (`GET /api/v1/leases`), odwzorowując
- * `app/domain/insights.py::build_graph_layout`.
+ * Warstwa danych grafu: backend serwuje `GET /api/v1/graph` (kontraktowy `PermissionGraph`, ADR 0009)
+ * z filtrem `?team=<slug>` (`app/api/v1/graph.py`), więc `fetchGraph()` nie składa już grafu
+ * z listy dzierżaw — bierze gotowy ładunek, razem z węzłami zespołów i krawędziami członkostwa.
  *
  * Testujemy tutaj, bo widok pokazuje wyłącznie liczniki węzłów i krawędzi — identyfikatory,
  * `data` krawędzi i `position` węzłów nigdzie nie trafiają, a to one pinują kontrakt React Flow.
@@ -24,12 +25,17 @@ import type {
 
 const RISK_STATUSES: readonly LeaseStatus[] = ['WARNING', 'EXPIRED'];
 
-/** Trasa, której backend jeszcze nie ma: wołanie jej to regres, a nie powód do cichego fallbacku. */
+/** Trasa spoza `fetchGraph`: wołanie jej to regres do składania grafu po stronie frontendu. */
 function forbidRoute(path: string, calls: string[]): HttpHandler {
   return http.get(path, () => {
     calls.push(path);
     return HttpResponse.json({ detail: `${path} not found` }, { status: 404 });
   });
+}
+
+/** Ładunek, który oddaje „backend”: ta sama reguła co `insights_service.get_permission_graph`. */
+function liveGraph(team: string | null = null): PermissionGraph {
+  return buildGraphFixture(getLeases(), team);
 }
 
 /** Dzierżawy, które widzi API — graf pomija nieaktywne (odebrany dostęp), tak jak backend. */
@@ -52,37 +58,71 @@ afterEach(() => {
 });
 
 describe('fetchGraph', () => {
-  it('składa węzły osób i repozytoriów oraz krawędź na każdą czynną dzierżawę', async () => {
-    const leases: LeaseOverview[] = activeLeases();
+  it('czyta graf z GET /api/v1/graph i nie schodzi na listę dzierżaw', async () => {
+    const paths: string[] = [];
+    const derivedPaths: string[] = [];
+    const payload: PermissionGraph = {
+      nodes: [
+        {
+          id: 'team:dev',
+          type: 'team',
+          position: { x: 0, y: 0 },
+          data: { label: 'DEV', team: 'dev', is_admin: false },
+        },
+      ],
+      edges: [],
+    };
+    server.use(
+      http.get('/api/v1/graph', ({ request }) => {
+        paths.push(new URL(request.url).pathname);
+        return HttpResponse.json(payload);
+      }),
+      forbidRoute('/api/v1/leases', derivedPaths),
+      forbidRoute('/api/v1/dashboard/stats', derivedPaths),
+    );
+
     const graph: PermissionGraph = await fetchGraph();
 
-    expect(nodeIds(graph, 'user')).toEqual(
-      uniqueIds(leases.map((lease) => `user:${lease.user.id}`)),
-    );
-    expect(nodeIds(graph, 'repo')).toEqual(
-      uniqueIds(leases.map((lease) => `repo:${lease.repository.id}`)),
-    );
-    expect(graph.nodes).toHaveLength(nodeIds(graph, 'user').length + nodeIds(graph, 'repo').length);
-    expect(graph.edges.map((edge: GraphEdge): string => edge.id).toSorted()).toEqual(
-      uniqueIds(leases.map((lease) => `lease:${lease.id}`)),
-    );
+    expect(paths).toEqual(['/api/v1/graph']);
+    expect(derivedPaths).toEqual([]);
+    // Odpowiedź idzie na ekran co do znaku — frontend nie dokłada węzłów ani nie zmienia pozycji.
+    expect(graph).toEqual(payload);
   });
 
-  it('nie tworzy węzłów zespołów ani krawędzi członkostwa, bo lista dzierżaw nie niesie składu zespołów', async () => {
+  it('przekazuje filtr zespołu jako parametr ?team=<slug>', async () => {
+    const searches: string[] = [];
+    server.use(
+      http.get('/api/v1/graph', ({ request }) => {
+        const url = new URL(request.url);
+        searches.push(url.search);
+        return HttpResponse.json(liveGraph(url.searchParams.get('team')));
+      }),
+    );
+
+    const whole: PermissionGraph = await fetchGraph();
+    const narrowed: PermissionGraph = await fetchGraph({ team: 'qa' });
+
+    expect(searches).toEqual(['', '?team=qa']);
+    // Bez filtra ładunek niesie wszystkie zespoły, z filtrem tylko wskazany.
+    expect(nodeIds(whole, 'team')).toEqual(['team:dev', 'team:qa']);
+    expect(nodeIds(narrowed, 'team')).toEqual(['team:qa']);
+    expect(narrowed.nodes.length).toBeLessThan(whole.nodes.length);
+  });
+
+  it('niesie węzły zespołów i krawędzie członkostwa, których lista dzierżaw nie ma', async () => {
     const graph: PermissionGraph = await fetchGraph();
 
-    expect(graph.nodes.filter((node: GraphNode): boolean => node.type === 'team')).toEqual([]);
+    expect(nodeIds(graph, 'team')).toEqual(['team:dev', 'team:qa']);
     expect(
-      graph.edges.filter((edge: GraphEdge): boolean => edge.data.kind === 'membership'),
-    ).toEqual([]);
-    // Zespół zostaje tam, gdzie naprawdę jest w payloadzie: na węźle osoby (slug z `user.team`).
+      graph.edges
+        .filter((edge: GraphEdge): boolean => edge.data.kind === 'membership')
+        .map((edge: GraphEdge): string => edge.id),
+    ).toContain('member:kamil');
     expect(
-      new Set(
-        graph.nodes
-          .filter((node: GraphNode): boolean => node.type === 'user')
-          .map((node) => node.data.team),
-      ),
-    ).toEqual(new Set(activeLeases().map((lease) => lease.user.team?.slug ?? null)));
+      graph.edges
+        .filter((edge: GraphEdge): boolean => edge.data.kind === 'membership')
+        .every((edge: GraphEdge): boolean => edge.animated === false),
+    ).toBe(true);
   });
 
   it('niesie rolę, status i rekomendację dzierżawy oraz zapala animated tylko dla ryzyka', async () => {
@@ -95,8 +135,8 @@ describe('fetchGraph', () => {
       );
 
       expect(edge).toMatchObject({
-        source: `user:${lease.user.id}`,
-        target: `repo:${lease.repository.id}`,
+        source: `user:${lease.user.login}`,
+        target: `repo:${lease.repository.name}`,
         label: lease.current_role,
         animated: RISK_STATUSES.includes(lease.status),
         data: {
@@ -117,25 +157,20 @@ describe('fetchGraph', () => {
     ).toBe(true);
   });
 
-  it('nadaje każdemu węzłowi pozycję i trzyma układ między odczytami', async () => {
-    server.use(forbidRoute('/api/v1/graph', []));
+  it('ma pozycję w każdym węźle — kontrakt React Flow nie czeka na układ widoku', async () => {
+    const graph: PermissionGraph = await fetchGraph();
 
-    const first: PermissionGraph = await fetchGraph();
-    const second: PermissionGraph = await fetchGraph();
-
-    first.nodes.forEach((node: GraphNode): void => {
+    graph.nodes.forEach((node: GraphNode): void => {
       expect(Number.isFinite(node.position.x)).toBe(true);
       expect(Number.isFinite(node.position.y)).toBe(true);
     });
-    expect(new Set(first.nodes.map((node) => `${node.position.x}:${node.position.y}`)).size).toBe(
-      first.nodes.length,
+    expect(new Set(graph.nodes.map((node) => `${node.position.x}:${node.position.y}`)).size).toBe(
+      graph.nodes.length,
     );
-    expect(second.nodes).toEqual(first.nodes);
   });
 
   it('po podróży w czasie przenosi nowe statusy na krawędzie', async () => {
     advanceSimulatedClock(25);
-    server.use(forbidRoute('/api/v1/graph', []));
 
     const leases: LeaseOverview[] = activeLeases();
     const graph: PermissionGraph = await fetchGraph();
@@ -150,20 +185,24 @@ describe('fetchGraph', () => {
     });
   });
 
-  it('nie woła brakującego GET /api/v1/graph (krok 4.6B)', async () => {
-    const calls: string[] = [];
-    server.use(forbidRoute('/api/v1/graph', calls));
+  it('zwraca 404 z serwera jako błąd, a nie cichy fallback na graf z listy dzierżaw', async () => {
+    const derivedPaths: string[] = [];
+    server.use(
+      http.get('/api/v1/graph', () => HttpResponse.json({ detail: 'Not Found' }, { status: 404 })),
+      forbidRoute('/api/v1/leases', derivedPaths),
+    );
 
-    const graph: PermissionGraph = await fetchGraph();
+    const error: unknown = await fetchGraph().catch((caught: unknown) => caught);
 
-    expect(calls).toEqual([]);
-    expect(graph.nodes.length).toBeGreaterThan(0);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 404 });
+    expect(derivedPaths).toEqual([]);
   });
 
   it('w trybie VITE_USE_FIXTURES oddaje graf z fixture i nie pyta API', async () => {
     vi.stubEnv('VITE_USE_FIXTURES', 'true');
     const calls: string[] = [];
-    server.use(forbidRoute('/api/v1/leases', calls), forbidRoute('/api/v1/graph', calls));
+    server.use(forbidRoute('/api/v1/graph', calls), forbidRoute('/api/v1/leases', calls));
 
     expect(await fetchGraph()).toEqual(graphFixture);
     expect(calls).toEqual([]);

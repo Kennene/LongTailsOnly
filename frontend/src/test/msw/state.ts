@@ -1,5 +1,5 @@
 import { leasesFixture } from '@/api/fixtures/leases';
-import type { DecisionRequest, LeaseOverview, LeaseStatus } from '@/types/api';
+import type { DecisionRequest, LeaseOverview, LeaseStatus, Recommendation } from '@/types/api';
 
 /**
  * Stan symulacji dla testów: zegar, offset, dzierżawy i zapisane żądania.
@@ -144,16 +144,35 @@ function extensionDays(request: DecisionRequest, base: string): number {
  * Przesuwa snapshot dzierżawy o zegar symulowany: `status` wynika z liczby dni, a nie z zegara
  * systemowego, więc panel pokazuje dokładnie to, co pokazałby backend po `time_travel`.
  *
- * Rekomendacja zostaje z fixture'u (pochodzi z aktywności w seedzie, nie z samego terminu):
- * UC-4 oczekuje `KEEP` także w chwili, gdy `kamil@core-api` jest już `EXPIRED`.
+ * Rekomendacja bierze się z aktywności w seedzie (snapshot fixture'u), z jednym wyjątkiem:
+ * dzierżawa po terminie to `REVOKE` (patrz `recommendationFor`).
  */
 export function withComputedFields(lease: LeaseOverview, elapsedDays: number): LeaseOverview {
   const days: number | null =
     lease.expires_at === null || lease.days_remaining === null
       ? null
       : lease.days_remaining - elapsedDays;
+  const status: LeaseStatus = statusFor(lease, days);
 
-  return { ...lease, status: statusFor(lease, days), days_remaining: days };
+  return {
+    ...lease,
+    status,
+    days_remaining: days,
+    recommendation: recommendationFor(lease.recommendation, status),
+  };
+}
+
+/**
+ * Rekomendacja dla policzonego statusu — scenariusze są źródłem prawdy, nie snapshot kotwicy.
+ *
+ * `shared/scenarios/uc-04-time-travel.json` pinuje dla `kamil@core-api` w `t30` status `EXPIRED`
+ * **i** rekomendację `REVOKE`, a snapshot kotwicy trzyma tam `KEEP` (fixture'y są zrzutem z bazy
+ * sprzed doby, ADR 0008). Dzierżawa po terminie idzie więc na `REVOKE`, a przed terminem
+ * rekomendacja zostaje ze snapshotu — to ona pinuje `WARNING`/`DOWNSCOPE` z
+ * `shared/scenarios/uc-02-downscope.json`.
+ */
+function recommendationFor(snapshot: Recommendation, status: LeaseStatus): Recommendation {
+  return status === 'EXPIRED' ? 'REVOKE' : snapshot;
 }
 
 /**

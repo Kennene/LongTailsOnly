@@ -2,7 +2,6 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, type HttpHandler, HttpResponse } from 'msw';
 
-import { appealsFixture } from '@/api/fixtures';
 import { countDashboard, dashboardFixture } from '@/api/fixtures/dashboard';
 import { leasesFixture } from '@/api/fixtures/leases';
 import { formatDaysRemaining } from '@/lib/dateTime';
@@ -27,14 +26,15 @@ const KPI_TEST_IDS: string[] = ['kpi-active', 'kpi-warning', 'kpi-expired', 'kpi
 
 /**
  * Oczekiwane liczniki liczymy z żywego stanu dzierżaw i zegara symulowanego — dokładnie z tego,
- * co widzi handler MSW. Żadna liczba nie jest przepisana drugi raz (audyt: „Aktywne 12”
- * przy czterech wierszach), a fixture pochodzi ze wspólnego `shared/fixtures/leases*.json`.
+ * co widzi handler MSW (`GET /api/v1/dashboard/stats`). Żadna liczba nie jest przepisana drugi raz
+ * (audyt: „Aktywne 12” przy czterech wierszach), a fixture pochodzi ze wspólnego
+ * `shared/fixtures/leases*.json`.
  */
 function expectedCounters(): DashboardStats {
   return countDashboard(getLeases(), getSimulatedNow());
 }
 
-/** Trasa, której backend jeszcze nie ma (4.6B): wołanie jej to regres, nie powód do fallbacku. */
+/** Trasa, której backend nie serwuje: wołanie jej to regres, nie powód do cichego fallbacku. */
 function forbidRoute(path: string, calls: string[]): HttpHandler {
   return http.get(path, () => {
     calls.push(path);
@@ -116,23 +116,36 @@ describe('DashboardPage', () => {
     expectKpi('kpi-downscope', expected.downscope_recommendations);
   });
 
-  it('derives the counters from the lease list without calling the missing /api/v1/dashboard', async () => {
-    const calls: string[] = [];
+  it('pokazuje liczniki z GET /api/v1/dashboard/stats, a nie policzone z listy dzierżaw', async () => {
+    const paths: string[] = [];
+    const legacyPaths: string[] = [];
+    // Liczby celowo różne od reguły liczonej z dzierżaw: gdyby widok nadal liczył je sam,
+    // karty pokazałyby `expectedCounters()`, a nie tę odpowiedź.
+    const payload: DashboardStats = {
+      ...expectedCounters(),
+      active: 42,
+      warning: 7,
+      expired: 1,
+      downscope_recommendations: 5,
+    };
     server.use(
-      forbidRoute('/api/v1/dashboard', calls),
-      forbidRoute('/api/v1/dashboard/stats', calls),
-      forbidRoute('/api/v1/graph', calls),
+      http.get('/api/v1/dashboard/stats', ({ request }) => {
+        paths.push(new URL(request.url).pathname);
+        return HttpResponse.json(payload);
+      }),
+      forbidRoute('/api/v1/dashboard', legacyPaths),
     );
 
-    const expected: DashboardStats = expectedCounters();
     renderWithProviders(<DashboardPage />);
 
     expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
-    expectKpi('kpi-active', expected.active);
-    expectKpi('kpi-warning', expected.warning);
-    expectKpi('kpi-expired', expected.expired);
-    expectKpi('kpi-downscope', expected.downscope_recommendations);
-    expect(calls).toEqual([]);
+    expectKpi('kpi-active', 42);
+    expectKpi('kpi-warning', 7);
+    expectKpi('kpi-expired', 1);
+    expectKpi('kpi-downscope', 5);
+    expect(paths).toEqual(['/api/v1/dashboard/stats']);
+    expect(legacyPaths).toEqual([]);
+    expect(payload.active).not.toBe(expectedCounters().active);
   });
 
   it('recounts the counters from the live lease state after the simulated clock moves', async () => {
@@ -151,8 +164,20 @@ describe('DashboardPage', () => {
     expect(expected.expired).not.toBe(dashboardFixture.expired);
   });
 
-  it('renders zeros when the API returns no leases', async () => {
-    server.use(http.get('/api/v1/leases', () => HttpResponse.json([])));
+  it('pokazuje zera, gdy backend oddaje zerowe liczniki', async () => {
+    const zeros: DashboardStats = {
+      generated_at: getSimulatedNow(),
+      active: 0,
+      warning: 0,
+      expired: 0,
+      permanent: 0,
+      revoked: 0,
+      downscope_recommendations: 0,
+      revoke_recommendations: 0,
+      pending_appeals: 0,
+      onboarding_candidates: 0,
+    };
+    server.use(http.get('/api/v1/dashboard/stats', () => HttpResponse.json(zeros)));
     renderWithProviders(<DashboardPage />);
 
     expect(await screen.findByTestId('kpi-warning')).toBeInTheDocument();
@@ -162,24 +187,25 @@ describe('DashboardPage', () => {
     }
   });
 
-  it('shows an error state whose retry button refetches the derived counters', async () => {
+  it('pokazuje błąd liczników, gdy GET /api/v1/dashboard/stats odpowiada 404, i ponawia odczyt', async () => {
     const user = userEvent.setup();
-    let appealsFailing: boolean = true;
+    let statsMissing: boolean = true;
     server.use(
-      http.get('/api/v1/appeals', () =>
-        appealsFailing
-          ? HttpResponse.json({ detail: 'Boom' }, { status: 500 })
-          : HttpResponse.json(appealsFixture),
+      http.get('/api/v1/dashboard/stats', () =>
+        statsMissing
+          ? HttpResponse.json({ detail: 'Not Found' }, { status: 404 })
+          : HttpResponse.json(expectedCounters()),
       ),
     );
     renderWithProviders(<DashboardPage />);
 
-    const alert: HTMLElement = await screen.findByRole('alert');
+    // Brak endpointu jest błędem widoku: żadnego cichego fallbacku na liczenie z listy dzierżaw.
+    const alert: HTMLElement = await screen.findByTestId('kpi-error');
     expect(alert).toHaveTextContent('Nie udało się pobrać liczników');
-    expect(screen.getByRole('button', { name: 'Odśwież' })).toBeInTheDocument();
+    expect(screen.queryByTestId('kpi-active')).not.toBeInTheDocument();
 
-    appealsFailing = false;
-    await user.click(screen.getByRole('button', { name: 'Odśwież' }));
+    statsMissing = false;
+    await user.click(within(alert).getByRole('button', { name: 'Odśwież' }));
 
     expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
     expectKpi('kpi-active', expectedCounters().active);
@@ -246,7 +272,7 @@ describe('DashboardPage', () => {
     expect(within(section).queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('reports a leases failure in both sections and lets each one retry on its own', async () => {
+  it('rozłącza liczniki od listy dzierżaw: awaria dzierżaw nie zabiera KPI', async () => {
     const user = userEvent.setup();
     let leasesFailing: boolean = true;
     server.use(
@@ -258,22 +284,43 @@ describe('DashboardPage', () => {
     );
     renderWithProviders(<DashboardPage />);
 
-    // Liczniki i okno ostrzegawcze czytają ten sam zasób osobnymi zapytaniami, więc każda sekcja
-    // mówi o błędzie własnym alertem i własnym „Odśwież” — liczniki nie znikają po cichu.
+    // Liczniki czytają `GET /api/v1/dashboard/stats`, a okno ostrzegawcze listę dzierżaw — każda
+    // sekcja ma własny alert i własne „Odśwież”, więc awaria listy nie zabiera liczb z ekranu.
     const section: HTMLElement = await screen.findByTestId('warning-window');
     expect(await within(section).findByText('Nie udało się pobrać dzierżaw')).toBeInTheDocument();
 
-    const countersError: HTMLElement = await screen.findByTestId('kpi-error');
-    expect(countersError).toHaveTextContent('Nie udało się pobrać liczników');
+    expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
+    expectKpi('kpi-active', expectedCounters().active);
+    expect(screen.queryByTestId('kpi-error')).not.toBeInTheDocument();
 
     leasesFailing = false;
     await user.click(within(section).getByRole('button', { name: 'Odśwież' }));
 
     await expectWarningWindow(section, getLeases());
-    // Ponowienie listy nie odświeża liczników — KPI wracają dopiero po własnym ponowieniu.
-    expect(screen.queryByTestId('kpi-active')).not.toBeInTheDocument();
+    expectKpi('kpi-active', expectedCounters().active);
+  });
 
+  it('rozłącza listę dzierżaw od liczników: awaria KPI nie zabiera okna ostrzegawczego', async () => {
+    const user = userEvent.setup();
+    let statsFailing: boolean = true;
+    server.use(
+      http.get('/api/v1/dashboard/stats', () =>
+        statsFailing
+          ? HttpResponse.json({ detail: 'Boom' }, { status: 500 })
+          : HttpResponse.json(expectedCounters()),
+      ),
+    );
+    renderWithProviders(<DashboardPage />);
+
+    const countersError: HTMLElement = await screen.findByTestId('kpi-error');
+    expect(countersError).toHaveTextContent('Nie udało się pobrać liczników');
+
+    const section: HTMLElement = await screen.findByTestId('warning-window');
+    await expectWarningWindow(section, getLeases());
+
+    statsFailing = false;
     await user.click(within(countersError).getByRole('button', { name: 'Odśwież' }));
+
     expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
     expectKpi('kpi-active', expectedCounters().active);
   });

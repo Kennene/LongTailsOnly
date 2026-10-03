@@ -27,26 +27,44 @@ import { leasesFixture } from './leases';
  *
  * `position` jest w kontrakcie wymagane, więc dokładamy je od razu układem kolumnowym
  * z `lib/graphLayout.ts` — ten sam, którym widok ratuje odpowiedź bez `position`.
+ *
+ * `team` (slug) zawęża graf tak samo jak `GET /api/v1/graph?team=…`: zostają osoby tego zespołu,
+ * ich czynne dzierżawy, repozytoria z tych dzierżaw oraz sam węzeł zespołu z krawędziami
+ * członkostwa. Bez filtra repozytoria biorą się z całego `repositories.json`, tak jak backend
+ * czyta wszystkie repozytoria z bazy.
  */
 const TEAMS: TeamRead[] = teamsJson as TeamRead[];
 const USERS: UserRead[] = usersJson as UserRead[];
 const REPOSITORIES: RepositoryRead[] = repositoriesJson as RepositoryRead[];
 
-export function buildGraphFixture(leases: LeaseOverview[]): PermissionGraph {
-  const live: LeaseOverview[] = leases.filter((lease: LeaseOverview): boolean => lease.is_active);
-  const members: UserRead[] = [...USERS].toSorted(compareMembers);
+export function buildGraphFixture(
+  leases: LeaseOverview[],
+  team: string | null = null,
+): PermissionGraph {
+  const members: UserRead[] = USERS.toSorted(compareMembers).filter(
+    (member: UserRead): boolean => team === null || member.team?.slug === team,
+  );
+  const logins = new Set<string>(members.map((member: UserRead): string => member.login));
+  const live: LeaseOverview[] = leases.filter(
+    (lease: LeaseOverview): boolean => lease.is_active && logins.has(lease.user.login),
+  );
+  const teams: TeamRead[] = TEAMS.filter(
+    (candidate: TeamRead): boolean => team === null || candidate.slug === team,
+  );
   const repoNames: string[] = [
     ...new Set<string>([
-      ...REPOSITORIES.map((repository: RepositoryRead): string => repository.name),
+      ...(team === null
+        ? REPOSITORIES.map((repository: RepositoryRead): string => repository.name)
+        : []),
       ...live.map((lease: LeaseOverview): string => lease.repository.name),
     ]),
   ].toSorted(compareStrings);
 
   const nodes: GraphNodeInput[] = [
-    ...TEAMS.map((team: TeamRead): GraphNodeInput => ({
-      id: `team:${team.slug}`,
+    ...teams.map((teamRead: TeamRead): GraphNodeInput => ({
+      id: `team:${teamRead.slug}`,
       type: 'team',
-      data: { label: team.name, team: team.slug, is_admin: false },
+      data: { label: teamRead.name, team: teamRead.slug, is_admin: false },
     })),
     ...members.map((member: UserRead): GraphNodeInput => ({
       id: `user:${member.login}`,
