@@ -1,0 +1,117 @@
+{
+  "contractVersion": "0.1.0",
+  "contractSource": "backend/contract/schema.json",
+  "generatedBy": "backend/scripts/export_contract.py — ADR 0009",
+  "note": "Fixtures są danymi zgodnymi z kontraktem, nie drugim kontraktem (ADR 0011). Każdy plik waliduje ten sam model Pydantic, który generuje kontrakt — patrz backend/tests/contract/test_fixtures_match_contract.py.",
+  "populationNote": "Dane odwzorowują realny seed z backend/app/db/seed_data.py. Zbiór dzierżaw jest reprezentatywny (15 z 53), a nie pełnym zrzutem bazy — pokrywa każdy status, rolę i rekomendację.",
+  "fixtures": [
+    {
+      "id": "users",
+      "file": "users.json",
+      "shape": "list",
+      "model": "UserRead",
+      "kind": "response",
+      "consumedBy": ["frontend:5.3", "frontend:5.7", "frontend:5.9"],
+      "status": "provisional"
+    },
+    {
+      "id": "teams",
+      "file": "teams.json",
+      "shape": "list",
+      "model": "TeamRead",
+      "kind": "response",
+      "consumedBy": ["frontend:5.7", "frontend:5.9"],
+      "status": "provisional"
+    },
+    {
+      "id": "repositories",
+      "file": "repositories.json",
+      "shape": "list",
+      "model": "RepositoryRead",
+      "kind": "response",
+      "consumedBy": ["frontend:5.7", "frontend:5.9"],
+      "status": "provisional"
+    },
+    {
+      "id": "leases",
+      "file": "leases.json",
+      "shape": "list",
+      "model": "LeaseOverview",
+      "kind": "response",
+      "consumedBy": ["frontend:5.3", "frontend:5.4", "frontend:5.5", "frontend:5.6"],
+      "status": "provisional"
+    },
+    {
+      "id": "leases-expired",
+      "file": "leases-expired.json",
+      "shape": "list",
+      "model": "LeaseOverview",
+      "kind": "response",
+      "consumedBy": ["frontend:5.3", "frontend:5.4", "frontend:5.6"],
+      "status": "provisional"
+    },
+    {
+      "id": "activity",
+      "file": "activity.json",
+      "shape": "list",
+      "model": "ActivityEventRead",
+      "kind": "response",
+      "consumedBy": ["frontend:5.5", "frontend:5.8"],
+      "status": "provisional"
+    },
+    {
+      "id": "baseline",
+      "file": "baseline.json",
+      "shape": "list",
+      "model": "BaselineEntry",
+      "kind": "response",
+      "consumedBy": ["frontend:5.7"],
+      "status": "provisional"
+    },
+    {
+      "id": "appeals",
+      "file": "appeals.json",
+      "shape": "list",
+      "model": "AppealRead",
+      "kind": "response",
+      "consumedBy": ["frontend:5.8"],
+      "status": "provisional"
+    },
+    {
+      "id": "audit",
+      "file": "audit.json",
+      "shape": "list",
+      "model": "AuditLogRead",
+      "kind": "response",
+      "consumedBy": ["frontend:5.10"],
+      "status": "provisional"
+    },
+    {
+      "id": "clock",
+      "file": "clock.json",
+      "shape": "single",
+      "model": "ClockRead",
+      "kind": "response",
+      "consumedBy": ["frontend:5.2", "frontend:5.4"],
+      "status": "provisional"
+    },
+    {
+      "id": "demo-reset",
+      "file": "demo-reset.json",
+      "shape": "single",
+      "model": "DemoResetResult",
+      "kind": "response",
+      "consumedBy": ["frontend:5.4", "demo:6.6"],
+      "status": "provisional"
+    },
+    {
+      "id": "decision-requests",
+      "file": "decision-requests.json",
+      "shape": "list",
+      "model": "DecisionRequest",
+      "kind": "request",
+      "consumedBy": ["frontend:5.5"],
+      "status": "provisional"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+[
+  { "id": 1, "name": "core-api", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 2, "name": "auth-service", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 3, "name": "payment-service", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 4, "name": "frontend-app", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 5, "name": "infra-terraform", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 6, "name": "notifications", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 7, "name": "mobile-app", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 8, "name": "data-pipeline", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 9, "name": "qa-automation", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 },
+  { "id": 10, "name": "legacy-reports", "owner": "longtails", "default_branch": "main", "default_lease_duration_days": 30 }
+]

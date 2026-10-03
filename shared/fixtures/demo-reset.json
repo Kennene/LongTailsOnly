@@ -1,0 +1,13 @@
+{
+  "now": "2026-10-03T00:00:00Z",
+  "offset_days": 0,
+  "counts": {
+    "repositories": 10,
+    "teams": 2,
+    "users": 19,
+    "activity_events": 46,
+    "leases": 53,
+    "appeals": 0,
+    "audit_logs": 0
+  }
+}

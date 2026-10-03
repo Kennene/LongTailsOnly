@@ -76,6 +76,107 @@
       "title": "AppealCreate",
       "type": "object"
     },
+    "AppealOverview": {
+      "description": "Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0014 \u00a74).",
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "days_remaining": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "type": "integer"
+        },
+        "justification": {
+          "type": "string"
+        },
+        "lease_expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lease_id": {
+          "type": "integer"
+        },
+        "lease_is_active": {
+          "type": "boolean"
+        },
+        "lease_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "previous_appeals": {
+          "type": "integer"
+        },
+        "recent_activity_count": {
+          "type": "integer"
+        },
+        "repo_id": {
+          "type": "integer"
+        },
+        "repository": {
+          "$ref": "#/$defs/RepositoryRead"
+        },
+        "requested_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/AppealStatus"
+        },
+        "user": {
+          "$ref": "#/$defs/UserRead"
+        },
+        "user_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "lease_id",
+        "user_id",
+        "repo_id",
+        "requested_role",
+        "justification",
+        "status",
+        "created_at",
+        "resolved_at",
+        "user",
+        "repository",
+        "lease_role",
+        "lease_expires_at",
+        "lease_is_active",
+        "days_remaining",
+        "recent_activity_count",
+        "previous_appeals"
+      ],
+      "title": "AppealOverview",
+      "type": "object"
+    },
     "AppealRead": {
       "properties": {
         "created_at": {
@@ -129,6 +230,20 @@
       "title": "AppealRead",
       "type": "object"
     },
+    "AppealRejectRequest": {
+      "properties": {
+        "justification": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "justification"
+      ],
+      "title": "AppealRejectRequest",
+      "type": "object"
+    },
     "AppealStatus": {
       "enum": [
         "PENDING",
@@ -137,6 +252,74 @@
       ],
       "title": "AppealStatus",
       "type": "string"
+    },
+    "AuditEntry": {
+      "description": "Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0014 \u00a74).",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "actor_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_login": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_type": {
+          "$ref": "#/$defs/ActorType"
+        },
+        "details": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "justification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "actor_type",
+        "actor_id",
+        "action",
+        "target",
+        "details",
+        "justification",
+        "actor_login"
+      ],
+      "title": "AuditEntry",
+      "type": "object"
     },
     "AuditLogRead": {
       "properties": {
@@ -239,6 +422,55 @@
       "title": "ClockRead",
       "type": "object"
     },
+    "DashboardStats": {
+      "properties": {
+        "active": {
+          "type": "integer"
+        },
+        "downscope_recommendations": {
+          "type": "integer"
+        },
+        "expired": {
+          "type": "integer"
+        },
+        "generated_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "onboarding_candidates": {
+          "type": "integer"
+        },
+        "pending_appeals": {
+          "type": "integer"
+        },
+        "permanent": {
+          "type": "integer"
+        },
+        "revoke_recommendations": {
+          "type": "integer"
+        },
+        "revoked": {
+          "type": "integer"
+        },
+        "warning": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "generated_at",
+        "active",
+        "warning",
+        "expired",
+        "permanent",
+        "revoked",
+        "downscope_recommendations",
+        "revoke_recommendations",
+        "pending_appeals",
+        "onboarding_candidates"
+      ],
+      "title": "DashboardStats",
+      "type": "object"
+    },
     "DecisionAction": {
       "enum": [
         "EXTEND",
@@ -306,6 +538,40 @@
       "title": "DemoResetResult",
       "type": "object"
     },
+    "EnforcementMode": {
+      "description": "How the lease engine acts on lapsing leases (docs/3-silnik-dzierzawy \u00a75).",
+      "enum": [
+        "disabled",
+        "warning",
+        "auto"
+      ],
+      "title": "EnforcementMode",
+      "type": "string"
+    },
+    "EnforcementModeRead": {
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/EnforcementMode"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "EnforcementModeRead",
+      "type": "object"
+    },
+    "EnforcementModeUpdate": {
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/EnforcementMode"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "EnforcementModeUpdate",
+      "type": "object"
+    },
     "Extension": {
       "description": "Exactly one way of extending a lease (ADR 0005).",
       "properties": {
@@ -368,6 +634,217 @@
         }
       },
       "title": "Extension",
+      "type": "object"
+    },
+    "GraphEdge": {
+      "properties": {
+        "animated": {
+          "type": "boolean"
+        },
+        "data": {
+          "$ref": "#/$defs/GraphEdgeData"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target",
+        "label",
+        "animated",
+        "data"
+      ],
+      "title": "GraphEdge",
+      "type": "object"
+    },
+    "GraphEdgeData": {
+      "properties": {
+        "kind": {
+          "enum": [
+            "membership",
+            "lease"
+          ],
+          "type": "string"
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recommendation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LeaseStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "role",
+        "status",
+        "recommendation"
+      ],
+      "title": "GraphEdgeData",
+      "type": "object"
+    },
+    "GraphNode": {
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/GraphNodeData"
+        },
+        "id": {
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/GraphPosition"
+        },
+        "type": {
+          "enum": [
+            "team",
+            "user",
+            "repo"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "position",
+        "data"
+      ],
+      "title": "GraphNode",
+      "type": "object"
+    },
+    "GraphNodeData": {
+      "properties": {
+        "is_admin": {
+          "type": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "team": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "team",
+        "is_admin"
+      ],
+      "title": "GraphNodeData",
+      "type": "object"
+    },
+    "GraphPosition": {
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "GraphPosition",
+      "type": "object"
+    },
+    "LeaseActivityStats": {
+      "description": "Evidence of use for the decision modal: renewing actions in the lease window (docs/3-silnik-dzierzawy \u00a76).",
+      "properties": {
+        "comment_count": {
+          "type": "integer"
+        },
+        "last_activity_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lease_id": {
+          "type": "integer"
+        },
+        "push_count": {
+          "type": "integer"
+        },
+        "review_count": {
+          "type": "integer"
+        },
+        "window_days": {
+          "type": "integer"
+        },
+        "window_end": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "window_start": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "lease_id",
+        "window_days",
+        "window_start",
+        "window_end",
+        "push_count",
+        "review_count",
+        "comment_count",
+        "last_activity_at"
+      ],
+      "title": "LeaseActivityStats",
       "type": "object"
     },
     "LeaseOverview": {
@@ -496,10 +973,65 @@
       "enum": [
         "ACTIVE",
         "WARNING",
-        "EXPIRED"
+        "EXPIRED",
+        "PERMANENT",
+        "REVOKED"
       ],
       "title": "LeaseStatus",
       "type": "string"
+    },
+    "OnboardingProposal": {
+      "description": "Team baseline split for one person: what approval would grant and what they already have (ADR 0014 \u00a74).",
+      "properties": {
+        "already_granted": {
+          "items": {
+            "$ref": "#/$defs/BaselineEntry"
+          },
+          "type": "array"
+        },
+        "team": {
+          "$ref": "#/$defs/TeamRead"
+        },
+        "to_grant": {
+          "items": {
+            "$ref": "#/$defs/BaselineEntry"
+          },
+          "type": "array"
+        },
+        "user": {
+          "$ref": "#/$defs/UserRead"
+        }
+      },
+      "required": [
+        "user",
+        "team",
+        "to_grant",
+        "already_granted"
+      ],
+      "title": "OnboardingProposal",
+      "type": "object"
+    },
+    "PermissionGraph": {
+      "properties": {
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/GraphEdge"
+          },
+          "type": "array"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/GraphNode"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "title": "PermissionGraph",
+      "type": "object"
     },
     "Recommendation": {
       "enum": [
@@ -546,6 +1078,24 @@
       ],
       "title": "Role",
       "type": "string"
+    },
+    "SimulationClock": {
+      "description": "Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0014 \u00a74).",
+      "properties": {
+        "offset_days": {
+          "type": "integer"
+        },
+        "simulated_now": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "simulated_now",
+        "offset_days"
+      ],
+      "title": "SimulationClock",
+      "type": "object"
     },
     "TeamRead": {
       "properties": {

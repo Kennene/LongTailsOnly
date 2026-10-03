@@ -1,0 +1,39 @@
+{
+  "id": "uc-04-time-travel",
+  "use_case": "UC-4",
+  "title": "Cykl życia dzierżawy: ACTIVE → WARNING → EXPIRED",
+  "given": {
+    "anchor": "2026-10-03T00:00:00Z",
+    "seed": "default",
+    "relies_on": ["kamil", "core-api"],
+    "note": "kamil@core-api ma TTL do 2026-11-01T10:00:00Z. Skok +25 dni wprowadza dzierżawę w okno ostrzegawcze (4 dni), kolejne +5 dni (razem 30) ją wygasza; ostatni push jest wtedy starszy niż 30 dni, więc rekomendacja to REVOKE. Wartości dni przy zegarze po 10:00 UTC w dniu seeda (np. 12:00); days_remaining zaokrąglane w górę (lease_window.py, docs/3-silnik-dzierzawy D5)."
+  },
+  "when": [
+    { "type": "reset" },
+    { "type": "api", "method": "GET", "path": "/api/v1/leases", "as": "t0" },
+    { "type": "time_travel", "days": 25 },
+    { "type": "api", "method": "GET", "path": "/api/v1/leases", "as": "t25" },
+    { "type": "time_travel", "days": 5 },
+    { "type": "api", "method": "GET", "path": "/api/v1/leases", "as": "t30" }
+  ],
+  "then": [
+    {
+      "target": "t0",
+      "model": "LeaseOverview",
+      "where": { "user.login": "kamil", "repository.name": "core-api" },
+      "expect": { "status": "ACTIVE", "recommendation": "KEEP" }
+    },
+    {
+      "target": "t25",
+      "model": "LeaseOverview",
+      "where": { "user.login": "kamil", "repository.name": "core-api" },
+      "expect": { "status": "WARNING" }
+    },
+    {
+      "target": "t30",
+      "model": "LeaseOverview",
+      "where": { "user.login": "kamil", "repository.name": "core-api" },
+      "expect": { "status": "EXPIRED", "recommendation": "REVOKE" }
+    }
+  ]
+}

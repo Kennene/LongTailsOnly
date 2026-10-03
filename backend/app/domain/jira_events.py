@@ -1,4 +1,4 @@
-"""Deterministic Jira issue data derived from stored `ActivityEvent` rows (ADR 0011).
+"""Deterministic Jira issue data derived from stored `ActivityEvent` rows (ADR 0016).
 
 Nothing but the event is persisted. Issue events are grouped in runs of three consecutive ids counted
 from the first Jira issue event (`origin`), so a seed that writes created -> updated -> comment in a row

@@ -1,4 +1,4 @@
-"""End-to-end contract of the Jira mock with the seeded demo (scenarios E-H, ADR 0011).
+"""End-to-end contract of the Jira mock with the seeded demo (scenarios E-H, ADR 0016).
 
 Like the GitHub contract test, the status oracle is a literal transcription of ADR 0002 (TTL 30 days,
 warning window 7 days, write evidence renews write+read, read evidence renews only read). It is NOT

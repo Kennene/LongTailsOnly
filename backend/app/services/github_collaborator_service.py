@@ -11,14 +11,11 @@ from app.domain.enums import GitHubPermission, Role
 from app.domain.roles import from_github
 from app.models import Lease, Repository, User
 from app.ports.clock import ClockPort
-from app.services.access_leases import AccessLeaseService, LastAdminError, Outcome
+from app.services.access_leases import AccessLeaseService, Outcome
+from app.services.errors import LastAdminError
 from app.services.github_mock_service import GitHubMockService, not_found
 
 DOC = "collaborators/collaborators"
-_LAST_ADMIN_MESSAGES = {
-    "organization": "Cannot remove the last administrator of the organization",
-    "resource": "Cannot remove the last administrator of the repository",
-}
 
 
 class GitHubCollaboratorService:
@@ -48,7 +45,7 @@ class GitHubCollaboratorService:
         try:
             outcome, lease = await self.leases.grant(repository, user, role)
         except LastAdminError as exc:
-            raise GitHubError(403, _LAST_ADMIN_MESSAGES[exc.scope], DOC) from None
+            raise GitHubError(403, exc.detail, DOC) from None
         return outcome, lease, repository, user
 
     async def remove(self, owner: str, repo: str, username: str) -> None:
@@ -57,4 +54,4 @@ class GitHubCollaboratorService:
         try:
             await self.leases.revoke(repository, user)
         except LastAdminError as exc:
-            raise GitHubError(403, _LAST_ADMIN_MESSAGES[exc.scope], DOC) from None
+            raise GitHubError(403, exc.detail, DOC) from None

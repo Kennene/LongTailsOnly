@@ -1,4 +1,4 @@
-"""Jira project roles and identities for the mock (ADR 0006, 0011).
+"""Jira project roles and identities for the mock (ADR 0006, 0016).
 
 Team-managed projects have three roles. They map 1:1 to the project's `Role`:
 Viewer=read, Member=write, Administrator=admin.

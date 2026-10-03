@@ -1,0 +1,94 @@
+{
+  "id": "uc-03-appeal-flow",
+  "use_case": "UC-3",
+  "title": "Ostrzeżenie, odwołanie z uzasadnieniem i decyzja administratora",
+  "given": {
+    "anchor": "2026-10-03T00:00:00Z",
+    "seed": "default",
+    "relies_on": ["marta", "qa-automation"],
+    "note": "Dzierżawa marta@qa-automation wypada w oknie ostrzegawczym (scenariusz B z ADR 0008). lease_id rozwiązywane przez $from, bo identyfikatory zależą od kolejności seedowania. Przedłużenie idzie na dzierżawę bez PENDING appeal — /leases/{id}/decision zwraca 409, gdy odwołanie czeka na decyzję. Asercje idą po statusie, nie po days_remaining, bo pozostała liczba dni zależy od godziny seedowania."
+  },
+  "when": [
+    { "type": "reset" },
+    { "type": "api", "method": "GET", "path": "/api/v1/leases", "as": "leases" },
+    {
+      "type": "api",
+      "method": "POST",
+      "path": "/api/v1/appeals",
+      "as": "appeal",
+      "body": {
+        "lease_id": {
+          "$from": "leases",
+          "where": { "user.login": "marta", "repository.name": "qa-automation" },
+          "field": "id"
+        },
+        "justification": "W przyszłym tygodniu prowadzę testy regresyjne wydania v2.1 i muszę mieć dostęp do zgłoszeń oraz wyników QA."
+      }
+    },
+    {
+      "type": "api",
+      "method": "POST",
+      "path": "/api/v1/appeals",
+      "as": "rejected-appeal",
+      "body": {
+        "lease_id": {
+          "$from": "leases",
+          "where": { "user.login": "marta", "repository.name": "qa-automation" },
+          "field": "id"
+        },
+        "justification": ""
+      }
+    },
+    {
+      "type": "api",
+      "method": "POST",
+      "path": "/api/v1/leases/{lease_id}/decision",
+      "as": "extension",
+      "resolve": {
+        "lease_id": {
+          "$from": "leases",
+          "where": { "user.login": "kamil", "repository.name": "payment-service" },
+          "field": "id"
+        }
+      },
+      "body": { "action": "EXTEND", "extension": { "preset_days": 30 }, "justification": null }
+    },
+    {
+      "type": "api",
+      "method": "POST",
+      "path": "/api/v1/appeals/{appeal_id}/reject",
+      "as": "rejected",
+      "resolve": {
+        "appeal_id": { "$from": "appeal", "field": "id" }
+      },
+      "body": { "justification": "Uzasadnienie nie pokazuje nowego zapotrzebowania na dostęp w tym sprincie." }
+    }
+  ],
+  "then": [
+    {
+      "target": "leases",
+      "model": "LeaseOverview",
+      "where": { "user.login": "marta", "repository.name": "qa-automation" },
+      "expect": { "status": "WARNING", "recommendation": "KEEP", "current_role": "read" }
+    },
+    {
+      "target": "appeal",
+      "model": "AppealOverview",
+      "expect": { "status": "PENDING" }
+    },
+    {
+      "target": "rejected-appeal",
+      "expect": { "status_code": 422 }
+    },
+    {
+      "target": "extension",
+      "model": "LeaseOverview",
+      "expect": { "status": "ACTIVE", "current_role": "write" }
+    },
+    {
+      "target": "rejected",
+      "model": "AppealOverview",
+      "expect": { "status": "REJECTED" }
+    }
+  ]
+}

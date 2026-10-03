@@ -1,7 +1,43 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
+venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 *.egg-info/
+build/
+
+# Baza danych demo
+*.sqlite3
 *.db
+
+# Node / frontend
 node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Cache npm używany w środowisku agenta (sandbox nie ma dostępu do ~/.npm)
+.npm-cache/
+
+# Środowiska lokalne
+.env
+.env.local
+.env.*.local
+
+# Edytory i system
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Logi
+*.log
+npm-debug.log*
+
+# Artefakty narzędzi przeglądarkowych (Playwright MCP i podobne)
+.playwright-mcp/

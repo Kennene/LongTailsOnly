@@ -91,8 +91,8 @@ Pięć projektów: `PAY`, `CORE`, `AUTH`, `QA`, `OPS`. Użytkownicy ci sami co w
 
 Kolejność Task 0 → 8; Task 0 blokuje resztę (potrzebuje decyzji D1).
 
-### Task 0: ADR 0011 i uzgodnienie z autorem zadań 1.x
-- Create: `docs/adr/0011-multi-provider-resources-and-jira-mock.md` (D1–D6, odpowiedź na "dlaczego `provider` zamiast osobnej tabeli", pytanie o `AccessProvider`).
+### Task 0: ADR 0016 i uzgodnienie z autorem zadań 1.x
+- Create: `docs/adr/0016-multi-provider-resources-and-jira-mock.md` (D1–D6, odpowiedź na "dlaczego `provider` zamiast osobnej tabeli", pytanie o `AccessProvider`).
 - Rezultat: zgoda na migrację i listę zmian w enumach. Bez tego dalej nie idziemy.
 
 ### Task 1: Migracja `provider` i filtrowanie GitHuba
@@ -141,18 +141,18 @@ Kolejność Task 0 → 8; Task 0 blokuje resztę (potrzebuje decyzji D1).
 ## 8. Definicja ukończenia
 - Wszystkie testy (istniejące + nowe) zielone, wynik pokazany w komunikacie końcowym.
 - Mock GitHuba zachowuje się bez zmian (regresja).
-- Dokumentacja zgodna z kodem (`docs/jira-mock.md`, ADR 0011, AGENTS.md).
+- Dokumentacja zgodna z kodem (`docs/jira-mock.md`, ADR 0016, AGENTS.md).
 - Scenariusze E–H widoczne w `POST /api/v1/demo/reset` + time-travel.
 
 ## Odchylenia wprowadzone podczas implementacji
 
 Wykonano zadania 0–8 (z testami; wynik w komunikacie końcowym). Zmiany względem planu:
 
-1. **ADR 0011** zapisano razem z kodem (Task 0 bez osobnej akceptacji autora zadań 1.x; zmiana jest addytywna, ale **warto ją potwierdzić przy review**).
+1. **ADR 0016** zapisano razem z kodem (Task 0 bez osobnej akceptacji autora zadań 1.x; zmiana jest addytywna, ale **warto ją potwierdzić przy review**).
 2. **Audit records** zawierają wyłącznie `project_updated` (mock nie zapisuje `AuditLog`, więc zmiany ról nie są listowane).
 3. **Grupowanie zgłoszeń:** zamiast stałego `id // 3` użyto serii trzech kolejnych zdarzeń liczonych od pierwszego zdarzenia Jiry (`origin`), żeby nie zależało od liczby wcześniejszych zdarzeń GitHuba. Seed pisze zdarzenia grupami po trzy.
 4. **Scenariusze** E–H policzono ręcznie przed kodem i potwierdzono testem integracyjnym; scenariusz F to DOWNSCOPE na t0 i +15, a G (OPS) to nieużywany dostęp.
 5. **Migracja 0002** to zwykły `ALTER TABLE` (tryb batch psuje tabelę z kluczami obcymi w SQLite).
 6. **Wspólny serwis leasów** (`access_leases.py`) powstał od razu, a mock GitHuba przepisano na niego (regresja zielona).
-7. **Port `AccessProvider`** nie został zaimplementowany (brak kodu portów w repo); nazwa ustalona w ADR 0011.
+7. **Port `AccessProvider`** nie został zaimplementowany (brak kodu portów w repo); nazwa ustalona w ADR 0016.
 8. Walidacja pod `/rest/api/3` zwraca `400` (format Jiry); jeden wspólny handler deleguje po prefiksie.

@@ -1,4 +1,4 @@
-"""Demo data for the Jira mock (scenarios E-H, ADR 0011), added on top of the GitHub seed.
+"""Demo data for the Jira mock (scenarios E-H, ADR 0016), added on top of the GitHub seed.
 
 Idempotent and deterministic. Jira issue events are written in groups of exactly three (one issue
 each), because `domain.jira_events` derives issues from runs of three consecutive event ids.

@@ -1,29 +1,23 @@
-"""Provider-neutral lease writes used by the GitHub and Jira mocks (ADR 0004, 0007, 0011).
+"""Provider-neutral lease writes used by the GitHub and Jira mocks (ADR 0004, 0007, 0016).
 
 A collaborator / project-role actor is an active `Lease`. Revoking sets `is_active=False` (the row
 stays for audit and a later grant reactivates it). Mocks never write `AuditLog`: decisions are
-audited by the services that call them.
+audited by the services that call them. Last Admin Protection is the shared `ensure_not_last_admin`
+(raises `LastAdminError`, HTTP 403) that the VCS adapter and the lease engine use too.
 """
 from datetime import datetime, timedelta
 from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.enums import Role
 from app.domain.roles import is_leased
 from app.models import Lease, Repository, User
 from app.ports.clock import ClockPort
+from app.services.last_admin_guard import ensure_not_last_admin
 
 Outcome = Literal["created", "updated"]
-
-
-class LastAdminError(Exception):
-    """The operation would leave an organization or a resource without an administrator."""
-
-    def __init__(self, scope: Literal["organization", "resource"]) -> None:
-        super().__init__(scope)
-        self.scope = scope
 
 
 class AccessLeaseService:
@@ -46,20 +40,6 @@ class AccessLeaseService:
             return None
         return now + timedelta(days=repository.default_lease_duration_days)
 
-    async def guard_last_admin(self, repository: Repository, user: User, lease: Lease) -> None:
-        owners = await self.session.scalar(select(func.count()).select_from(User).where(User.is_admin))
-        if user.is_admin and owners == 1:
-            raise LastAdminError("organization")
-        if lease.current_role is not Role.ADMIN:
-            return
-        admins = await self.session.scalar(
-            select(func.count()).select_from(Lease).where(
-                Lease.repo_id == repository.id, Lease.current_role == Role.ADMIN, Lease.is_active
-            )
-        )
-        if admins == 1:
-            raise LastAdminError("resource")
-
     async def grant(self, repository: Repository, user: User, role: Role) -> tuple[Outcome, Lease]:
         """Create, reactivate or change a lease. Same role on an active lease is a no-op ("updated")."""
         lease = await self.find(repository, user)
@@ -80,7 +60,7 @@ class AccessLeaseService:
             outcome = "updated"
             if lease.current_role is not role:
                 if lease.current_role is Role.ADMIN:
-                    await self.guard_last_admin(repository, user, lease)
+                    await ensure_not_last_admin(self.session, repository=repository, user=user, lease=lease)
                 lease.current_role, lease.granted_at, lease.expires_at = role, now, expires
         await self.session.commit()
         return outcome, lease
@@ -90,7 +70,7 @@ class AccessLeaseService:
         lease = await self.find(repository, user)
         if lease is None or not lease.is_active:
             return False
-        await self.guard_last_admin(repository, user, lease)
+        await ensure_not_last_admin(self.session, repository=repository, user=user, lease=lease)
         lease.is_active = False
         await self.session.commit()
         return True

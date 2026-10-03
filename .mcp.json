@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "prelint": {
+      "type": "http",
+      "url": "https://app.prelint.com/mcp"
+    }
+  }
+}

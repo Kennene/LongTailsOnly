@@ -1,7 +1,7 @@
 """repository provider (github | jira)
 
-Revision ID: 0002
-Revises: 0001
+Revision ID: 0004
+Revises: 0003
 Create Date: 2026-10-03 20:30:00.000000
 
 """
@@ -10,8 +10,8 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = '0002'
-down_revision: Union[str, Sequence[str], None] = '0001'
+revision: str = '0004'
+down_revision: Union[str, Sequence[str], None] = '0003'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

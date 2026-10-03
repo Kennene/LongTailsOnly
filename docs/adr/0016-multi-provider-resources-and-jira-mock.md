@@ -1,4 +1,4 @@
-# ADR 0011: Wielu dostawców (`provider`) i mock Jiry
+# ADR 0016: Wielu dostawców (`provider`) i mock Jiry
 
 - Status: przyjęty
 - Rozszerza: ADR 0006 (model ról), ADR 0007 (model danych), ADR 0010 (typy aktywności)
@@ -28,3 +28,8 @@ ani "collaboratorów": ma role projektowe i zgłoszenia. Trzeba było zdecydowa�
 - Zmiana enumu wymagała regeneracji `contract/schema.json` i `frontend/src/types/api.ts` (ADR 0009).
 - Port `AccessProvider` (zamiast `VCSProvider` z PLAN.md) nie jest jeszcze zaimplementowany w kodzie; nazwa ma być użyta przy pierwszym porcie.
 - Reguła "issue = trzy kolejne zdarzenia" jest ograniczeniem seeda mocka, nie modelu produkcyjnego (prawdziwy adapter Jiry czytałby prawdziwe zgłoszenia).
+
+
+## Uzgodnienie z Last Admin Protection (ADR 0014 §2)
+
+Zapis dzierżaw dla mocków GitHuba i Jiry (`AccessLeaseService`) korzysta z jednej reguły `last_admin_guard.ensure_not_last_admin`, tej samej co `DatabaseVCSAdapter` i silnik dzierżaw. Błąd `LastAdminError` (403) mock GitHuba oddaje w formacie GitHuba, a mock Jiry w formacie Jiry, z komunikatem "project" zamiast "repository".

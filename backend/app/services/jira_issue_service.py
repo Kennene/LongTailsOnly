@@ -1,4 +1,4 @@
-"""Issues, changelog, comments and audit records of the Jira mock, derived from `ActivityEvent` (ADR 0011)."""
+"""Issues, changelog, comments and audit records of the Jira mock, derived from `ActivityEvent` (ADR 0016)."""
 from dataclasses import dataclass, field
 from datetime import datetime
 

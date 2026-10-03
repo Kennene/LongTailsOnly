@@ -1,4 +1,4 @@
-"""HTTP plumbing for the Jira mock: error format and pagination (ADR 0011).
+"""HTTP plumbing for the Jira mock: error format and pagination (ADR 0016).
 
 Validation errors under `/rest/api/3` are rendered by `jira_validation_response`; the single
 RequestValidationError handler lives in the GitHub mock's `http.py`, which delegates by path prefix.

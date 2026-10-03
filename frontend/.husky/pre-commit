@@ -1,0 +1,3 @@
+# Git runs hooks from the repository root, but this project lives in frontend/.
+cd frontend
+npx lint-staged

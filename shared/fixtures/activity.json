@@ -1,0 +1,10 @@
+[
+  { "id": 1, "user_id": 2, "repo_id": 1, "timestamp": "2026-10-02T10:00:00Z", "action_type": "PushEvent", "required_permission": "write" },
+  { "id": 2, "user_id": 2, "repo_id": 1, "timestamp": "2026-10-01T10:00:00Z", "action_type": "PushEvent", "required_permission": "write" },
+  { "id": 3, "user_id": 2, "repo_id": 3, "timestamp": "2026-09-08T10:00:00Z", "action_type": "PushEvent", "required_permission": "write" },
+  { "id": 4, "user_id": 2, "repo_id": 3, "timestamp": "2026-10-01T10:00:00Z", "action_type": "PullRequestReviewEvent", "required_permission": "read" },
+  { "id": 5, "user_id": 2, "repo_id": 3, "timestamp": "2026-09-28T10:00:00Z", "action_type": "PullRequestReviewEvent", "required_permission": "read" },
+  { "id": 6, "user_id": 2, "repo_id": 4, "timestamp": "2026-09-30T10:00:00Z", "action_type": "PullRequestReviewEvent", "required_permission": "read" },
+  { "id": 7, "user_id": 14, "repo_id": 9, "timestamp": "2026-09-06T10:00:00Z", "action_type": "IssueCommentEvent", "required_permission": "read" },
+  { "id": 8, "user_id": 14, "repo_id": 4, "timestamp": "2026-09-29T10:00:00Z", "action_type": "IssueCommentEvent", "required_permission": "read" }
+]

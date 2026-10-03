@@ -1,0 +1,35 @@
+{
+  "id": "uc-01-onboarding",
+  "use_case": "UC-1",
+  "title": "Wdrożenie nowego pracownika na standardzie zespołu DEV",
+  "given": {
+    "anchor": "2026-10-03T00:00:00Z",
+    "seed": "default",
+    "relies_on": ["nowy-dev", "dev", "core-api", "auth-service", "payment-service"],
+    "note": "nowy-dev nie ma żadnych dzierżaw (scenariusz D z ADR 0008), więc standard zespołu jest jedynym źródłem propozycji dostępu. active_members liczy wszystkich członków zespołu z aktywnością w oknie 30 dni, więc kamil też wchodzi do każdego z tych repozytoriów. frontend-app nie trafia do standardu: 4 aktywnych z 12 to mniej niż próg 50%."
+  },
+  "when": [
+    { "type": "reset" },
+    { "type": "api", "method": "GET", "path": "/api/v1/teams/dev/baseline", "as": "baseline" }
+  ],
+  "then": [
+    {
+      "target": "baseline",
+      "model": "BaselineEntry",
+      "where": { "team_id": 1, "repository.name": "core-api" },
+      "expect": { "proposed_role": "write", "active_members": 11, "team_size": 12 }
+    },
+    {
+      "target": "baseline",
+      "model": "BaselineEntry",
+      "where": { "team_id": 1, "repository.name": "auth-service" },
+      "expect": { "proposed_role": "write", "active_members": 7, "team_size": 12 }
+    },
+    {
+      "target": "baseline",
+      "model": "BaselineEntry",
+      "where": { "team_id": 1, "repository.name": "payment-service" },
+      "expect": { "proposed_role": "read", "active_members": 8, "team_size": 12 }
+    }
+  ]
+}

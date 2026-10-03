@@ -1,6 +1,6 @@
 # Mock Jiry, aktywność i dane demo
 
-Dokumentacja modułu `backend/app/api/jira_mock` (prefiks `/rest/api/3`). Zakres: drugi dostawca obok GitHuba (ADR 0011).
+Dokumentacja modułu `backend/app/api/jira_mock` (prefiks `/rest/api/3`). Zakres: drugi dostawca obok GitHuba (ADR 0016).
 Plan wykonania: `docs/superpowers/plans/2026-10-03-jira-mock-and-activity.md`. Mock GitHuba: `docs/github-mock.md`.
 
 ## 1. Po co to jest
@@ -80,7 +80,7 @@ W bazie są tylko `ActivityEvent` (użytkownik, projekt, czas, typ). Zgłoszenia
 
 * Zgłoszenie = seria **trzech kolejnych** zdarzeń Jiry (liczonych od pierwszego zdarzenia Jiry w bazie), klucz `KEY-n`, status zależy od liczby zmian (`To Do → In Progress → In Review → Done`). Seed musi pisać zdarzenia grupami po trzy (`db/jira_seed.py` to wymusza).
 * Zdarzenia z przyszłości nie są widoczne, więc time-travel w tył i w przód przesuwa okno `updated >= -Nd`. Jira nie ma limitu 90 dni jak GitHub.
-* **Silnik i baseline** muszą filtrować `roles.RENEWING_ACTIONS` i `repositories.provider` (ADR 0010, 0011).
+* **Silnik i baseline** muszą filtrować `roles.RENEWING_ACTIONS` i `repositories.provider` (ADR 0010, 0016).
 
 ## 5. Dane demo i scenariusze
 

@@ -1,4 +1,4 @@
-"""Writes of Jira project role actors with Last Admin Protection (ADR 0004, 0011)."""
+"""Writes of Jira project role actors with Last Admin Protection (ADR 0004, 0016)."""
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.jira_mock.http import JiraError
@@ -6,13 +6,14 @@ from app.core.config import Settings
 from app.domain.jira_roles import JiraRole
 from app.models import Repository, User
 from app.ports.clock import ClockPort
-from app.services.access_leases import AccessLeaseService, LastAdminError
+from app.services.access_leases import AccessLeaseService
+from app.services.errors import LastAdminError
 from app.services.jira_mock_service import JiraMockService
 
-_LAST_ADMIN = {
-    "organization": "Cannot remove the last administrator of the organization",
-    "resource": "Cannot remove the last administrator of the project",
-}
+
+def _last_admin(exc: LastAdminError) -> JiraError:
+    """The shared guard speaks of repositories; a Jira resource is a project."""
+    return JiraError(403, exc.detail.replace("of the repository", "of the project"))
 
 
 class JiraRoleService:
@@ -33,7 +34,7 @@ class JiraRoleService:
             for user in users:
                 await self.leases.grant(project, user, role.role)
         except LastAdminError as exc:
-            raise JiraError(403, _LAST_ADMIN[exc.scope]) from None
+            raise _last_admin(exc) from None
         return project, role
 
     async def set_actors(self, project_key: str, role_id: str, account_ids: list[str]) -> tuple[Repository, JiraRole]:
@@ -47,7 +48,7 @@ class JiraRoleService:
             for user in desired:
                 await self.leases.grant(project, user, role.role)
         except LastAdminError as exc:
-            raise JiraError(403, _LAST_ADMIN[exc.scope]) from None
+            raise _last_admin(exc) from None
         return project, role
 
     async def remove_actor(self, project_key: str, role_id: str, account_id: str) -> None:
@@ -58,4 +59,4 @@ class JiraRoleService:
         try:
             await self.leases.revoke(project, user)
         except LastAdminError as exc:
-            raise JiraError(403, _LAST_ADMIN[exc.scope]) from None
+            raise _last_admin(exc) from None

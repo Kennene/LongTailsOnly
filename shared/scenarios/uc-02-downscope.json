@@ -1,0 +1,37 @@
+{
+  "id": "uc-02-downscope",
+  "use_case": "UC-2",
+  "title": "Deeskalacja write → read przy braku pushów",
+  "given": {
+    "anchor": "2026-10-03T00:00:00Z",
+    "seed": "default",
+    "relies_on": ["kamil", "payment-service", "core-api"],
+    "note": "kamil ma write w payment-service, ale ostatni PushEvent był 25 dni temu; od tego czasu wyłącznie recenzje PR. Dzierżawa wygasa za 5 dni, więc jest w oknie ostrzegawczym, a najnowsza aktywność (review) jest poniżej roli → DOWNSCOPE (scenariusz A z ADR 0008). Wartości dni przy zegarze po 10:00 UTC w dniu seeda (np. 12:00); days_remaining zaokrąglane w górę (lease_window.py, docs/3-silnik-dzierzawy D5)."
+  },
+  "when": [
+    { "type": "reset" },
+    { "type": "api", "method": "GET", "path": "/api/v1/leases", "as": "leases" }
+  ],
+  "then": [
+    {
+      "target": "leases",
+      "model": "LeaseOverview",
+      "where": { "user.login": "kamil", "repository.name": "payment-service" },
+      "expect": {
+        "status": "WARNING",
+        "recommendation": "DOWNSCOPE",
+        "current_role": "write"
+      }
+    },
+    {
+      "target": "leases",
+      "model": "LeaseOverview",
+      "where": { "user.login": "kamil", "repository.name": "core-api" },
+      "expect": {
+        "status": "ACTIVE",
+        "recommendation": "KEEP",
+        "current_role": "write"
+      }
+    }
+  ]
+}

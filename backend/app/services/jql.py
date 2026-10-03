@@ -1,4 +1,4 @@
-"""A deliberately tiny JQL subset for the Jira mock (ADR 0011, D6).
+"""A deliberately tiny JQL subset for the Jira mock (ADR 0016, D6).
 
 Supported: `project = KEY`, `updated >= "-30d" | "2026-09-01"`, `assignee|reporter|commenter = "accountId"`,
 joined with AND, optional `ORDER BY updated|created [ASC|DESC]`. Anything else is a `JqlError`.
