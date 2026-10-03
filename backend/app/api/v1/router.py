@@ -2,7 +2,17 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import appeals, audit, baseline, dashboard, enforcement, graph, leases, onboarding
+from app.api.v1 import (
+    appeals,
+    audit,
+    baseline,
+    dashboard,
+    enforcement,
+    graph,
+    leases,
+    onboarding,
+    services,
+)
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(audit.router)
@@ -13,3 +23,4 @@ v1_router.include_router(enforcement.router)
 v1_router.include_router(leases.router)
 v1_router.include_router(dashboard.router)
 v1_router.include_router(graph.router)
+v1_router.include_router(services.router)

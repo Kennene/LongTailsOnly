@@ -1083,6 +1083,48 @@
       "title": "Role",
       "type": "string"
     },
+    "ServiceKind": {
+      "description": "The class of external system a service represents.",
+      "enum": [
+        "vcs",
+        "issue_tracker",
+        "cloud_iam"
+      ],
+      "title": "ServiceKind",
+      "type": "string"
+    },
+    "ServiceRead": {
+      "description": "One selectable external service: its identity, what it can do and whether it is usable.",
+      "properties": {
+        "capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "is_available": {
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/ServiceKind"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "capabilities",
+        "is_available"
+      ],
+      "title": "ServiceRead",
+      "type": "object"
+    },
     "SimulationClock": {
       "description": "Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0014 \u00a74).",
       "properties": {

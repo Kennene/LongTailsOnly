@@ -45,7 +45,6 @@ def resolve_vcs_provider(session: SessionDep, clock: ClockDep, service_id: str) 
 def get_vcs_provider(session: SessionDep, clock: ClockDep) -> VCSProvider:
     """The default VCS provider (ADR 0014 §3). Per-request selection goes through `resolve_vcs_provider`."""
     return resolve_vcs_provider(session, clock, "github")
-    return DatabaseVCSAdapter(session, clock)
 
 
 AdminIdDep = Annotated[int, Depends(get_admin_id)]
