@@ -37,3 +37,18 @@ npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/sr
 ```
 
 `frontend/src/types/api.ts` nie edytujemy ręcznie. Test `tests/schemas/test_contract_is_fresh.py` pada, jeśli `contract/schema.json` jest nieaktualny.
+
+## Migracje bazy (Alembic)
+
+Schemat bazy powstaje **wyłącznie z migracji** w `alembic/versions/` (ADR 0007, pkt 9) — serwer i testy uruchamiają je same.
+
+Po **każdej** zmianie w `app/models/`:
+
+```bash
+cd backend
+uv run alembic revision --autogenerate -m "opis zmiany"   # nowy plik w alembic/versions/
+# przejrzyj wygenerowany plik ręcznie!
+uv run pytest tests/db/test_migrations.py                 # sprawdza, czy migracje = modele
+```
+
+Przydatne: `uv run alembic upgrade head` (zastosuj), `uv run alembic current` (aktualna wersja), `uv run alembic downgrade -1` (cofnij jedną).
