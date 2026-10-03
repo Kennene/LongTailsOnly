@@ -5,6 +5,7 @@ from app.schemas.appeal import AppealCreate, AppealOverview, AppealRead, AppealR
 from app.schemas.audit import AuditEntry, AuditLogRead
 from app.schemas.baseline import BaselineEntry, OnboardingProposal
 from app.schemas.decision import DecisionRequest, Extension
+from app.schemas.insights import DashboardStats, PermissionGraph
 from app.schemas.lease import LeaseOverview, LeaseRead
 from app.schemas.people import TeamRead, UserRead
 from app.schemas.repository import RepositoryRead
@@ -16,12 +17,12 @@ CONTRACT_REQUEST_MODELS: list[type[BaseModel]] = [
 CONTRACT_RESPONSE_MODELS: list[type[BaseModel]] = [
     TeamRead, UserRead, RepositoryRead, LeaseRead, LeaseOverview, ActivityEventRead,
     AppealRead, AuditLogRead, BaselineEntry, ClockRead, DemoResetResult,
-    AuditEntry, OnboardingProposal, AppealOverview,
+    AuditEntry, OnboardingProposal, AppealOverview, DashboardStats, PermissionGraph,
 ]
 
 __all__ = [
-    "ActivityEventRead", "AppealCreate", "AppealOverview", "AppealRead", "AppealRejectRequest", "AuditEntry", "AuditLogRead", "BaselineEntry",
-    "ClockRead", "CONTRACT_REQUEST_MODELS", "CONTRACT_RESPONSE_MODELS", "DecisionRequest",
-    "DemoResetResult", "Extension", "LeaseOverview", "LeaseRead", "OnboardingProposal", "RepositoryRead", "TeamRead",
-    "TimeTravelRequest", "UserRead",
+    "ActivityEventRead", "AppealCreate", "AppealOverview", "AppealRead", "AppealRejectRequest", "AuditEntry",
+    "AuditLogRead", "BaselineEntry", "ClockRead", "CONTRACT_REQUEST_MODELS", "CONTRACT_RESPONSE_MODELS",
+    "DashboardStats", "DecisionRequest", "DemoResetResult", "Extension", "LeaseOverview", "LeaseRead",
+    "OnboardingProposal", "PermissionGraph", "RepositoryRead", "TeamRead", "TimeTravelRequest", "UserRead",
 ]

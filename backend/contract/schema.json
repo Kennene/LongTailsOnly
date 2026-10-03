@@ -418,6 +418,55 @@
       "title": "ClockRead",
       "type": "object"
     },
+    "DashboardStats": {
+      "properties": {
+        "active": {
+          "type": "integer"
+        },
+        "downscope_recommendations": {
+          "type": "integer"
+        },
+        "expired": {
+          "type": "integer"
+        },
+        "generated_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "onboarding_candidates": {
+          "type": "integer"
+        },
+        "pending_appeals": {
+          "type": "integer"
+        },
+        "permanent": {
+          "type": "integer"
+        },
+        "revoke_recommendations": {
+          "type": "integer"
+        },
+        "revoked": {
+          "type": "integer"
+        },
+        "warning": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "generated_at",
+        "active",
+        "warning",
+        "expired",
+        "permanent",
+        "revoked",
+        "downscope_recommendations",
+        "revoke_recommendations",
+        "pending_appeals",
+        "onboarding_candidates"
+      ],
+      "title": "DashboardStats",
+      "type": "object"
+    },
     "DecisionAction": {
       "enum": [
         "EXTEND",
@@ -547,6 +596,166 @@
         }
       },
       "title": "Extension",
+      "type": "object"
+    },
+    "GraphEdge": {
+      "properties": {
+        "animated": {
+          "type": "boolean"
+        },
+        "data": {
+          "$ref": "#/$defs/GraphEdgeData"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target",
+        "label",
+        "animated",
+        "data"
+      ],
+      "title": "GraphEdge",
+      "type": "object"
+    },
+    "GraphEdgeData": {
+      "properties": {
+        "kind": {
+          "enum": [
+            "membership",
+            "lease"
+          ],
+          "type": "string"
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recommendation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LeaseStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "role",
+        "status",
+        "recommendation"
+      ],
+      "title": "GraphEdgeData",
+      "type": "object"
+    },
+    "GraphNode": {
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/GraphNodeData"
+        },
+        "id": {
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/GraphPosition"
+        },
+        "type": {
+          "enum": [
+            "team",
+            "user",
+            "repo"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "position",
+        "data"
+      ],
+      "title": "GraphNode",
+      "type": "object"
+    },
+    "GraphNodeData": {
+      "properties": {
+        "is_admin": {
+          "type": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "team": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "team",
+        "is_admin"
+      ],
+      "title": "GraphNodeData",
+      "type": "object"
+    },
+    "GraphPosition": {
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "GraphPosition",
       "type": "object"
     },
     "LeaseOverview": {
@@ -709,6 +918,28 @@
         "already_granted"
       ],
       "title": "OnboardingProposal",
+      "type": "object"
+    },
+    "PermissionGraph": {
+      "properties": {
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/GraphEdge"
+          },
+          "type": "array"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/GraphNode"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "title": "PermissionGraph",
       "type": "object"
     },
     "Recommendation": {

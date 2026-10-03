@@ -194,6 +194,22 @@ export interface ClockRead {
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "DashboardStats".
+ */
+export interface DashboardStats {
+  active: number;
+  downscope_recommendations: number;
+  expired: number;
+  generated_at: string;
+  onboarding_candidates: number;
+  pending_appeals: number;
+  permanent: number;
+  revoke_recommendations: number;
+  revoked: number;
+  warning: number;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "DecisionRequest".
  */
 export interface DecisionRequest {
@@ -223,6 +239,55 @@ export interface DemoResetResult {
   };
   now: string;
   offset_days: number;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphEdge".
+ */
+export interface GraphEdge {
+  animated: boolean;
+  data: GraphEdgeData;
+  id: string;
+  label: string | null;
+  source: string;
+  target: string;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphEdgeData".
+ */
+export interface GraphEdgeData {
+  kind: "membership" | "lease";
+  recommendation: Recommendation | null;
+  role: Role | null;
+  status: LeaseStatus | null;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphNode".
+ */
+export interface GraphNode {
+  data: GraphNodeData;
+  id: string;
+  position: GraphPosition;
+  type: "team" | "user" | "repo";
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphNodeData".
+ */
+export interface GraphNodeData {
+  is_admin: boolean;
+  label: string;
+  team: string | null;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphPosition".
+ */
+export interface GraphPosition {
+  x: number;
+  y: number;
 }
 /**
  * Lease plus values computed by the lease service (Task 8 of the team plan).
@@ -267,6 +332,14 @@ export interface OnboardingProposal {
   team: TeamRead;
   to_grant: BaselineEntry[];
   user: UserRead;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "PermissionGraph".
+ */
+export interface PermissionGraph {
+  edges: GraphEdge[];
+  nodes: GraphNode[];
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
