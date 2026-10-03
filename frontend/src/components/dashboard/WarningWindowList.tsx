@@ -24,7 +24,7 @@ const SKELETON_ROWS: readonly number[] = [0, 1];
  * decyzji, zanim uprawnienia wygasną. Gęsta lista wierszy (`h-9`) zamiast drugiej tabeli —
  * DESIGN.md §4 zakazuje stawiania kart w kartach i rozdymania pulpitu.
  *
- * Jak w tabeli dostępów: jedna pozycja na osobę (najpilniejszy termin i status), a jej
+ * Jak w tabeli dostępów: jedna pozycja na osobę (najpilniejszy termin, bez statusu), a jej
  * repozytoria rozwijają się pod nią. Wiersz repozytorium jest linkiem do `/leases` (tam zapada
  * decyzja). Status bierzemy z `LeaseStatusBadge`, a pozostały czas z `formatDaysRemaining`.
  */
@@ -117,7 +117,6 @@ function WarningGroup({ group, expanded, onToggle }: WarningGroupProps): React.J
         <span className="ml-auto shrink-0 text-xs text-muted-foreground">
           {formatDaysRemaining(group.mostUrgent.days_remaining)}
         </span>
-        <LeaseStatusBadge status={group.mostUrgent.status} />
       </div>
       {expanded ? (
         <ul className="divide-y divide-border border-t bg-muted/20">
