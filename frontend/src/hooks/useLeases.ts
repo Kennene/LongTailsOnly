@@ -8,18 +8,15 @@ import type { LeaseOverview } from '@/types/api';
  * Lista dzierżaw **aktywnej usługi** — prefiks `['leases', <id usługi>]` trzyma integracje
  * w osobnych wpisach cache, więc przełączenie usługi w pickerze nie pokazuje cudzych dzierżaw.
  *
- * `enabled` jest istotne, nie kosmetyczne: dopóki katalog jest w drodze, `activeService.id` to
- * `''`, więc bez tej bramki każde wejście na stronę strzelałoby dwa razy — raz w namespace „brak
- * usługi”, raz we właściwy — a pierwsza odpowiedź zdążyłaby namalować tabelę, którą zmiana klucza
- * zaraz zastępuje. Gdy katalog **padnie** i żadnego identyfikatora nie ma, jest tak samo: nie ma
- * usługi, której można by przypisać dane (Ruling 28). Gdy identyfikator jest — potwierdzony
- * katalogiem albo wybrany w oknie błędu (Ruling 25) — pytamy, bo wiemy, o którą usługę chodzi.
- *
- * **Wyjątek od tego zdania (Ruling 31):** identyfikator odtworzony z rejestru **w trakcie
- * oczekiwania** na katalog jest prawdziwy, ale jeszcze nie pobiera danych, bo `!isPending` jest
- * fałszem. Żądanie rusza, gdy katalog się rozstrzygnie **albo padnie** — do tego czasu czekamy
- * świadomie: katalog może ten identyfikator jeszcze zdegradować, a pobieranie pod nim to dokładnie
- * ten zmarnowany request i mignięcie treści, które ta bramka usuwa.
+ * `enabled` jest istotne, nie kosmetyczne i ma pin w `useServiceScopedGates.test.tsx`: milczący
+ * katalog rozstrzyga się z rejestru frontendu (spec §5.2), więc `activeService.id` jest **niepuste**
+ * już w trakcie oczekiwania — z zapisanym wyborem albo, gdy go nie ma, z domyślnym `github`. Bez
+ * `!isPending` każde wejście na stronę strzelałoby więc przed potwierdzeniem katalogu, a odpowiedź
+ * zdążyłaby namalować tabelę, którą zmiana klucza zaraz zastępuje (Ruling 28a). Druga połowa bramki
+ * (`id !== ''`) obejmuje katalog, który osiadł **pusty**: jest wypowiedzią, więc nie ma usługi,
+ * której można by przypisać dane. Gdy katalog **padnie**, bramka się otwiera — nie wypowie się już
+ * w tej sesji, więc rejestr jest jedynym autorytetem i dane domyślnego `github` (albo usługi wybranej
+ * w tym oknie — Ruling 25) są lepsze niż pusta powłoka (Ruling 35).
  */
 export function useLeases(): UseQueryResult<LeaseOverview[]> {
   const { activeService, isPending } = useActiveService();

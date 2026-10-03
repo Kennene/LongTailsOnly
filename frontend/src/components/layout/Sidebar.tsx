@@ -8,8 +8,9 @@ import { useActiveService } from '@/services/ServicesContext';
 export function Sidebar(): React.JSX.Element {
   const { activeService } = useActiveService();
   // Nawigacja to jedyna lista tras (spec §5.7): rejestr usług jest źródłem prawdy dla sidebaru
-  // i strażnika, więc usługa spoza rejestru nie ma własnych pozycji. Podczas `isPending`
-  // identyfikator jest pusty, więc nawigacja startuje pusta — katalog ją uzupełnia.
+  // i strażnika, więc usługa spoza rejestru nie ma własnych pozycji. Milczący katalog — w drodze
+  // albo po błędzie — rozstrzyga się na `github` z rejestru (spec §5.2), więc nawigacja istnieje od
+  // pierwszego renderu; pusta zostaje tylko przy osiadłym pustym katalogu.
   const routes = getServiceConfig(activeService.id)?.routes ?? [];
 
   return (

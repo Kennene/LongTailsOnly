@@ -163,11 +163,10 @@ describe('ServicePicker', () => {
     // frontendu, a `aria-busy` mówi o tym, że katalog jeszcze nie dotarł.
     const select = screen.getByLabelText('Usługa');
     expect(select).toHaveAttribute('aria-busy', 'true');
-    expect(select).toHaveValue('');
-    // Stan bieżący jest widoczny, a nie pusty: nic nie jest jeszcze aktywne, więc opcja-placeholder
-    // jest wyłączona. `setActiveService('')` i tak by jej nie przyjął, a wyłączonej opcji nie da
-    // się kliknąć — nie jest to więc martwy klik (Ruling 23).
-    expect(within(select).getByRole('option', { name: 'Brak usług' })).toBeDisabled();
+    // Rejestr frontendu rozstrzyga milczący katalog na `github` (spec §5.2), więc kontrolka nie
+    // jest pusta przez całe oczekiwanie: pokazuje bieżącą usługę i drugi wpis rejestru.
+    expect(select).toHaveValue('github');
+    expect(within(select).getByRole('option', { name: 'github' })).toBeInTheDocument();
     expect(within(select).getByRole('option', { name: 'demo-tracker' })).toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
 
@@ -176,14 +175,28 @@ describe('ServicePicker', () => {
     });
   });
 
+  it('disables the placeholder option when the settled catalog names no service', async () => {
+    server.use(http.get('/api/v1/services', () => HttpResponse.json([])));
+    renderWithProviders(<ServicePicker />);
+
+    const select = screen.getByLabelText('Usługa');
+    await waitFor(() => {
+      expect(select).toHaveAttribute('aria-busy', 'false');
+    });
+
+    // Pusty katalog to wypowiedź, nie milczenie (spec §5.6.1): bieżącej usługi nie ma na liście
+    // opcji, więc dochodzi jako opcja **wyłączona** — widoczna prawda o stanie, a nie martwy klik.
+    expect(select).toHaveValue('');
+    expect(within(select).getByRole('option', { name: 'Brak usług' })).toBeDisabled();
+  });
+
   it('offers a catalog service the frontend registry does not know, and switches to it', async () => {
     server.use(http.get('/api/v1/services', () => HttpResponse.json(GITHUB_AND_UNREGISTERED)));
     renderWithProviders(pickerWithProbe());
 
-    // Czekamy na rozstrzygnięcie katalogu: dopiero wtedy opcje pochodzą z katalogu.
-    await waitFor(() => {
-      expect(screen.getByTestId('active-service')).toHaveTextContent(/^github$/);
-    });
+    // Czekamy na **osiadły** katalog: dopiero wtedy opcje pochodzą z katalogu. `active-service`
+    // pokazuje `github` już w trakcie oczekiwania (rejestr), więc tamta asercja nic by nie czekała.
+    await screen.findByRole('option', { name: 'LinkedIn Sourced' });
 
     await userEvent.selectOptions(screen.getByLabelText('Usługa'), 'linkedin-sourced');
 

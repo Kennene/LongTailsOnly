@@ -27,6 +27,10 @@ import { renderWithProviders } from '@/test/renderWithProviders';
  * niego: `useDashboard` i `useGraph` wołają `fetchLeases()` wewnątrz własnego `queryFn`, więc
  * w grupie zasoby dzieliłyby jeden licznik.
  *
+ * Trzy ramiona bramki, trzy bloki: okno `isPending` **z pustym `localStorage`**, to samo okno
+ * **z zapisanym identyfikatorem** (pinuje koniunkcję `!isPending`, bo wtedy `activeService.id` jest
+ * niepuste już przed katalogiem) i katalog, który padł.
+ *
  * Osobny plik, a nie dopisanie do `useServiceScopedKeys.test.tsx`: tamten ma 262 z 300 linii
  * objętych regułą `max-lines` (`skipBlankLines`/`skipComments`).
  */
@@ -194,7 +198,7 @@ describe('service-scoped read gates', () => {
   );
 
   it.each<GatedReader>(GATED_READERS)(
-    'does not request $path when the catalog fails ($resource)',
+    'requests $path once for the registry default when the catalog fails ($resource)',
     async (reader: GatedReader) => {
       const requests: string[] = recordRequests();
       server.use(
@@ -215,14 +219,15 @@ describe('service-scoped read gates', () => {
       await waitFor(() => {
         expect(screen.getByTestId('catalog-error')).toHaveTextContent('true');
       });
+      // Katalog nie wypowie się już w tej sesji, więc rozstrzyga rejestr frontendu — domyślny
+      // `github` (Ruling 35). Czytnik pobiera więc dane **raz**, w namespace tej usługi, zamiast
+      // zostawać bezczynnym w nieprzypisanym `''` i zostawiać powłokę bez treści.
       await waitFor(() => {
-        expect(cached(queryClient, keyOf(reader, ''))).toBeDefined();
+        expect(cached(queryClient, keyOf(reader, GITHUB))?.state.status).toBe('success');
       });
 
-      const placeholder: Query | undefined = cached(queryClient, keyOf(reader, ''));
-      expect(placeholder?.state.fetchStatus).toBe('idle');
-      expect(placeholder?.state.dataUpdateCount).toBe(0);
-      expect(countRequests(requests, reader.path)).toBe(0);
+      expect(countRequests(requests, reader.path)).toBe(1);
+      expect(cached(queryClient, keyOf(reader, ''))).toBeUndefined();
     },
   );
 });

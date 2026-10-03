@@ -8,12 +8,12 @@ import { useActiveService } from '@/services/ServicesContext';
  * razie przekierowuje **deklaratywnie** na jej trasę domyślną (`<Navigate replace>` — bez migotania
  * treści i bez podwójnego renderu, jakiego wymagałby `useEffect`).
  *
- * Dopóki katalog jest w drodze, strażnik nie podejmuje decyzji i oddaje trasę routerowi: pierwszy
- * render widzi placeholder (pusty identyfikator), więc przekierowanie na tej podstawie wyrzuciłoby
- * użytkownika z trasy, którą aktywna usługa jednak obsługuje — np. z `/leases` przy zapisanym
- * `github`. Po rozstrzygnięciu katalogu bez żadnej usługi placeholder prowadzi na pulpit, bo tylko
- * tę trasę `isRouteSupported` uznaje dla nieznanego identyfikatora (zadanie 4); dzięki temu strażnik
- * nigdy nie odrzuca własnego celu przekierowania i nie zapętla się.
+ * Dopóki katalog jest w drodze, strażnik nie podejmuje decyzji i oddaje trasę routerowi: to okno
+ * rozstrzyga rejestr frontendu (spec §5.2), więc identyfikator może się jeszcze zmienić, gdy katalog
+ * dotrze — przekierowanie na tej podstawie wyrzuciłoby użytkownika z trasy, którą docelowa usługa
+ * jednak obsługuje. Gdy katalog osiadł **pusty**, aktywny jest placeholder, a jego jedyną obsługiwaną
+ * trasą jest pulpit (zadanie 4); dzięki temu strażnik nigdy nie odrzuca własnego celu przekierowania
+ * i nie zapętla się.
  */
 export function ServiceRouteGuard(): React.JSX.Element {
   const { activeService, isPending } = useActiveService();

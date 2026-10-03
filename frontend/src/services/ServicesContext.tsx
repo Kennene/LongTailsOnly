@@ -15,7 +15,9 @@ import type { ServiceRead } from '@/types/api';
 const STORAGE_KEY = 'lease-governor.service';
 
 /**
- * Placeholder, gdy nie da się wybrać żadnej usługi: pusty katalog albo błąd zapytania.
+ * Placeholder, gdy **osiadły** katalog nie wskazuje żadnej usługi — czyli gdy jest pusty. Milczący
+ * katalog (w drodze albo po błędzie) rozstrzyga się z rejestru frontendu, więc tu nie trafia; gdyby
+ * rejestr nie znał nawet domyślnego `github`, placeholder jest ostatnim zastępstwem.
  * Identyfikator jest pusty (`getServiceConfig('')` → `undefined`), więc `getDefaultPath('')`
  * prowadzi na pulpit, a `isRouteSupported('', '/')` jest `true` — strażnik nie odrzuca własnego
  * celu przekierowania i powłoka nigdy nie zostaje pusta. `kind: 'vcs'` jest **bez znaczenia,
@@ -91,10 +93,14 @@ function unconfirmedService(id: string): ServiceRead | null {
  * po cichu), a wybór degraduje się tylko na czas sesji.
  *
  * Trzeci argument dotyczy katalogu **nierozstrzygniętego**: gdy żądanie jest w drodze albo padło,
- * a zapisany identyfikator zna rejestr frontendu, usługa pochodzi z rejestru. Katalog milczy, więc
- * wybór bez efektu byłby martwym klikiem, a gdy żądanie padło, nie ma już niczego, co mogłoby ten
- * wybór później poprawić (Ruling 21, spec §5.6.1 zdanie 3). Osiadły katalog — także **pusty** —
- * jest stwierdzeniem, więc rejestr go nie przebija i placeholder zostaje.
+ * katalog nie jest autorytetem, więc rozstrzyga rejestr frontendu — najpierw zapisany identyfikator
+ * (Ruling 21: wybór przyjęty w tym oknie musi faktycznie zadziałać, bo gdy żądanie padło, nie ma już
+ * niczego, co mogłoby go później poprawić), a gdy zapisu nie ma albo rejestr go nie zna, domyślny
+ * `github` (spec §5.2: „użytkownik wraca do domyślnej (`github`)”). Inaczej pierwsza wizyta
+ * zaczynałaby się od pustej nawigacji, a po nieudanym katalogu powłoka ogłaszałaby „Brak usług”
+ * przez całą sesję, choć kontrolka obok oferuje `github` — dokładnie w stanie „backend leży”,
+ * w którym plan wymaga nawigowalności. Osiadły katalog — także **pusty** — jest stwierdzeniem,
+ * więc rejestr go nie przebija i placeholder zostaje (spec §5.6.1).
  */
 function resolveActiveService(
   services: ServiceRead[],
@@ -119,8 +125,8 @@ function resolveActiveService(
     return services[0];
   }
 
-  if (isCatalogUnresolved && storedId !== null) {
-    return unconfirmedService(storedId) ?? NO_SERVICE;
+  if (isCatalogUnresolved) {
+    return unconfirmedService(storedId ?? 'github') ?? unconfirmedService('github') ?? NO_SERVICE;
   }
 
   return NO_SERVICE;

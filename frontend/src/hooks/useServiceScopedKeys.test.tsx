@@ -194,7 +194,9 @@ describe('service-scoped query keys', () => {
   });
 
   it('does not request data in the placeholder namespace while the catalog is pending', async () => {
-    // Katalog bez zapisu w `localStorage` i bez rozstrzygnięcia: `activeService.id` to `''`.
+    // Katalog bez zapisu w `localStorage`: rejestr frontendu rozstrzyga go na `github` już
+    // w trakcie oczekiwania, więc klucz czytnika to od pierwszego renderu `['leases', 'github']` —
+    // ale pozostaje bezczynny, dopóki katalog się nie rozstrzygnie (spec §5.2, Ruling 28a).
     const requestedLeaseUrls: string[] = [];
     server.use(
       http.get('/api/v1/leases', ({ request }) => {
@@ -209,20 +211,23 @@ describe('service-scoped query keys', () => {
 
     const { queryClient } = renderWithProviders(<LeasesProbe />);
 
-    // Wpis `['leases', '']` powstaje (klucz zawsze budujemy z `activeService.id`), ale jest bezczynny:
-    // żądanie poszłoby w namespace, którego katalog jeszcze nie potwierdził, a jego odpowiedź
-    // zdążyłaby namalować tabelę, którą zmiana klucza zaraz zastępuje.
+    // Klucz powstaje (budujemy go zawsze z `activeService.id`), ale żądanie nie wychodzi: poszłoby
+    // pod usługę, której katalog jeszcze nie potwierdził, a jego odpowiedź zdążyłaby namalować
+    // tabelę, którą zmiana klucza zaraz zastępuje.
+    expect(cachedKeys(queryClient)).toContainEqual(['leases', GITHUB]);
     expect(requestedLeaseUrls).toEqual([]);
 
+    // Dokładnie jedno żądanie i dopiero po rozstrzygnięciu katalogu.
     await waitFor(() => {
-      expect(cachedKeys(queryClient)).toContainEqual(['leases', GITHUB]);
+      expect(requestedLeaseUrls).toHaveLength(1);
     });
-    // Dokładnie jedno żądanie — już w namespace rozstrzygniętej usługi.
-    expect(requestedLeaseUrls).toHaveLength(1);
+    expect(cachedKeys(queryClient)).toContainEqual(['leases', GITHUB]);
   });
 
-  it('does not request data in the placeholder namespace when the catalog fails', async () => {
-    // Ruling 28: „katalog padł” nie jest stwierdzeniem, więc czytnik nie pyta w namespace `''`.
+  it('never asks for data in the unattributed namespace when the catalog fails', async () => {
+    // Ruling 35: katalog, który padł, milczy — więc rozstrzyga rejestr frontendu i usługą jest
+    // domyślny `github`. Czytnik pobiera dane raz, w namespace tej usługi; namespace `''`
+    // („brak usługi”) nie powstaje wcale.
     const requestedLeaseUrls: string[] = [];
     server.use(
       http.get('/api/v1/leases', ({ request }) => {
@@ -242,24 +247,22 @@ describe('service-scoped query keys', () => {
     );
 
     // Kluczowy warunek tego testu: czekamy na **osiadły** błąd katalogu. Bez tego asercje
-    // przechodzą na stanie „katalog w drodze” i nie mówią nic o oknie błędu (Ruling 28).
+    // przechodzą na stanie „katalog w drodze” i nie mówią nic o oknie błędu.
     await waitFor(() => {
       expect(screen.getByTestId('catalog-error')).toHaveTextContent('true');
     });
     await waitFor(() => {
-      expect(cachedKeys(queryClient)).toContainEqual(['leases', '']);
+      expect(requestedLeaseUrls).toHaveLength(1);
     });
 
-    const placeholder = queryClient.getQueryCache().find({ queryKey: ['leases', ''], exact: true });
-    expect(placeholder?.state.fetchStatus).toBe('idle');
-    expect(placeholder?.state.dataUpdateCount).toBe(0);
-    expect(requestedLeaseUrls).toEqual([]);
+    expect(cachedKeys(queryClient)).toContainEqual(['leases', GITHUB]);
+    expect(cachedKeys(queryClient)).not.toContainEqual(['leases', '']);
   });
 
   it('still loads the service the user picks while the catalog is down', async () => {
     // Ruling 25: wybór przyjęty w oknie błędu katalogu ma **zadziałać** — także dla danych.
-    // Ten test jest granicą Ruling 28: `!isError` blokuje nie tylko namespace `''`, ale i realny
-    // identyfikator, który użytkownik właśnie wybrał.
+    // Ten test jest granicą Ruling 28: bramka oparta na `isError` blokowałaby nie tylko namespace
+    // `''`, ale i realny identyfikator, który użytkownik właśnie wybrał.
     const user = userEvent.setup();
     const requestedLeaseUrls: string[] = [];
     server.use(
@@ -286,12 +289,16 @@ describe('service-scoped query keys', () => {
       expect(screen.getByTestId('catalog-error')).toHaveTextContent('true');
     });
 
+    // Milczący katalog rozstrzygnął się na domyślnym `github`, więc jedno żądanie już poszło
+    // (Ruling 35). Liczymy **przyrost** po kliknięciu, żeby ten test nadal pytał wyłącznie o wybór.
+    const beforePick = requestedLeaseUrls.length;
+
     await user.click(screen.getByRole('button', { name: 'Przełącz na demo-tracker' }));
 
     await waitFor(() => {
-      expect(cachedKeys(queryClient)).toContainEqual(['leases', DEMO_TRACKER]);
+      expect(requestedLeaseUrls).toHaveLength(beforePick + 1);
     });
-    expect(requestedLeaseUrls).toHaveLength(1);
+    expect(cachedKeys(queryClient)).toContainEqual(['leases', DEMO_TRACKER]);
   });
 
   it('keeps the clock key global', async () => {

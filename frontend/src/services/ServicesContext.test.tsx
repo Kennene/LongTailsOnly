@@ -123,6 +123,15 @@ async function waitForCatalog(): Promise<void> {
   });
 }
 
+/** Osiadły błąd katalogu — wspólny warunek wstępny okna, w którym katalog milczy (Ruling 35). */
+async function failCatalog(ui: React.JSX.Element = <ActiveServiceProbe />): Promise<void> {
+  server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
+  renderWithProviders(ui);
+  await waitFor(() => {
+    expect(screen.getByTestId('catalog-state')).toHaveTextContent('błąd');
+  });
+}
+
 beforeEach(() => {
   window.localStorage.clear();
 });
@@ -133,6 +142,23 @@ describe('ServicesProvider', () => {
 
     await waitForCatalog();
 
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^github$/);
+  });
+
+  it('keeps github navigable while the catalog is still in flight', async () => {
+    server.use(
+      http.get('/api/v1/services', async () => {
+        await delay(300);
+
+        return HttpResponse.json(servicesFixture);
+      }),
+    );
+    renderWithProviders(<ActiveServiceProbe />);
+
+    // Warunek wstępny: katalog jest w drodze — inaczej test nie bada tego okna. Pierwsza wizyta
+    // nie może zaczynać się od pustej nawigacji: rejestr frontendu zna `github`, więc powłoka jest
+    // nawigowalna od pierwszego renderu, a nie dopiero po katalogu (spec §5.2).
+    expect(screen.getByTestId('catalog-state')).toHaveTextContent('wczytywanie');
     expect(screen.getByTestId('active-service')).toHaveTextContent(/^github$/);
   });
 
@@ -246,12 +272,7 @@ describe('ServicesProvider', () => {
 
   it('accepts a registry-known selection when the catalog request fails', async () => {
     const user = userEvent.setup();
-    server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
-    renderWithProviders(<FixedSwitcherProbe />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('catalog-state')).toHaveTextContent('błąd');
-    });
+    await failCatalog(<FixedSwitcherProbe />);
 
     await user.click(screen.getByRole('button', { name: 'Przełącz na demo-tracker' }));
 
@@ -264,31 +285,39 @@ describe('ServicesProvider', () => {
 
   it('restores a stored registry-known service when the catalog request fails', async () => {
     window.localStorage.setItem(STORAGE_KEY, 'demo-tracker');
-    server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
-    renderWithProviders(<ActiveServiceProbe />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('catalog-state')).toHaveTextContent('błąd');
-    });
+    await failCatalog();
 
     // Ten sam mechanizm bez kliknięcia: rejestr frontendu zna zapis, więc użytkownik nie zostaje
     // uwięziony na placeholderze, gdy backend leży (Ruling 21).
     expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
   });
 
+  it.each<string | null>([null, 'decommissioned'])(
+    'defaults to github when the catalog request fails (stored: %s)',
+    async (stored: string | null) => {
+      if (stored !== null) {
+        window.localStorage.setItem(STORAGE_KEY, stored);
+      }
+      await failCatalog();
+
+      // Katalog nie wypowie się już w tej sesji, więc rozstrzyga rejestr frontendu: bez zapisu
+      // (albo z zapisem, którego rejestr nie zna) jest nim domyślny `github` (spec §5.2).
+      // Inaczej powłoka ogłaszałaby „Brak usług”, choć kontrolka obok oferuje `github`,
+      // a `/leases` spadałoby na pulpit dokładnie wtedy, gdy backend leży.
+      expect(screen.getByTestId('active-service')).toHaveTextContent(/^github$/);
+    },
+  );
+
   it('does not persist a registry-unknown selection when the catalog request fails', async () => {
     const user = userEvent.setup();
-    server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
-    renderWithProviders(<FixedSwitcherProbe />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('catalog-state')).toHaveTextContent('błąd');
-    });
+    await failCatalog(<FixedSwitcherProbe />);
 
     await user.click(screen.getByRole('button', { name: 'Wybierz nieznaną usługę' }));
 
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
-    expect(screen.getByTestId('active-service')).toBeEmptyDOMElement();
+    // Odrzucony wybór nie może też **udać** aktywnej usługi: w oknie błędu katalog milczy, więc
+    // rozstrzyga rejestr i powłoka pokazuje domyślny `github` (Ruling 35), a nie odrzuconą literówkę.
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^github$/);
   });
 
   it('accepts and persists a registry-known selection from a settled catalog', async () => {
@@ -362,12 +391,7 @@ describe('ServicesProvider', () => {
   });
 
   it('reports the error and still renders its children when the catalog request fails', async () => {
-    server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
-    renderWithProviders(<ActiveServiceProbe />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('catalog-state')).toHaveTextContent('błąd');
-    });
+    await failCatalog();
 
     expect(screen.getByTestId('services-count')).toHaveTextContent('0');
   });

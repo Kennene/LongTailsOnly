@@ -74,11 +74,13 @@ describe('ServiceRouteGuard', () => {
     expect(await screen.findByTestId('dashboard-marker')).toBeInTheDocument();
   });
 
-  it('degrades a deep link to the dashboard when the catalog request fails', async () => {
+  it('keeps a github deep link when the catalog request fails', async () => {
+    // Milczący katalog rozstrzyga się z rejestru frontendu, więc `/leases` ma gospodarza: `github`.
+    // Pusta nawigacja i powrót na pulpit w stanie „backend leży” były defektem (Ruling 35).
     server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
     renderWithProviders(<GuardedRoutes />, { route: '/leases' });
 
-    expect(await screen.findByTestId('dashboard-marker')).toBeInTheDocument();
+    expect(await screen.findByTestId('leases-marker')).toBeInTheDocument();
   });
 
   it('degrades a stale github deep link when the catalog omits github', async () => {
