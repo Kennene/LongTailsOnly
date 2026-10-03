@@ -142,8 +142,9 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   return (
     // Modal jest dłuższy niż niski ekran (laptop 1366×768, telefon): bez sufitu wysokości Radix
     // centruje go poza krawędziami i tytuł oraz akcje stają się nieosiągalne. Treść przewija się
-    // w środku, a stopka z akcjami zostaje przyklejona do dolnej krawędzi.
-    <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+    // w środku, a stopka z akcjami zostaje przyklejona do dolnej krawędzi. `pb-0` + `mb-0`, bo
+    // w kontenerze przewijanym dolny padding ląduje za stopką i zostawiał pod nią 16 px pustki.
+    <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto pb-0 sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Decyzja o dostępie</DialogTitle>
         <DialogDescription>{`${lease.user.name} (${lease.user.login})`}</DialogDescription>
@@ -199,7 +200,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
         </Alert>
       ) : null}
 
-      <DialogFooter className="sticky bottom-0 bg-popover">
+      <DialogFooter className="sticky bottom-0 mb-0 bg-popover">
         <Button variant="outline" onClick={() => onOpenChange(false)}>
           Zamknij
         </Button>
