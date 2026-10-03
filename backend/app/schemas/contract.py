@@ -16,6 +16,6 @@ def build_contract() -> dict[str, Any]:
     models = [(m, "validation") for m in CONTRACT_REQUEST_MODELS] + [
         (m, "serialization") for m in CONTRACT_RESPONSE_MODELS
     ]
-    _, schema = models_json_schema(models, title="LongTailsOnly API contract")
+    _, schema = models_json_schema(models, title="TailCut API contract")
     _drop_property_titles(schema["$defs"])
     return schema

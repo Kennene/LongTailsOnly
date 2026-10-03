@@ -1,7 +1,7 @@
 /* AUTO-GENERATED from backend/contract/schema.json - do not edit. Regenerate: see backend/README.md */
 
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "ActionType".
  */
 export type ActionType =
@@ -16,48 +16,48 @@ export type ActionType =
   | "comment_created"
   | "project_updated";
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "Role".
  */
 export type Role = "read" | "write" | "admin";
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "ActorType".
  */
 export type ActorType = "ADMIN" | "USER" | "SYSTEM";
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "AppealStatus".
  */
 export type AppealStatus = "PENDING" | "APPROVED" | "REJECTED";
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "DecisionAction".
  */
 export type DecisionAction = "EXTEND" | "DOWNSCOPE" | "REVOKE";
 /**
  * How the lease engine acts on lapsing leases (docs/3-silnik-dzierzawy §5).
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "EnforcementMode".
  */
 export type EnforcementMode = "disabled" | "warning" | "auto";
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "Recommendation".
  */
 export type Recommendation = "KEEP" | "DOWNSCOPE" | "REVOKE";
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "LeaseStatus".
  */
 export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED" | "PERMANENT" | "REVOKED";
 
-export interface LongTailsOnlyAPIContract {
+export interface TailCutAPIContract {
   [k: string]: unknown;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "ActivityEventRead".
  */
 export interface ActivityEventRead {
@@ -69,7 +69,7 @@ export interface ActivityEventRead {
   user_id: number;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "AppealCreate".
  */
 export interface AppealCreate {
@@ -79,7 +79,7 @@ export interface AppealCreate {
 /**
  * Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0014 §4).
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "AppealOverview".
  */
 export interface AppealOverview {
@@ -102,7 +102,7 @@ export interface AppealOverview {
   user_id: number;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "RepositoryRead".
  */
 export interface RepositoryRead {
@@ -113,7 +113,7 @@ export interface RepositoryRead {
   owner: string;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "UserRead".
  */
 export interface UserRead {
@@ -124,7 +124,7 @@ export interface UserRead {
   team: TeamRead | null;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "TeamRead".
  */
 export interface TeamRead {
@@ -133,7 +133,7 @@ export interface TeamRead {
   slug: string;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "AppealRead".
  */
 export interface AppealRead {
@@ -148,7 +148,7 @@ export interface AppealRead {
   user_id: number;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "AppealRejectRequest".
  */
 export interface AppealRejectRequest {
@@ -157,7 +157,7 @@ export interface AppealRejectRequest {
 /**
  * Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0014 §4).
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "AuditEntry".
  */
 export interface AuditEntry {
@@ -174,7 +174,7 @@ export interface AuditEntry {
   timestamp: string;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "AuditLogRead".
  */
 export interface AuditLogRead {
@@ -190,7 +190,7 @@ export interface AuditLogRead {
   timestamp: string;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "BaselineEntry".
  */
 export interface BaselineEntry {
@@ -201,7 +201,7 @@ export interface BaselineEntry {
   team_size: number;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "ClockRead".
  */
 export interface ClockRead {
@@ -209,7 +209,7 @@ export interface ClockRead {
   offset_days: number;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "DashboardStats".
  */
 export interface DashboardStats {
@@ -225,7 +225,7 @@ export interface DashboardStats {
   warning: number;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "DecisionRequest".
  */
 export interface DecisionRequest {
@@ -236,7 +236,7 @@ export interface DecisionRequest {
 /**
  * Exactly one way of extending a lease (ADR 0005).
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "Extension".
  */
 export interface Extension {
@@ -246,7 +246,7 @@ export interface Extension {
   until_date?: string | null;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "DemoResetResult".
  */
 export interface DemoResetResult {
@@ -257,21 +257,21 @@ export interface DemoResetResult {
   offset_days: number;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "EnforcementModeRead".
  */
 export interface EnforcementModeRead {
   mode: EnforcementMode;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "EnforcementModeUpdate".
  */
 export interface EnforcementModeUpdate {
   mode: EnforcementMode;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "GraphEdge".
  */
 export interface GraphEdge {
@@ -283,7 +283,7 @@ export interface GraphEdge {
   target: string;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "GraphEdgeData".
  */
 export interface GraphEdgeData {
@@ -293,7 +293,7 @@ export interface GraphEdgeData {
   status: LeaseStatus | null;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "GraphNode".
  */
 export interface GraphNode {
@@ -303,7 +303,7 @@ export interface GraphNode {
   type: "team" | "user" | "repo";
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "GraphNodeData".
  */
 export interface GraphNodeData {
@@ -312,7 +312,7 @@ export interface GraphNodeData {
   team: string | null;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "GraphPosition".
  */
 export interface GraphPosition {
@@ -322,7 +322,7 @@ export interface GraphPosition {
 /**
  * Evidence of use for the decision modal: renewing actions in the lease window (docs/3-silnik-dzierzawy §6).
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "LeaseActivityStats".
  */
 export interface LeaseActivityStats {
@@ -338,7 +338,7 @@ export interface LeaseActivityStats {
 /**
  * Lease plus values computed by the lease service (Task 8 of the team plan).
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "LeaseOverview".
  */
 export interface LeaseOverview {
@@ -355,7 +355,7 @@ export interface LeaseOverview {
   user: UserRead;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "LeaseRead".
  */
 export interface LeaseRead {
@@ -370,7 +370,7 @@ export interface LeaseRead {
 /**
  * Team baseline split for one person: what approval would grant and what they already have (ADR 0014 §4).
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "OnboardingProposal".
  */
 export interface OnboardingProposal {
@@ -380,7 +380,7 @@ export interface OnboardingProposal {
   user: UserRead;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "PermissionGraph".
  */
 export interface PermissionGraph {
@@ -390,7 +390,7 @@ export interface PermissionGraph {
 /**
  * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0014 §4).
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "SimulationClock".
  */
 export interface SimulationClock {
@@ -398,7 +398,7 @@ export interface SimulationClock {
   simulated_now: string;
 }
 /**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "TimeTravelRequest".
  */
 export interface TimeTravelRequest {

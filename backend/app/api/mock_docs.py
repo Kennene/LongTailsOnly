@@ -35,7 +35,7 @@ class MockDocs:
 
 GITHUB_DOCS = MockDocs(
     slug="github",
-    title="LongTailsOnly: mock GitHuba",
+    title="TailCut: mock GitHuba",
     description="Udawane GitHub REST API v3 (`/api/v3`). API produktu: [/docs](/docs).",
     routes=github_mock_router.routes,
     tags=[
@@ -47,7 +47,7 @@ GITHUB_DOCS = MockDocs(
 
 JIRA_DOCS = MockDocs(
     slug="jira",
-    title="LongTailsOnly: mock Jiry",
+    title="TailCut: mock Jiry",
     description="Udawane Jira Cloud REST API v3 (`/rest/api/3`). API produktu: [/docs](/docs).",
     routes=jira_mock_router.routes,
     tags=[

@@ -28,7 +28,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="LongTailsOnly API", description=MAIN_DESCRIPTION, lifespan=lifespan)
+app = FastAPI(title="TailCut API", description=MAIN_DESCRIPTION, lifespan=lifespan)
 app.add_exception_handler(ServiceError, service_error_handler)
 app.include_router(demo_router)
 app.include_router(simulation_router)

@@ -44,7 +44,7 @@ export default [
   jsxA11y.flatConfigs.recommended,
 
   {
-    name: 'long-tails-only/source',
+    name: 'tailcut/source',
     files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
       ecmaVersion: 'latest',
@@ -140,7 +140,7 @@ export default [
     // - max-lines: one generated file per primitive, some exceed 300 lines.
     // - explicit-function-return-type: the generator emits untyped declarations.
     // - react-refresh/only-export-components: variants are exported next to components.
-    name: 'long-tails-only/vendored-shadcn-ui',
+    name: 'tailcut/vendored-shadcn-ui',
     files: ['src/components/ui/**/*.{ts,tsx}'],
     rules: {
       'max-lines': 'off',
@@ -150,7 +150,7 @@ export default [
   },
 
   {
-    name: 'long-tails-only/tests',
+    name: 'tailcut/tests',
     files: TEST_FILES,
     plugins: {
       ...vitest.configs.recommended.plugins,
@@ -174,7 +174,7 @@ export default [
 
   {
     // Build/tooling config files: no components, no React runtime, Node globals.
-    name: 'long-tails-only/config-files',
+    name: 'tailcut/config-files',
     files: CONFIG_FILES,
     languageOptions: {
       globals: { ...globals.node },
