@@ -6,7 +6,7 @@
     "anchor": "2026-10-03T00:00:00Z",
     "seed": "default",
     "relies_on": ["marta", "qa-automation"],
-    "note": "Dzierżawa marta@qa-automation wygasa za 3 dni (scenariusz B z ADR 0008). lease_id rozwiązywane przez $from, bo identyfikatory zależą od kolejności seedowania. Wartości dni przy zegarze po 10:00 UTC w dniu seeda (np. 12:00); days_remaining zaokrąglane w górę (lease_window.py, docs/3-silnik-dzierzawy D5)."
+    "note": "Dzierżawa marta@qa-automation wypada w oknie ostrzegawczym (scenariusz B z ADR 0008). lease_id rozwiązywane przez $from, bo identyfikatory zależą od kolejności seedowania. Przedłużenie idzie na dzierżawę bez PENDING appeal — /leases/{id}/decision zwraca 409, gdy odwołanie czeka na decyzję. Asercje idą po statusie, nie po days_remaining, bo pozostała liczba dni zależy od godziny seedowania."
   },
   "when": [
     { "type": "reset" },
@@ -42,12 +42,26 @@
     {
       "type": "api",
       "method": "POST",
-      "path": "/api/v1/appeals/{appeal_id}/decision",
-      "as": "decision",
+      "path": "/api/v1/leases/{lease_id}/decision",
+      "as": "extension",
+      "resolve": {
+        "lease_id": {
+          "$from": "leases",
+          "where": { "user.login": "kamil", "repository.name": "payment-service" },
+          "field": "id"
+        }
+      },
+      "body": { "action": "EXTEND", "extension": { "preset_days": 30 }, "justification": null }
+    },
+    {
+      "type": "api",
+      "method": "POST",
+      "path": "/api/v1/appeals/{appeal_id}/reject",
+      "as": "rejected",
       "resolve": {
         "appeal_id": { "$from": "appeal", "field": "id" }
       },
-      "body": { "action": "EXTEND", "extension": { "preset_days": 30 } }
+      "body": { "justification": "Uzasadnienie nie pokazuje nowego zapotrzebowania na dostęp w tym sprincie." }
     }
   ],
   "then": [
@@ -55,21 +69,26 @@
       "target": "leases",
       "model": "LeaseOverview",
       "where": { "user.login": "marta", "repository.name": "qa-automation" },
-      "expect": { "status": "WARNING", "days_remaining": 3, "recommendation": "KEEP" }
+      "expect": { "status": "WARNING", "recommendation": "KEEP", "current_role": "read" }
     },
     {
       "target": "appeal",
-      "model": "AppealRead",
-      "expect": { "status": "PENDING", "requested_role": "read" }
+      "model": "AppealOverview",
+      "expect": { "status": "PENDING" }
     },
     {
       "target": "rejected-appeal",
       "expect": { "status_code": 422 }
     },
     {
-      "target": "decision",
-      "model": "AppealRead",
-      "expect": { "status": "APPROVED" }
+      "target": "extension",
+      "model": "LeaseOverview",
+      "expect": { "status": "ACTIVE", "current_role": "write" }
+    },
+    {
+      "target": "rejected",
+      "model": "AppealOverview",
+      "expect": { "status": "REJECTED" }
     }
   ]
 }

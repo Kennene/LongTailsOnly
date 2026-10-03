@@ -23,6 +23,7 @@ pytest
 - Przy pierwszym starcie serwer sam tworzy bazę (migracje) i wgrywa dane demo (19 osób, 10 repo, persony Kamil i Marta).
 - `POST /api/v1/demo/reset` → przywraca bazę i zegar do stanu startowego demo (wyłączenie: `ENABLE_DEMO_RESET=false`).
 - Mock GitHuba (`/api/v3/...`), zdarzenia aktywności i `/api/v1/simulation/time-travel`: patrz `docs/github-mock.md` (ADR 0010).
+- Mock Jiry (`/rest/api/3/...`): patrz `docs/jira-mock.md` (ADR 0016).
 - Baza: SQLite przez aiosqlite, adres w `DATABASE_URL` (patrz `.env.example`).
 - Nowa biblioteka: `uv add nazwa` (narzędzie tylko do developmentu: `uv add --optional dev nazwa`).
 
@@ -58,7 +59,7 @@ Przydatne: `uv run alembic upgrade head` (zastosuj), `uv run alembic current` (a
 
 ## API v1 (stan 2026-10-03)
 
-Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; nowy router = jedna linia `include_router`). Błędy: kod HTTP + `{"detail": "..."}` (`ServiceError` w `app/services/errors.py`). Szczegóły kontraktu: ADR 0011, opis kroków Osoby 4: [`docs/osoba-4.md`](../docs/osoba-4.md).
+Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; nowy router = jedna linia `include_router`). Błędy: kod HTTP + `{"detail": "..."}` (`ServiceError` w `app/services/errors.py`). Szczegóły kontraktu: ADR 0014, opis kroków Osoby 4: [`docs/osoba-4.md`](../docs/osoba-4.md).
 
 | Endpoint | Co zwraca |
 | --- | --- |
@@ -68,6 +69,9 @@ Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; n
 | `POST /api/v1/appeals` · `POST /api/v1/appeals/{id}/reject` | złożenie odwołania (wymagane nowe uzasadnienie) i odrzucenie |
 | `GET /api/v1/appeals?login=&lease_id=&status=` | historia odwołań z gotowymi liczbami |
 | `GET /api/v1/audit?actor_type=&action=&actor_login=&target=&since=&until=&limit=` | dziennik audytu (tylko do dopisywania) |
+| `POST /api/v1/appeals/{id}/decision` | decyzja na odwołaniu (przedłuż / zdeeskaluj / odbierz) silnikiem dzierżaw |
+| `GET /api/v1/dashboard/stats` | gotowe liczniki KPI dashboardu |
+| `GET /api/v1/graph?team=` | graf uprawnień w formacie React Flow (węzły z pozycjami, krawędzie ze statusem) |
 | `POST /api/v1/demo/reset` | reset bazy i zegara do stanu demo |
 
 Audyt zapisuje się **wyłącznie** przez `write_audit_event` (`app/services/audit_service.py`); migracja `0002` blokuje w bazie `UPDATE`/`DELETE` na `audit_logs`. Wspólne fabryki testowe: `tests/factories.py`.

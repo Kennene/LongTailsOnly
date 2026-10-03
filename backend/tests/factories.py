@@ -1,4 +1,4 @@
-"""Shared test record factories (ADR 0011 §1). They only flush; tests commit when an HTTP call needs the data."""
+"""Shared test record factories (ADR 0014 §1). They only flush; tests commit when an HTTP call needs the data."""
 
 from datetime import datetime
 

@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.github_mock.http import register_github_error_handlers
 from app.api.github_mock.router import router as github_mock_router
+from app.api.jira_mock.http import register_jira_error_handlers
+from app.api.jira_mock.router import router as jira_mock_router
 from app.api.v1.demo import router as demo_router
 from app.api.v1.errors import service_error_handler
 from app.api.v1.router import v1_router
@@ -29,8 +31,10 @@ app.add_exception_handler(ServiceError, service_error_handler)
 app.include_router(demo_router)
 app.include_router(simulation_router)
 app.include_router(github_mock_router)
+app.include_router(jira_mock_router)
 app.include_router(v1_router)
 register_github_error_handlers(app)
+register_jira_error_handlers(app)
 
 
 @app.get("/health")

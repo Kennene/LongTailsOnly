@@ -1,4 +1,4 @@
-"""Intentional friction for appeals (ADR 0005, ADR 0011 §5.3-5.4). Pure functions."""
+"""Intentional friction for appeals (ADR 0005, ADR 0014 §5.3-5.4). Pure functions."""
 
 from collections.abc import Iterable
 from datetime import datetime, timedelta

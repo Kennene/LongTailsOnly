@@ -16,6 +16,10 @@ git ls-tree -r --name-only origin/main -- docs/adr
 > `test_adr_numbers_are_unique` w `backend/tests/repo/test_docs_integrity.py`.
 > Rozstrzygnięcie: numer zachowuje ADR, który pierwszy trafił na `main` i jest przywoływany
 > z kodu produkcyjnego (`app/domain/roles.py`, `enums.py`) — trzy ADR-y Osoby 6 przesunięto na 0011–0013.
+>
+> **Druga kolizja (0010 i 0011).** Po tej poprawce na `main` trafiły jeszcze ADR frontendu (0010) i Osoby 4 (0011),
+> nadane równolegle. Ta sama reguła: 0010 i 0011 zostają przy wcześniejszych ADR-ach, Osoba 4 przechodzi na **0014**,
+> frontend na **0015** (odwołania w kodzie i dokumentacji zaktualizowane).
 
 | Nr | Tytuł | Status | Dotyczy |
 | --- | --- | --- | --- |
@@ -32,6 +36,9 @@ git ls-tree -r --name-only origin/main -- docs/adr
 | [0011](0011-fixtures-zgodne-z-generowanym-kontraktem.md) | Fixtures jako dane zgodne z generowanym kontraktem | Proponowany | `shared/fixtures/`, krok 6.1 |
 | [0012](0012-scenariusze-demo-jako-dane.md) | Scenariusze demonstracyjne jako wykonywalne dane | Proponowany | `shared/scenarios/`, UC-1…UC-5, kroki 6.2 i 6.3 |
 | [0013](0013-prelint-i-straz-adr-w-procesie-pr.md) | Prelint jako pamięć decyzji i straż ADR-ów w procesie PR | Proponowany | Proces, `.mcp.json`, szablon PR, krok 6.0 |
+| [0014](0014-person-4-baseline-appeals-audit-insights.md) | Kontrakty Osoby 4: standard zespołu, onboarding, odwołania, audyt, dane widoków | Proponowany | `baseline_service`, `appeal_service`, `audit_service`, `insights`, kroki 4.1–4.6 |
+| [0015](0015-frontend-navigation-and-data-layer.md) | Frontend SPA: nawigacja, warstwa danych i praca na generowanym kontrakcie | Proponowany | `frontend/src`, kroki 5.x |
+| [0016](0016-multi-provider-resources-and-jira-mock.md) | Wielu dostawców (`provider`) i mock Jiry | Proponowany | `repositories.provider`, `api/jira_mock`, `access_leases`, `jql` |
 
 ## Statusy
 

@@ -23,11 +23,18 @@ _REQUIRED_PERMISSION: dict[ActionType, Role] = {
     ActionType.PR_MERGE: Role.WRITE,
     ActionType.ISSUE_LABEL: Role.READ,
     ActionType.REPO_SETTINGS: Role.ADMIN,
+    ActionType.JIRA_ISSUE_CREATED: Role.WRITE,
+    ActionType.JIRA_ISSUE_UPDATED: Role.WRITE,
+    ActionType.JIRA_COMMENT_CREATED: Role.READ,
+    ActionType.JIRA_PROJECT_UPDATED: Role.ADMIN,
 }
 
 # Only these actions prove a person still uses their access (ADR 0002, ADR 0010).
 RENEWING_ACTIONS: frozenset[ActionType] = frozenset(
-    {ActionType.PUSH, ActionType.PR_REVIEW, ActionType.ISSUE_COMMENT}
+    {
+        ActionType.PUSH, ActionType.PR_REVIEW, ActionType.ISSUE_COMMENT,
+        ActionType.JIRA_ISSUE_CREATED, ActionType.JIRA_ISSUE_UPDATED, ActionType.JIRA_COMMENT_CREATED,
+    }
 )
 
 

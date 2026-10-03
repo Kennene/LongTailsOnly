@@ -15,6 +15,11 @@ class GitHubPermission(StrEnum):
     ADMIN = "admin"
 
 
+class Provider(StrEnum):
+    GITHUB = "github"
+    JIRA = "jira"
+
+
 class ActionType(StrEnum):
     PUSH = "PushEvent"
     PR_REVIEW = "PullRequestReviewEvent"
@@ -23,6 +28,11 @@ class ActionType(StrEnum):
     PR_MERGE = "PullRequestEvent"
     ISSUE_LABEL = "IssuesEvent"
     REPO_SETTINGS = "PublicEvent"
+    # Jira (ADR 0016): names follow Jira webhook events.
+    JIRA_ISSUE_CREATED = "jira:issue_created"
+    JIRA_ISSUE_UPDATED = "jira:issue_updated"
+    JIRA_COMMENT_CREATED = "comment_created"
+    JIRA_PROJECT_UPDATED = "project_updated"
 
 
 class LeaseStatus(StrEnum):
@@ -66,7 +76,7 @@ class EnforcementMode(StrEnum):
 
 
 class AuditAction(StrEnum):
-    """What an audit_logs row records (ADR 0011 §2); the column stays text, writers must use this enum."""
+    """What an audit_logs row records (ADR 0014 §2); the column stays text, writers must use this enum."""
 
     LEASE_EXTENDED = "LEASE_EXTENDED"
     LEASE_DOWNSCOPED = "LEASE_DOWNSCOPED"

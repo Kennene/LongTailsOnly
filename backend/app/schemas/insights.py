@@ -1,4 +1,4 @@
-"""Dashboard counters and React Flow graph (ADR 0011 §4): ready to render, nothing computed in the browser."""
+"""Dashboard counters and React Flow graph (ADR 0014 §4): ready to render, nothing computed in the browser."""
 
 from datetime import datetime
 from typing import Self
