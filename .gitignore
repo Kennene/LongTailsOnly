@@ -1,4 +1,19 @@
-# Zależności i artefakty budowania
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+
+# Baza danych demo
+*.sqlite3
+*.db
+
+# Node / frontend
 node_modules/
 dist/
 coverage/
@@ -14,9 +29,11 @@ coverage/
 
 # Edytory i system
 .DS_Store
+Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+*.swp
 
 # Logi
 *.log

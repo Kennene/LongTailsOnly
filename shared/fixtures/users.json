@@ -1,0 +1,135 @@
+[
+  {
+    "id": 1,
+    "login": "tomasz-admin",
+    "name": "Tomasz (IT Security)",
+    "team": null,
+    "is_admin": true
+  },
+  {
+    "id": 2,
+    "login": "kamil",
+    "name": "Kamil",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 3,
+    "login": "ania",
+    "name": "Anna",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 4,
+    "login": "bartek",
+    "name": "Bartek",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 5,
+    "login": "celina",
+    "name": "Celina",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 6,
+    "login": "darek",
+    "name": "Darek",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 7,
+    "login": "ewa",
+    "name": "Ewa",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 8,
+    "login": "filip",
+    "name": "Filip",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 9,
+    "login": "gosia",
+    "name": "Gosia",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 10,
+    "login": "henryk",
+    "name": "Henryk",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 11,
+    "login": "iza",
+    "name": "Iza",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 12,
+    "login": "jan",
+    "name": "Jan",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 13,
+    "login": "nowy-dev",
+    "name": "Nowy Developer",
+    "team": { "id": 1, "slug": "dev", "name": "DEV" },
+    "is_admin": false
+  },
+  {
+    "id": 14,
+    "login": "marta",
+    "name": "Marta",
+    "team": { "id": 2, "slug": "qa", "name": "QA" },
+    "is_admin": false
+  },
+  {
+    "id": 15,
+    "login": "ola",
+    "name": "Ola",
+    "team": { "id": 2, "slug": "qa", "name": "QA" },
+    "is_admin": false
+  },
+  {
+    "id": 16,
+    "login": "piotr",
+    "name": "Piotr",
+    "team": { "id": 2, "slug": "qa", "name": "QA" },
+    "is_admin": false
+  },
+  {
+    "id": 17,
+    "login": "rafal",
+    "name": "Rafał",
+    "team": { "id": 2, "slug": "qa", "name": "QA" },
+    "is_admin": false
+  },
+  {
+    "id": 18,
+    "login": "sylwia",
+    "name": "Sylwia",
+    "team": { "id": 2, "slug": "qa", "name": "QA" },
+    "is_admin": false
+  },
+  {
+    "id": 19,
+    "login": "tomek",
+    "name": "Tomek",
+    "team": { "id": 2, "slug": "qa", "name": "QA" },
+    "is_admin": false
+  }
+]

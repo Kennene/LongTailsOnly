@@ -4,37 +4,38 @@
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "ActionType".
  */
-export type ActionType = 'PushEvent' | 'PullRequestReviewEvent' | 'IssueCommentEvent';
+export type ActionType =
+  "PushEvent" | "PullRequestReviewEvent" | "IssueCommentEvent" | "PullRequestEvent" | "IssuesEvent" | "PublicEvent";
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "Role".
  */
-export type Role = 'read' | 'write' | 'admin';
+export type Role = "read" | "write" | "admin";
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "ActorType".
  */
-export type ActorType = 'ADMIN' | 'USER' | 'SYSTEM';
+export type ActorType = "ADMIN" | "USER" | "SYSTEM";
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "AppealStatus".
  */
-export type AppealStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type AppealStatus = "PENDING" | "APPROVED" | "REJECTED";
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "DecisionAction".
  */
-export type DecisionAction = 'EXTEND' | 'DOWNSCOPE' | 'REVOKE';
+export type DecisionAction = "EXTEND" | "DOWNSCOPE" | "REVOKE";
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "Recommendation".
  */
-export type Recommendation = 'KEEP' | 'DOWNSCOPE' | 'REVOKE';
+export type Recommendation = "KEEP" | "DOWNSCOPE" | "REVOKE";
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "LeaseStatus".
  */
-export type LeaseStatus = 'ACTIVE' | 'WARNING' | 'EXPIRED';
+export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED";
 
 export interface LongTailsOnlyAPIContract {
   [k: string]: unknown;
@@ -60,6 +61,62 @@ export interface AppealCreate {
   lease_id: number;
 }
 /**
+ * Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0011 §4).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "AppealOverview".
+ */
+export interface AppealOverview {
+  created_at: string;
+  days_remaining: number | null;
+  id: number;
+  justification: string;
+  lease_expires_at: string | null;
+  lease_id: number;
+  lease_is_active: boolean;
+  lease_role: Role;
+  previous_appeals: number;
+  recent_activity_count: number;
+  repo_id: number;
+  repository: RepositoryRead;
+  requested_role: Role;
+  resolved_at: string | null;
+  status: AppealStatus;
+  user: UserRead;
+  user_id: number;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "RepositoryRead".
+ */
+export interface RepositoryRead {
+  default_branch: string;
+  default_lease_duration_days: number;
+  id: number;
+  name: string;
+  owner: string;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "UserRead".
+ */
+export interface UserRead {
+  id: number;
+  is_admin: boolean;
+  login: string;
+  name: string;
+  team: TeamRead | null;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "TeamRead".
+ */
+export interface TeamRead {
+  id: number;
+  name: string;
+  slug: string;
+}
+/**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "AppealRead".
  */
@@ -73,6 +130,32 @@ export interface AppealRead {
   resolved_at: string | null;
   status: AppealStatus;
   user_id: number;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "AppealRejectRequest".
+ */
+export interface AppealRejectRequest {
+  justification: string;
+}
+/**
+ * Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0011 §4).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "AuditEntry".
+ */
+export interface AuditEntry {
+  action: string;
+  actor_id: number | null;
+  actor_login: string | null;
+  actor_type: ActorType;
+  details: {
+    [k: string]: unknown;
+  };
+  id: number;
+  justification: string | null;
+  target: string;
+  timestamp: string;
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
@@ -103,22 +186,27 @@ export interface BaselineEntry {
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
- * via the `definition` "RepositoryRead".
- */
-export interface RepositoryRead {
-  default_branch: string;
-  default_lease_duration_days: number;
-  id: number;
-  name: string;
-  owner: string;
-}
-/**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "ClockRead".
  */
 export interface ClockRead {
   now: string;
   offset_days: number;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "DashboardStats".
+ */
+export interface DashboardStats {
+  active: number;
+  downscope_recommendations: number;
+  expired: number;
+  generated_at: string;
+  onboarding_candidates: number;
+  pending_appeals: number;
+  permanent: number;
+  revoke_recommendations: number;
+  revoked: number;
+  warning: number;
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
@@ -153,6 +241,55 @@ export interface DemoResetResult {
   offset_days: number;
 }
 /**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphEdge".
+ */
+export interface GraphEdge {
+  animated: boolean;
+  data: GraphEdgeData;
+  id: string;
+  label: string | null;
+  source: string;
+  target: string;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphEdgeData".
+ */
+export interface GraphEdgeData {
+  kind: "membership" | "lease";
+  recommendation: Recommendation | null;
+  role: Role | null;
+  status: LeaseStatus | null;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphNode".
+ */
+export interface GraphNode {
+  data: GraphNodeData;
+  id: string;
+  position: GraphPosition;
+  type: "team" | "user" | "repo";
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphNodeData".
+ */
+export interface GraphNodeData {
+  is_admin: boolean;
+  label: string;
+  team: string | null;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "GraphPosition".
+ */
+export interface GraphPosition {
+  x: number;
+  y: number;
+}
+/**
  * Lease plus values computed by the lease service (Task 8 of the team plan).
  *
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
@@ -173,26 +310,6 @@ export interface LeaseOverview {
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
- * via the `definition` "UserRead".
- */
-export interface UserRead {
-  id: number;
-  is_admin: boolean;
-  login: string;
-  name: string;
-  team: TeamRead | null;
-}
-/**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
- * via the `definition` "TeamRead".
- */
-export interface TeamRead {
-  id: number;
-  name: string;
-  slug: string;
-}
-/**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "LeaseRead".
  */
 export interface LeaseRead {
@@ -203,6 +320,36 @@ export interface LeaseRead {
   is_active: boolean;
   repository: RepositoryRead;
   user: UserRead;
+}
+/**
+ * Team baseline split for one person: what approval would grant and what they already have (ADR 0011 §4).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "OnboardingProposal".
+ */
+export interface OnboardingProposal {
+  already_granted: BaselineEntry[];
+  team: TeamRead;
+  to_grant: BaselineEntry[];
+  user: UserRead;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "PermissionGraph".
+ */
+export interface PermissionGraph {
+  edges: GraphEdge[];
+  nodes: GraphNode[];
+}
+/**
+ * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0011 §4).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "SimulationClock".
+ */
+export interface SimulationClock {
+  offset_days: number;
+  simulated_now: string;
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema

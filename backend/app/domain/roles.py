@@ -20,7 +20,15 @@ _REQUIRED_PERMISSION: dict[ActionType, Role] = {
     ActionType.PUSH: Role.WRITE,
     ActionType.PR_REVIEW: Role.READ,
     ActionType.ISSUE_COMMENT: Role.READ,
+    ActionType.PR_MERGE: Role.WRITE,
+    ActionType.ISSUE_LABEL: Role.READ,
+    ActionType.REPO_SETTINGS: Role.ADMIN,
 }
+
+# Only these actions prove a person still uses their access (ADR 0002, ADR 0010).
+RENEWING_ACTIONS: frozenset[ActionType] = frozenset(
+    {ActionType.PUSH, ActionType.PR_REVIEW, ActionType.ISSUE_COMMENT}
+)
 
 
 def role_rank(role: Role) -> int:
@@ -46,3 +54,7 @@ def to_github(role: Role) -> GitHubPermission:
 
 def required_permission_for(action: ActionType) -> Role:
     return _REQUIRED_PERMISSION[action]
+
+
+def is_renewing(action: ActionType) -> bool:
+    return action in RENEWING_ACTIONS

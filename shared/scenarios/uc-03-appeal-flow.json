@@ -1,0 +1,75 @@
+{
+  "id": "uc-03-appeal-flow",
+  "use_case": "UC-3",
+  "title": "Ostrzeżenie, odwołanie z uzasadnieniem i decyzja administratora",
+  "given": {
+    "anchor": "2026-10-03T00:00:00Z",
+    "seed": "default",
+    "relies_on": ["marta", "qa-automation"],
+    "note": "Dzierżawa marta@qa-automation wygasa za 2 dni (scenariusz B z ADR 0008). lease_id rozwiązywane przez $from, bo identyfikatory zależą od kolejności seedowania."
+  },
+  "when": [
+    { "type": "reset" },
+    { "type": "api", "method": "GET", "path": "/api/v1/leases", "as": "leases" },
+    {
+      "type": "api",
+      "method": "POST",
+      "path": "/api/v1/appeals",
+      "as": "appeal",
+      "body": {
+        "lease_id": {
+          "$from": "leases",
+          "where": { "user.login": "marta", "repository.name": "qa-automation" },
+          "field": "id"
+        },
+        "justification": "W przyszłym tygodniu prowadzę testy regresyjne wydania v2.1 i muszę mieć dostęp do zgłoszeń oraz wyników QA."
+      }
+    },
+    {
+      "type": "api",
+      "method": "POST",
+      "path": "/api/v1/appeals",
+      "as": "rejected-appeal",
+      "body": {
+        "lease_id": {
+          "$from": "leases",
+          "where": { "user.login": "marta", "repository.name": "qa-automation" },
+          "field": "id"
+        },
+        "justification": ""
+      }
+    },
+    {
+      "type": "api",
+      "method": "POST",
+      "path": "/api/v1/appeals/{appeal_id}/decision",
+      "as": "decision",
+      "resolve": {
+        "appeal_id": { "$from": "appeal", "field": "id" }
+      },
+      "body": { "action": "EXTEND", "extension": { "preset_days": 30 } }
+    }
+  ],
+  "then": [
+    {
+      "target": "leases",
+      "model": "LeaseOverview",
+      "where": { "user.login": "marta", "repository.name": "qa-automation" },
+      "expect": { "status": "WARNING", "days_remaining": 2, "recommendation": "KEEP" }
+    },
+    {
+      "target": "appeal",
+      "model": "AppealRead",
+      "expect": { "status": "PENDING", "requested_role": "read" }
+    },
+    {
+      "target": "rejected-appeal",
+      "expect": { "status_code": 422 }
+    },
+    {
+      "target": "decision",
+      "model": "AppealRead",
+      "expect": { "status": "APPROVED" }
+    }
+  ]
+}
