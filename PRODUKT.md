@@ -8,7 +8,7 @@
 
 #### Kontekst i kategoria
 - **Kategoria:** HackYeah Defence + nagroda specjalna Prelint.
-- **Domena:** Cyberbezpieczeństwo, Identity & Access Management (IAM), Privilege Access Management (PAM), zasada Zero Standing Privileges (ZSP) oraz Least Privilege.
+- **Domena:** Cyberbezpieczeństwo, Identity & Access Management (IAM), Privileged Access Management (PAM), zasada Zero Standing Privileges (ZSP) oraz Least Privilege.
 
 #### Problem
 W nowoczesnych organizacjach uprawnienia w systemach kontroli wersji (GitHub) są przyznawane ad-hoc i bezterminowo („na wszelki wypadek”). 
