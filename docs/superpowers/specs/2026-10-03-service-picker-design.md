@@ -17,7 +17,7 @@ Produkt od początku deklaruje architekturę pluginową (Porty i Adaptery), ale 
 
 ### Świadome ograniczenie zakresu
 
-Rejestrujemy **jedną realną usługę (GitHub)** oraz **jedną jawnie oznaczoną usługę demonstracyjną**. Nie budujemy drugiego działającego adaptera ani izolacji danych per usługa — patrz §10 „Poza zakresem”.
+Rejestrujemy **jedną realną usługę (GitHub)** oraz **jedną jawnie oznaczoną usługę demonstracyjną**. Nie budujemy drugiego działającego adaptera ani izolacji danych per usługa — patrz §11 „Poza zakresem”.
 
 ---
 
@@ -34,9 +34,10 @@ Rejestrujemy **jedną realną usługę (GitHub)** oraz **jedną jawnie oznaczon�
 | Brak typu provider/service/tenant w kontrakcie | `schema.json` nie zawiera nawet podciągu `org` |
 | Brak wyboru usługi w SPA | 6 płaskich tras (`App.tsx:17-28`), 6 pozycji nawigacji (`Sidebar.tsx:6-13`) |
 | Nawigacja i trasy to **dwie niezależne listy** | `Sidebar.tsx:6-13` vs `App.tsx:17-28` |
-| „GitHub” zaszyty w trzech tekstach UI | `index.html:7`, `TopBar.tsx:12`, `Sidebar.tsx:28` |
+| „GitHub” zaszyty w trzech tekstach UI | `index.html:7`, `TopBar.tsx:12`, `Sidebar.tsx:28` — dwa z nich stają się dynamiczne, tytuł dokumentu zostaje (§5.7) |
 | Klucze zapytań nie mają wymiaru usługi | `['leases']`, `['dashboard']`, `['graph']`, `['audit']`, `['appeals']`, `['clock']` |
-| Bramki jakości zielone przed zmianą | typecheck 0 błędów, lint 0, **205 testów / 23 pliki**, build OK |
+| Bramki jakości: frontend zielony przed zmianą | typecheck 0 błędów, lint 0, **205 testów / 23 pliki**, build OK |
+| Bramki jakości: backend **nie jest w pełni zielony** przed zmianą | `uv run pytest -q` → **398 passed, 2 failed**. Oba błędy są wcześniejsze i niezwiązane z tym zadaniem (§2.1) |
 
 > **Uwaga środowiskowa (worktree agenta):** `uv` nie ma dostępu do `~/.cache/uv` w sandboxie. Testy backendu uruchamiamy z `UV_CACHE_DIR=<repo>/.uv-cache`, katalog już istnieje w repozytorium i jest ignorowany przez git. Bez tego `uv run` kończy się `Failed to initialize cache`.
 
@@ -45,6 +46,21 @@ Rejestrujemy **jedną realną usługę (GitHub)** oraz **jedną jawnie oznaczon�
 1. **Radix `Select` został odrzucony trzykrotnie** — `AppealForm.tsx:19-22`, `GraphFilters.tsx:19-22`, `AuditFilters.tsx:23-26`: nie przyjmuje `userEvent.selectOptions` i wymaga polyfilli w jsdom. `components/ui/select.tsx` ma **zero importerów**. Nowa kontrolka nie może być czwartym wyjątkiem.
 2. **`--primary` jest zarezerwowany** dla „akcji głównej, zaznaczenia i fokusu” (`DESIGN.md:52`), więc oznaczenie aktywnej usługi tym kolorem jest zgodne z systemem, ale kontrolka nie może stać się drugim przyciskiem `default`.
 3. **Chrome nigdy nie przekracza `text-sm`** (`DESIGN.md:68`), a dolna granica `text-xs` ma tylko dwa wyjątki (`DESIGN.md:70`).
+
+### 2.1 Wcześniejsze błędy backendu (nie należą do tego zadania)
+
+`uv run pytest -q` daje **398 passed, 2 failed** już na bazowym commicie `b6b6124`, w worktree zawierającym wyłącznie ten dokument. Oba dotyczą integralności dokumentacji i powstały z kolizji scalenia między gałęziami:
+
+| Test | Przyczyna |
+| --- | --- |
+| `tests/repo/test_docs_integrity.py::test_adr_numbers_are_unique` | Numery ADR kolidują: `0010` istnieje dwa razy (`0010-frontend-navigation-and-data-layer.md` i `0010-github-mock-activity-types-and-time-travel-api.md`) oraz `0011` dwa razy (`0011-fixtures-zgodne-z-generowanym-kontraktem.md` i `0011-person-4-baseline-appeals-audit-insights.md`) |
+| `tests/repo/test_docs_integrity.py::test_every_adr_file_is_listed_in_index` | `docs/adr/README.md` indeksuje nowsze pliki pod 0010/0011, a starsze pliki o tych numerach leżą na dysku nieindeksowane. `docs/adr/README.md:13` wprost opisuje kolizję 0010 |
+
+**Konsekwencje dla tego zadania:**
+
+1. **Kryterium akceptacji nie może brzmieć „cały `pytest` zielony”.** Brzmi: „brak **nowych** błędów; liczba błędów pozostaje 2”.
+2. **Numer naszego ADR to `0014`** — najniższy wolny. Numeracja 0010–0013 jest zajęta lub skolizjowana; sięgnięcie po nią pogłębiłoby istniejący problem.
+3. **Nie naprawiamy kolizji ADR-ów w tym zadaniu.** To osobna zmiana dotycząca cudzych dokumentów i indeksu; dopisanie jej tutaj rozdmuchałoby zakres (YAGNI, `CODING_STANDARDS.md` §1.5). Odnotowujemy i zostawiamy.
 
 ---
 
@@ -134,7 +150,7 @@ class ServiceRead(BaseModel):
     is_available: bool
 ```
 
-`ServiceRead` trafia do `CONTRACT_RESPONSE_MODELS` w `app/schemas/__init__.py`. **Konsekwencja obowiązkowa:** po tej zmianie trzeba wygenerować kontrakt i typy TS (§7.5) — inaczej `tests/schemas/test_contract_is_fresh.py` pada.
+`ServiceRead` trafia do `CONTRACT_RESPONSE_MODELS` w `app/schemas/__init__.py`. **Konsekwencja obowiązkowa:** po tej zmianie trzeba wygenerować kontrakt i typy TS — `uv run python scripts/export_contract.py`, a potem `json-schema-to-typescript` (dokładne polecenie w `backend/README.md`) — inaczej `tests/schemas/test_contract_is_fresh.py` pada (§7.5).
 
 ---
 
@@ -270,7 +286,8 @@ Zgodnie z TDD: test przed kodem, w każdym kroku planu.
 ### 7.5 Backend
 - `tests/ports/test_service_registry.py`: rejestracja i odczyt; sortowanie po `id`; duplikat `id` podnosi `ValueError`; `all_services()` zwraca `github` i `demo-tracker`.
 - `tests/api/test_services.py`: `GET /api/v1/services` → 200 i `list[ServiceRead]`; zawiera `github` z `kind == "vcs"` i `capabilities` równym sześciu identyfikatorom tras; zawiera `demo-tracker` z `is_available is False`; odpowiedź jest deterministyczna między wywołaniami.
-- `tests/schemas/test_contract_is_fresh.py` — **musi przejść** po regeneracji; to on pilnuje, że `schema.json` i `types/api.ts` nadążają.
+- `tests/schemas/test_contract_is_fresh.py` — **musi przejść** po regeneracji; to on pilnuje, że `schema.json` i `types/api.ts` nadążają. Jest to jedyny test, który realnie wyłapie pominięcie regeneracji, więc uruchamiamy go jawnie, a nie tylko w całości suite.
+- `tests/repo/test_docs_integrity.py` — **dwa wcześniejsze błędy pozostają** (§2.1). Sprawdzamy, że nasza zmiana nie dodaje trzeciego: nowy ADR dostaje numer `0014` i **musi** zostać dopisany do `docs/adr/README.md`, inaczej `test_every_adr_file_is_listed_in_index` zgłosi nowy błąd i liczba failed wzrośnie do 3.
 - `tests/adapters/`: `get_vcs_provider` bez argumentu zwraca adapter GitHuba (zgodność wsteczna); nieznany `service_id` → 404.
 
 ### 7.6 MSW i infrastruktura testów
@@ -288,7 +305,7 @@ Zgodnie z TDD: test przed kodem, w każdym kroku planu.
 4. Po przełączeniu na `demo-tracker` nawigacja ma dwie pozycje, a wejście na `/leases` przekierowuje na `/`; powrót na `github` przywraca sześć pozycji.
 5. Wybór usługi przeżywa odświeżenie strony (`localStorage`).
 6. Adresy tras pozostają niezmienione (`/leases`, nie `/github/leases`).
-7. Bramki: `npm run typecheck`, `npm run lint`, `npm test -- --run`, `npm run build` — zielone; `cd backend && uv run pytest` — zielone; kontrakt zregenerowany i `test_contract_is_fresh.py` przechodzi.
+7. Bramki: `npm run typecheck`, `npm run lint`, `npm test -- --run`, `npm run build` — zielone. Backend: `UV_CACHE_DIR=<repo>/.uv-cache uv run pytest -q` → **398 + N passed, dokładnie 2 failed** (te same dwa wcześniejsze błędy integralności ADR-ów z §2.1; żaden nowy). Kontrakt zregenerowany, `tests/schemas/test_contract_is_fresh.py` przechodzi.
 8. Dokumentacja spójna: ADR 0014, `AGENTS.md`/`SKILLS.md` bez zmian, `frontend/DESIGN.md` z nową sekcją o kontrolce chrome (patrz §9).
 
 ---
@@ -297,7 +314,7 @@ Zgodnie z TDD: test przed kodem, w każdym kroku planu.
 
 | Plik | Zmiana |
 | --- | --- |
-| `docs/adr/0014-wybor-uslugi-i-rejestr-dostawcow.md` **(nowy)** | Decyzja: płaskie trasy + gating przez rejestr usług, `localStorage` zamiast parametru trasy, rejestr backendu jako jawna lista, natywny `<select>`; alternatywy odrzucone (segment w ścieżce, discovery przez `entry_points`, Radix `Select`) |
+| `docs/adr/0014-wybor-uslugi-i-rejestr-dostawcow.md` **(nowy)** | Decyzja: płaskie trasy + gating przez rejestr usług, `localStorage` zamiast parametru trasy, rejestr backendu jako jawna lista, natywny `<select>`; alternatywy odrzucone (segment w ścieżce, discovery przez `entry_points`, Radix `Select`). **Numer 0014 — najniższy wolny** (§2.1) |
 | `frontend/DESIGN.md` | Nowa sekcja o kontrolce chrome: dopuszczalny rozmiar (`h-8`, `text-xs`), użycie `--primary` tylko dla zaznaczenia, zakaz drugiego przycisku `default` |
 | `README.md` | Sekcja „Stan prac” + opis endpointu `GET /api/v1/services` |
 | `frontend/README.md` | Nowy moduł `src/services/` i konwencja `localStorage` |
@@ -315,6 +332,7 @@ Zgodnie z TDD: test przed kodem, w każdym kroku planu.
 | Rozjazd nazw tras frontend/backend | Test krzyżowy (§7.4) + identyfikatory tras jako `capabilities` |
 | `localStorage` niedostępny (tryb prywatny) | Odczyt i zapis w `try/catch`; brak zapisu nie blokuje działania |
 | Pozorny „wybór” przy jednej realnej usłudze | Druga usługa jest jawnie oznaczona jako demonstracyjna w `name` i w docstringu; spec mówi o tym wprost w §1 |
+| Dwa wcześniejsze błędy `test_docs_integrity` zagłuszają sygnał z bramki backendu | Kryterium brzmi „dokładnie 2 failed, żaden nowy”, a nie „zero failed” (§2.1); przy weryfikacji porównujemy liczbę i nazwy testów, nie sam kod wyjścia |
 
 ---
 
