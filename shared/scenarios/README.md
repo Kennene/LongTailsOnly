@@ -1,7 +1,7 @@
 # Scenariusze demonstracyjne (`shared/scenarios`)
 
 Pięć przypadków użycia z `PRODUKT.md` zapisanych jako **wykonywalne dane**
-([ADR 0011](../../docs/adr/0011-scenariusze-demo-jako-dane.md)). To jedyne źródło prawdy:
+([ADR 0012](../../docs/adr/0012-scenariusze-demo-jako-dane.md)). To jedyne źródło prawdy:
 z tych samych plików korzysta skrypt prezentacji (6.6) i testy end-to-end (6.3).
 
 Sprawdzenie:

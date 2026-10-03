@@ -2,7 +2,7 @@
   "contractVersion": "0.1.0",
   "contractSource": "backend/contract/schema.json",
   "generatedBy": "backend/scripts/export_contract.py — ADR 0009",
-  "note": "Fixtures są danymi zgodnymi z kontraktem, nie drugim kontraktem (ADR 0010). Każdy plik waliduje ten sam model Pydantic, który generuje kontrakt — patrz backend/tests/contract/test_fixtures_match_contract.py.",
+  "note": "Fixtures są danymi zgodnymi z kontraktem, nie drugim kontraktem (ADR 0011). Każdy plik waliduje ten sam model Pydantic, który generuje kontrakt — patrz backend/tests/contract/test_fixtures_match_contract.py.",
   "populationNote": "Dane odwzorowują realny seed z backend/app/db/seed_data.py. Zbiór dzierżaw jest reprezentatywny (15 z 53), a nie pełnym zrzutem bazy — pokrywa każdy status, rolę i rekomendację.",
   "fixtures": [
     {

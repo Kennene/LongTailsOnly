@@ -1,4 +1,4 @@
-# ADR 0012: Prelint jako pamięć decyzji i straż ADR-ów w procesie PR
+# ADR 0013: Prelint jako pamięć decyzji i straż ADR-ów w procesie PR
 
 **Status:** Proponowany (do akceptacji zespołu) · **Autor:** Sydor (Osoba 6) · **Data:** 2026-10-03
 **Doprecyzowuje:** `AGENTS.md`, krok 6.0 planu zespołowego
