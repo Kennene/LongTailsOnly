@@ -6,7 +6,7 @@ Projekt bierze udział w hackathonie w kategorii Defence (ścieżka Prelint). Wy
 ## Decyzja
 Przyjmujemy rozdzieloną architekturę klient-serwer w modelu **Single Page Application (SPA)**:
 
-### 1. Backend: Python 3.12 + FastAPI + SQLAlchemy 2.0 (Architektura Portów i Adapterów)
+### 1. Backend: Python 3.14 + FastAPI + SQLAlchemy 2.0 (Architektura Portów i Adapterów)
 - **FastAPI**: Asynchroniczny, natywna walidacja typów przez Pydantic v2, automatyczna dokumentacja OpenAPI/Swagger.
 - **Baza danych**: SQLite z driverem asynchronicznym `aiosqlite` oraz SQLAlchemy 2.0 (`Mapped`, `mapped_column`, `select()`).
   - *Uzasadnienie:* Brak konieczności uruchamiania zewnętrznych kontenerów bazodanowych podczas demo; możliwość błyskawicznego resetu i załadowania deterministycznego seeda danych.

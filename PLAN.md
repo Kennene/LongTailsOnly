@@ -2,7 +2,7 @@
 
 Projekt jest realizowany w architekturze **Single Page Application (SPA)** oraz wzorcu **Portów i Adapterów (Hexagonal / Plugin Architecture)**:
 - **Frontend**: React 19 + React Compiler + Vite + Tailwind CSS + shadcn/ui + @xyflow/react
-- **Backend**: Python 3.12 + FastAPI + SQLAlchemy 2.0 (async SQLite) + Pydantic v2
+- **Backend**: Python 3.14 + FastAPI + SQLAlchemy 2.0 (async SQLite) + Pydantic v2
 - **Porty i Adaptery**: Czysta separacja logiki dzierżaw od dostawcy VCS (`VCSProvider` port -> `GitHubMockAdapter`), co pozwala w przyszłości podpiąć GitLab, Bitbucket czy chmurowe IAM.
 - **Mock**: REST API GitHuba v3 z symulacją zdarzeń (`/events`) i sterowaniem czasem (`SimulatedClockAdapter`).
 
@@ -37,6 +37,7 @@ Projekt jest realizowany w architekturze **Single Page Application (SPA)** oraz 
 
 1. **GitHub Mock Adapter & Router (`app/adapters/` & `app/api/`)**:
    - Implementacja portu `VCSProvider` w postaci `GitHubMockAdapter`.
+   - Implementacja mocka w 100% zgodna z oficjalną dokumentacją GitHub REST API (dokładne schematy JSON, nagłówki, kody błędów `200`, `204`, `403`, `404`, formaty zdarzeń `PushEvent`, `PullRequestReviewEvent`, `IssueCommentEvent`).
    - Router emulujący oficjalne endpointy GitHuba v3:
      - `GET /api/v3/orgs/{org}/members`
      - `GET /api/v3/repos/{owner}/{repo}/collaborators`

@@ -29,7 +29,7 @@ Celem nadrzędnym jest **maksymalna czytelność, modułowość i szybkość dos
 
 ---
 
-### 2. Backend: Python 3.12 + FastAPI + SQLAlchemy 2.0
+### 2. Backend: Python 3.14 + FastAPI + SQLAlchemy 2.0
 
 #### Struktura katalogów
 ```

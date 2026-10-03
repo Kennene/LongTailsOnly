@@ -82,7 +82,7 @@ Panel administratora bezpieczeństwa IT wprowadzający mechanizm **odnawialnej d
 | **M4: Egzekwowanie polityk** | Tryb `warning` (domyślny v1) oraz opcja `auto` (automatyczne odbieranie) | P0 (Must Have) | MVP |
 | **M5: Graf relacji uprawnień** | Wizualizacja relacji Użytkownik ↔ Zespół ↔ Rola ↔ Repozytorium (@xyflow/react) | P0 (Must Have) | MVP |
 | **M6: Dziennik audytowy (Historia)** | Niezmienna historia operacji: kto, co, kiedy, z jakim uzasadnieniem, decyzja człowieka vs automatu | P0 (Must Have) | MVP |
-| **M7: Symulator GitHuba & Zegar** | Mock REST API GitHuba (1 org, zespoły DEV/QA, 15–25 kont, 10–15 repo) + Time Travel Controller | P0 (Must Have) | MVP |
+| **M7: Symulator GitHuba & Zegar** | Mock REST API GitHuba wg oficjalnej dokumentacji (1 org, zespoły DEV/QA, 15–25 kont, 10–15 repo) + Time Travel Controller | P0 (Must Have) | MVP |
 | **M8: Wyjaśnienia LLM** | Generowanie syntetycznego podsumowania ryzyka dla managera w języku naturalnym | P1 (Nice to Have) | Post-MVP |
 
 ---

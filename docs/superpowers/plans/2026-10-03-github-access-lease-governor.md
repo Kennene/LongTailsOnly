@@ -2,7 +2,7 @@
 
 Projekt jest realizowany jako **Single Page Application (SPA)**:
 - **Frontend**: React 19 + React Compiler + TypeScript + Vite + Tailwind CSS + shadcn/ui + `@xyflow/react`.
-- **Backend**: Python 3.12 + FastAPI + SQLAlchemy 2.0 (async SQLite) + Pydantic v2.
+- **Backend**: Python 3.14 + FastAPI + SQLAlchemy 2.0 (async SQLite) + Pydantic v2.
 - **Mock**: REST API GitHuba v3 z symulacją zdarzeń i sterowaniem czasem (`TimeProvider`).
 
 Wykonuj zadania po kolei. Każde zadanie ma własny zakres plików i test weryfikujący dostarczane zachowanie. Polecenia testowe uruchamiaj z katalogu wskazanego przy zadaniu.
@@ -20,7 +20,7 @@ Wykonuj zadania po kolei. Każde zadanie ma własny zakres plików i test weryfi
 
 **Interfejs:** `app.main:app` udostępnia instancję FastAPI; testy backendu uruchamia `pytest`.
 
-- [ ] **Krok 1: Napisz test `test_pyproject_declares_backend_dependencies_and_pytest`** sprawdzający Python `>=3.12`, zależności `fastapi`, `uvicorn`, `sqlalchemy`, `aiosqlite`, `pydantic` oraz konfigurację `pytest`.
+- [ ] **Krok 1: Napisz test `test_pyproject_declares_backend_dependencies_and_pytest`** sprawdzający Python `>=3.14`, zależności `fastapi`, `uvicorn`, `sqlalchemy`, `aiosqlite`, `pydantic` oraz konfigurację `pytest`.
 - [ ] **Krok 2: Uruchom test przed konfiguracją.**
 
 Uruchom z `backend/`: `python -m unittest discover -s tests -p test_project_setup.py -v`
