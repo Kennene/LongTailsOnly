@@ -254,6 +254,16 @@ export interface Extension {
   until_date?: string | null;
 }
 /**
+ * One demo "refresh": the first call finds a new person, every later one brings fresh activity instead.
+ *
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
+ * via the `definition` "DemoRefreshResult".
+ */
+export interface DemoRefreshResult {
+  added_users: UserRead[];
+  events: ActivityEventRead[];
+}
+/**
  * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "DemoResetResult".
  */

@@ -24,6 +24,7 @@ let simulatedNow = BASE_SIMULATED_NOW;
 let offsetDays = 0;
 let lastTimeTravelRequest: { days: number } | null = null;
 let demoResetCount = 0;
+let demoRefreshCount = 0;
 let lastDecisionRequest: { lease_id: number; request: DecisionRequest } | null = null;
 let leases: LeaseOverview[] = cloneLeases();
 
@@ -48,6 +49,7 @@ export function resetMswState(): void {
   offsetDays = 0;
   lastTimeTravelRequest = null;
   demoResetCount = 0;
+  demoRefreshCount = 0;
   lastDecisionRequest = null;
   leases = cloneLeases();
 }
@@ -64,6 +66,8 @@ export function getLastTimeTravelRequest(): { days: number } | null {
 
 export function recordDemoReset(): void {
   demoResetCount += 1;
+  // Reset kasuje bazę, więc osoba dodana odświeżeniem znika i kolejne odświeżenie znów jest „pierwsze”.
+  demoRefreshCount = 0;
   simulatedNow = BASE_SIMULATED_NOW;
   offsetDays = 0;
   lastTimeTravelRequest = null;
@@ -72,6 +76,17 @@ export function recordDemoReset(): void {
 
 export function getDemoResetCount(): number {
   return demoResetCount;
+}
+
+/** Zapisuje odświeżenie demo i zwraca jego numer od ostatniego resetu (1 = pierwsze). */
+export function recordDemoRefresh(): number {
+  demoRefreshCount += 1;
+
+  return demoRefreshCount;
+}
+
+export function getDemoRefreshCount(): number {
+  return demoRefreshCount;
 }
 
 export function recordDecision(lease_id: number, request: DecisionRequest): void {

@@ -2,6 +2,9 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.schemas.activity import ActivityEventRead
+from app.schemas.people import UserRead
+
 
 class ClockRead(BaseModel):
     now: datetime
@@ -16,6 +19,13 @@ class DemoResetResult(BaseModel):
     now: datetime
     offset_days: int
     counts: dict[str, int]
+
+
+class DemoRefreshResult(BaseModel):
+    """One demo "refresh": the first call finds a new person, every later one brings fresh activity instead."""
+
+    added_users: list[UserRead]
+    events: list[ActivityEventRead]
 
 
 class SimulationClock(BaseModel):

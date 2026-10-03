@@ -11,7 +11,7 @@ from app.schemas.lease import LeaseActivityStats, LeaseOverview, LeaseRead
 from app.schemas.people import TeamRead, UserRead
 from app.schemas.repository import RepositoryRead
 from app.schemas.service import ServiceRead
-from app.schemas.simulation import ClockRead, DemoResetResult, SimulationClock, TimeTravelRequest
+from app.schemas.simulation import ClockRead, DemoRefreshResult, DemoResetResult, SimulationClock, TimeTravelRequest
 
 CONTRACT_REQUEST_MODELS: list[type[BaseModel]] = [
     AppealCreate, DecisionRequest, TimeTravelRequest, AppealRejectRequest, EnforcementModeUpdate,
@@ -20,13 +20,13 @@ CONTRACT_RESPONSE_MODELS: list[type[BaseModel]] = [
     TeamRead, UserRead, RepositoryRead, LeaseRead, LeaseOverview, ActivityEventRead,
     AppealRead, AuditLogRead, BaselineEntry, ClockRead, DemoResetResult,
     AuditEntry, OnboardingProposal, AppealOverview, DashboardStats, PermissionGraph,
-    SimulationClock, EnforcementModeRead, LeaseActivityStats, ServiceRead,
+    SimulationClock, EnforcementModeRead, LeaseActivityStats, ServiceRead, DemoRefreshResult,
 ]
 
 __all__ = [
     "ActivityEventRead", "AppealCreate", "AppealOverview", "AppealRead", "AppealRejectRequest", "AuditEntry",
     "AuditLogRead", "BaselineEntry", "ClockRead", "CONTRACT_REQUEST_MODELS", "CONTRACT_RESPONSE_MODELS",
-    "DashboardStats", "DecisionRequest", "DemoResetResult", "EnforcementModeRead", "EnforcementModeUpdate", "Extension", "LeaseActivityStats", "LeaseOverview", "LeaseRead",
+    "DashboardStats", "DecisionRequest", "DemoRefreshResult", "DemoResetResult", "EnforcementModeRead", "EnforcementModeUpdate", "Extension", "LeaseActivityStats", "LeaseOverview", "LeaseRead",
     "OnboardingProposal", "PermissionGraph", "RepositoryRead", "ServiceRead", "SimulationClock", "TeamRead",
     "TimeTravelRequest", "UserRead",
 ]
