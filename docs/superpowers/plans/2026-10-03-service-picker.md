@@ -852,7 +852,9 @@ Expected: **exactly 2 failed** — the same two pre-existing collisions. If the 
 
 `frontend/README.md`: document the new `src/services/` module and the `lease-governor.service` `localStorage` key.
 
-**Two things ADR 0014 must state explicitly rather than leave implied:**
+**Four things ADR 0014 must state explicitly rather than leave implied:**
+
+0. **The pending-window trade-off, with its cost named (Ruling 31).** Service-scoped readers are gated on `!isPending && activeService.id !== ''`, so on a cold start with a stored choice the first fetch **waits for the catalog**. `main.tsx` sets no query timeout, so a **hung** (not failed) catalog leaves those views on skeletons, where the brief's literal key-swap would have shown data. Record why that is the right trade: the catalog may still degrade the id, and fetching under an id that is about to be invalidated is exactly the wasted-request flash the gate removes. Also record the boundary the gate does *not* cover — a registry-restored id during pendency does not fetch.
 
 1. **Registration is declarative, not functional, today.** Both adapters call `register(...)`, but the catalog is served from the `_BUILTIN` entries, so those calls are a checked no-op (Ruling 10). Say so plainly — the ADR must not read as working plugin discovery.
 2. **Jira is deliberately deferred.** A real second provider (`backend/app/api/jira_mock/`, ADR 0016, the `Repository.provider` column via `alembic/versions/0002_repository_provider.py`) exists on `remotes/origin/jira_mock` and is not merged into `frontend-integration` or `main`. The decision was to finish this branch without it and add its frontend registry entry as a separate task. Also record that because an unregistered service now degrades to the dashboard rather than blanking the shell (Ruling 12), Jira will be immediately usable — with a generic glyph and only the shared routes — the moment it merges. Note that their `Provider` enum (GITHUB/JIRA) is orthogonal to `ServiceKind` (VCS/ISSUE_TRACKER/CLOUD_IAM), so the two do not clash.
@@ -890,7 +892,17 @@ Expected: tests PASS; exactly two `register(` matches, in `database_vcs.py` and 
 Run: `cd frontend && npm run lint`
 Expected: 0 errors, in particular no `max-lines` violation on the new modules.
 
-- [ ] **Step 5: Report evidence**
+- [ ] **Step 5: Close the Task 8 coverage minors (deferred from its review, no fix loop)**
+
+These are the cheapest mitigations for the residual drift risk of the 8 duplicated `enabled` expressions, and they are test-only:
+
+1. Add a `useRejectAppeal` probe test — it is the **one invalidator with no test pin**, and one of the three rebase-added hooks whose bare key was Ruling 27's stated risk. Mirror the `useSubmitAppeal` test: same three prefixes (`appeals`, `dashboard`, `audit`), each `[…, activeService.id]`, plus `not.toHaveBeenCalledWith({ queryKey: ['appeals'] })`.
+2. Extend the pending/failed-catalog request-counting tests to **more than `LeasesProbe`**. Today dropping the gate from any of the other seven readers leaves the suite green while reintroducing that resource's wasted-request flash. A parameterised case per reader, or a three-resource probe, closes it.
+3. Add a `useLeaseDecision` case running with **`github`** stored plus a negative on `['leases','demo-tracker']`. As written the decision probe runs with `demo-tracker` — the exact value a hardcoded prefix would use, so it cannot detect a hardcode.
+
+Then run the full suite and record the number.
+
+- [ ] **Step 6: Report evidence**
 
 Record the exact counts from Steps 1–2 for the PR body, which requires a command and its real output. Note in the PR that the two backend failures pre-date this branch and are documented in the spec.
 
