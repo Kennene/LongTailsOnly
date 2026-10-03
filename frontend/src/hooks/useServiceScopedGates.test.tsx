@@ -27,9 +27,11 @@ import { renderWithProviders } from '@/test/renderWithProviders';
  * niego: `useDashboard` i `useGraph` wołają `fetchLeases()` wewnątrz własnego `queryFn`, więc
  * w grupie zasoby dzieliłyby jeden licznik.
  *
- * Trzy ramiona bramki, trzy bloki: okno `isPending` **z pustym `localStorage`**, to samo okno
+ * Cztery ramiona bramki, cztery bloki: okno `isPending` **z pustym `localStorage`**, to samo okno
  * **z zapisanym identyfikatorem** (pinuje koniunkcję `!isPending`, bo wtedy `activeService.id` jest
- * niepuste już przed katalogiem) i katalog, który padł.
+ * niepuste już przed katalogiem), katalog, który **padł**, i katalog, który osiadł **pusty** (pinuje
+ * drugą połowę koniunkcji, `id !== ''`; przed tym blokiem żaden zamontowany czytnik nie widział
+ * osiadłego pustego katalogu, więc zdjęcie `id !== ''` przechodziło na zielono).
  *
  * Osobny plik, a nie dopisanie do `useServiceScopedKeys.test.tsx`: tamten ma 262 z 300 linii
  * objętych regułą `max-lines` (`skipBlankLines`/`skipComments`).
@@ -105,6 +107,17 @@ function CatalogErrorProbe(): React.JSX.Element {
   const { isError } = useActiveService();
 
   return <span data-testid="catalog-error">{String(isError)}</span>;
+}
+
+/**
+ * Pozwala poczekać, aż katalog przestanie być **nierozstrzygnięty** — czyli także wtedy, gdy osiadł
+ * pusty. Asercja postawiona w oknie `isPending` przechodzi z pierwszego członu bramki, więc nie
+ * mówi nic o drugim; potrzebny jest stan, w którym katalog już się wypowiedział.
+ */
+function CatalogUnresolvedProbe(): React.JSX.Element {
+  const { isError, isPending } = useActiveService();
+
+  return <span data-testid="catalog-unresolved">{String(isPending || isError)}</span>;
 }
 
 const GATED_READERS: GatedReader[] = [
@@ -277,6 +290,43 @@ describe('service-scoped read gates', () => {
 
       expect(countRequests(requests, reader.path)).toBe(1);
       expect(cached(queryClient, keyOf(reader, ''))).toBeUndefined();
+    },
+  );
+
+  it.each<GatedReader>(GATED_READERS)(
+    'stays idle when the catalog settles empty ($resource)',
+    async (reader: GatedReader) => {
+      const requests: string[] = recordRequests();
+      // Pusty, ale **rozstrzygnięty** katalog: `[]` to wypowiedź, nie milczenie (spec §5.6.1), więc
+      // `resolveActiveService` zwraca `NO_SERVICE` o `id === ''`.
+      server.use(http.get('/api/v1/services', () => HttpResponse.json([])));
+
+      const { queryClient } = renderWithProviders(
+        <>
+          <CatalogUnresolvedProbe />
+          <reader.Probe />
+        </>,
+      );
+
+      // Kluczowy warunek tego testu: katalog **osiadł**. Bez tego asercje przechodzą na stanie
+      // „katalog w drodze”, w którym czytnik milczy już z pierwszego członu bramki, więc o drugim
+      // (`id !== ''`) nie mówią nic.
+      await waitFor(() => {
+        expect(screen.getByTestId('catalog-unresolved')).toHaveTextContent('false');
+      });
+      // Makrozadanie jak w oknie `isPending`: daje ewentualnemu żądaniu czas dotrzeć do MSW, który
+      // emituje `request:start` już w momencie wywołania `fetch`. Bez niego „zero żądań” zależałoby
+      // od tego, ile mikrozadań zdąży przejść przed asercją — a fałszywie zielony przebieg tej klasy
+      // już się w tym projekcie zdarzył.
+      await new Promise((resolve: (value: undefined) => void) => {
+        setTimeout((): void => resolve(undefined), 0);
+      });
+
+      // Osiadły, pusty katalog nie wskazuje żadnej usługi, więc żądanie w namespace `''` nie ma
+      // gospodarza: czytnik zostaje bezczynny. Rozstrzyga licznik żądań pod jego własną ścieżką —
+      // `fetchStatus` wraca do `idle` także po pobraniu, które już się odbyło.
+      expect(cached(queryClient, keyOf(reader, ''))?.state.fetchStatus).toBe('idle');
+      expect(countRequests(requests, reader.path)).toBe(0);
     },
   );
 });
