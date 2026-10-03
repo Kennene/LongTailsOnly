@@ -64,18 +64,22 @@ export function WarningWindowList(): React.JSX.Element {
           <ul className="divide-y divide-border">
             {warnings.map((lease: LeaseOverview): React.JSX.Element => (
               <li key={lease.id}>
+                {/* Od `sm` wiersz ma stałe 36 px; na wąskim ekranie termin i status schodzą do
+                    drugiej linii, zamiast ściskać nazwę i repozytorium do zera (`truncate`). */}
                 <Link
                   to="/leases"
-                  className="flex h-9 items-center gap-3 px-4 text-sm transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:h-9 sm:flex-nowrap sm:py-0"
                 >
-                  <span className="truncate font-medium">{lease.user.name}</span>
-                  <span className="truncate font-mono text-muted-foreground">
+                  <span className="shrink-0 font-medium">{lease.user.name}</span>
+                  <span className="min-w-0 truncate font-mono text-muted-foreground">
                     {`${lease.repository.owner}/${lease.repository.name}`}
                   </span>
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                    {formatDaysRemaining(lease.days_remaining)}
+                  <span className="ml-auto flex shrink-0 items-center gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      {formatDaysRemaining(lease.days_remaining)}
+                    </span>
+                    <LeaseStatusBadge status={lease.status} />
                   </span>
-                  <LeaseStatusBadge status={lease.status} />
                 </Link>
               </li>
             ))}
