@@ -1,3 +1,12 @@
+/**
+ * Rejestr usług: jedyne źródło prawdy o tym, które trasy, etykiety i ikony obsługuje dana
+ * usługa. Backend zna tożsamość i uprawnienia (`GET /api/v1/services`), frontend — prezentację.
+ *
+ * `isRouteSupported` normalizuje ścieżkę tak samo jak React Router 7 (`caseSensitive: false`,
+ * końcowy `/` ignorowany), żeby strażnik tras nie przekierowywał adresów, które router obsługuje.
+ * Dla identyfikatora spoza rejestru uznaje wyłącznie trasę domyślną — inaczej odrzuciłby cel
+ * własnego przekierowania z `getDefaultPath` i panel zostałby pusty.
+ */
 import {
   Blocks,
   FileCheck2,
@@ -9,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 
-import { GitHubIcon, GitLabIcon } from '@/services/brandIcons';
+import { GitHubIcon } from '@/services/brandIcons';
 
 export type ServiceRouteId = 'dashboard' | 'leases' | 'appeals' | 'baseline' | 'graph' | 'audit';
 
@@ -69,11 +78,20 @@ export const SERVICE_REGISTRY: Record<string, ServiceConfig> = {
   },
   'demo-tracker': {
     id: 'demo-tracker',
-    icon: GitLabIcon,
+    // Neutralna ikona: GitLab jest przyszłym, nieobjętym tym zakresem adapterem, a `GitLabIcon`
+    // obiecywałby w kontrolce integrację, której nie ma. Eksport zostaje dla tego adaptera.
+    icon: fallbackIcon,
     routes: [ROUTES.dashboard, ROUTES.audit],
     defaultRouteId: 'dashboard',
   },
 };
+
+/** React Router 7 porównuje ścieżki bez wielkości liter i ignoruje końcowy `/`. */
+function normalisePath(path: string): string {
+  const trimmed = path.replace(/\/+$/, '');
+
+  return (trimmed === '' ? '/' : trimmed).toLowerCase();
+}
 
 /** `Object.hasOwn` zamiast odczytu wprost: `toString` i spółka nie są usługami. */
 export function getServiceConfig(id: string): ServiceConfig | undefined {
@@ -94,6 +112,12 @@ export function getDefaultPath(id: string): string {
 
 export function isRouteSupported(id: string, path: string): boolean {
   const config = getServiceConfig(id);
+  const normalisedPath = normalisePath(path);
 
-  return config?.routes.some((route): boolean => route.path === path) ?? false;
+  if (config === undefined) {
+    // Usługa spoza rejestru ma dokładnie jedną trasę: tę, na którą wskazuje `getDefaultPath`.
+    return normalisedPath === normalisePath(FALLBACK_PATH);
+  }
+
+  return config.routes.some((route): boolean => normalisePath(route.path) === normalisedPath);
 }

@@ -95,15 +95,14 @@ describe('SERVICE_REGISTRY', () => {
     }
   });
 
-  it('gives each service its own brand mark', () => {
+  it('brands github with GitHubIcon and the demo tracker with the fallback mark', () => {
     const icons: [ServiceConfig, ServiceIconComponent][] = [
       [SERVICE_REGISTRY.github, GitHubIcon],
-      [SERVICE_REGISTRY['demo-tracker'], GitLabIcon],
+      [SERVICE_REGISTRY['demo-tracker'], fallbackIcon],
     ];
 
     for (const [config, icon] of icons) {
       expect(config.icon).toBe(icon);
-      expect(config.icon).not.toBe(fallbackIcon);
     }
   });
 });
@@ -129,17 +128,38 @@ describe('isRouteSupported', () => {
     expect(isRouteSupported('demo-tracker', '/leases')).toBe(false);
   });
 
-  it.each<string>(['does-not-exist', 'toString'])(
-    'returns false for every path of the unregistered service %s',
+  it.each<string>(['does-not-exist', 'toString', 'constructor'])(
+    'supports only the fallback path of the unregistered service %s',
     (id: string) => {
-      expect(isRouteSupported(id, '/')).toBe(false);
+      expect(isRouteSupported(id, '/')).toBe(true);
       expect(isRouteSupported(id, '/audit')).toBe(false);
     },
   );
 
-  it('returns false for a path no route declares', () => {
+  it.each<string>(['does-not-exist', 'toString', 'constructor'])(
+    'never rejects the redirect target it resolves for %s',
+    (id: string) => {
+      expect(isRouteSupported(id, getDefaultPath(id))).toBe(true);
+    },
+  );
+
+  it.each<string>(['/leases/', '/Leases'])(
+    'matches %s the way React Router does: trailing slash and case are ignored',
+    (path: string) => {
+      expect(isRouteSupported('github', path)).toBe(true);
+    },
+  );
+
+  it('normalises the root and the audit path as well', () => {
+    expect(isRouteSupported('github', '/')).toBe(true);
+    expect(isRouteSupported('github', '/Audit/')).toBe(true);
+  });
+
+  it('still rejects a path that no route declares, normalised or not', () => {
     expect(isRouteSupported('github', '/nope')).toBe(false);
+    expect(isRouteSupported('github', '/Nope/')).toBe(false);
     expect(isRouteSupported('github', '/leases/42')).toBe(false);
+    expect(isRouteSupported('demo-tracker', '/Leases')).toBe(false);
   });
 });
 
@@ -181,9 +201,20 @@ describe('brand icons', () => {
       expect(view).toContain('fill="currentColor"');
       expect(view).toContain('aria-hidden="true"');
       expect(view).toContain('class="size-4"');
+      expect(view).toContain('width="1em"');
+      expect(view).toContain('height="1em"');
       expect(view).toContain(shape);
     },
   );
+
+  it('sizes every brand mark to 1em so a bare mark cannot inflate', () => {
+    for (const Icon of [GitHubIcon, GitLabIcon]) {
+      const view: string = markupOf(Icon);
+
+      expect(view).toContain('width="1em"');
+      expect(view).toContain('height="1em"');
+    }
+  });
 
   it('draws the two brand marks as different silhouettes', () => {
     expect(markupOf(GitHubIcon)).not.toBe(markupOf(GitLabIcon));

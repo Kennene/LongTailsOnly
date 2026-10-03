@@ -8,6 +8,9 @@
  * i opisany w `docs/superpowers/specs/2026-10-03-service-picker-design.md` §5.1. Oba
  * komponenty spełniają kontrakt `ServiceIconComponent`, co kompilator sprawdza przy
  * przypisaniu w rejestrze usług.
+ *
+ * `width="1em"`/`height="1em"` jak w lucide: bez tych wymiarów SVG jako element zastępowany
+ * rozciąga się do domyślnych 300×150, gdy ktoś pominie `className`.
  */
 interface BrandIconProps {
   className?: string;
@@ -18,6 +21,8 @@ export function GitHubIcon({ className }: BrandIconProps): React.JSX.Element {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
       fill="currentColor"
       aria-hidden="true"
       className={className}
@@ -37,6 +42,8 @@ export function GitLabIcon({ className }: BrandIconProps): React.JSX.Element {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
       fill="currentColor"
       aria-hidden="true"
       className={className}
