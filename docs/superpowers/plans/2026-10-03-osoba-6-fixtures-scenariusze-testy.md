@@ -213,12 +213,13 @@ def test_fixtures_use_seed_population_logins():
     # każdy login w fixtures należy do zbioru loginów z app/db/seed_data.py
     # (tomasz-admin, kamil, marta, nowy-dev, TEAM_MEMBERS, REGULAR_DEVS, REGULAR_QA)
 
-def test_last_admin_fixtures_expose_a_removable_admin_scenario():
-    # fixtures pokazują repozytorium z co najmniej dwoma adminami,
-    # żeby próba odebrania jednego nie była z góry skazana na 403
+def test_manifest_entries_declare_known_shape_and_consumers():
+    # shape ∈ {list, single}; consumedBy niepuste, więc widać, kto czyta dany plik
 ```
 
 Uwaga: `test_every_fixture_validates_against_its_contract_model` jest parametryzowany po `manifest.json`, więc nowy wpis automatycznie dostaje walidację.
+
+Uwaga o Last Admin Protection: planowany wcześniej test `test_last_admin_fixtures_expose_a_removable_admin_scenario` został **usunięty**. `app/db/seed.py` nadaje rolę `admin` wyłącznie `tomasz-admin` — po jednym na repozytorium, z `expires_at = NULL`. Fixtures nie mogą więc pokazać repozytorium z dwoma adminami bez rozjechania się z seedem. Przypadek „dwóch adminów" powstaje **akcją** w scenariuszu UC-5 (Task 3): najpierw `PUT` nadaje drugiego admina, potem `DELETE` jednego przechodzi, a `DELETE` ostatniego zwraca `403`. Weryfikacja straży należy do Task 4, nie do Task 2.
 
 - [ ] **Step 2: Uruchom testy, żeby zobaczyć porażkę**
 
