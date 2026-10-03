@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { ApiError } from '@/api/client';
 import { DecisionActions } from '@/components/leases/DecisionActions';
 import { DecisionModalAppeal } from '@/components/leases/DecisionModalAppeal';
 import {
   buildExtension,
   CUSTOM_DAYS_ERROR,
+  extensionBlockedReason,
   type ExtensionChoice,
 } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { useLeaseDecision } from '@/hooks/useLeaseDecision';
 import { useSimulatedClock } from '@/hooks/useSimulatedClock';
+import { type ApiErrorDescription, describeEngineError } from '@/lib/apiErrors';
 import { daysRemaining, formatDaysRemaining } from '@/lib/dateTime';
 import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import type { AppealOverview, DecisionRequest, LeaseOverview } from '@/types/api';
@@ -43,7 +44,7 @@ export interface DecisionModalProps {
 }
 
 const PAST_DATE_ERROR = 'Data musi być późniejsza niż czas symulowany';
-const LAST_ADMIN_ERROR = 'Nie można odebrać uprawnień ostatniemu administratorowi.';
+const DECISION_FALLBACK = 'Nie udało się zapisać decyzji.';
 const SUCCESS_MESSAGE = 'Decyzja zapisana';
 
 export function DecisionModal({
@@ -87,25 +88,24 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   const decision = useLeaseDecision();
   const [choice, setChoice] = useState<ExtensionChoice | null>(null);
   const [customDays, setCustomDays] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<ApiErrorDescription | null>(null);
 
   const now: string | null = clock.data?.now ?? null;
   const statusBadge = getStatusBadge(lease.status);
   const isPending: boolean = decision.isPending;
+  const extensionBlocked: string | null = extensionBlockedReason(lease);
 
   function sendDecision(request: DecisionRequest): void {
-    setError(null);
+    setFailure(null);
     const callbacks = {
       onSuccess: (): void => {
         toast.success(SUCCESS_MESSAGE);
         onOpenChange(false);
       },
-      onError: (failure: Error): void => {
-        setError(
-          failure instanceof ApiError && failure.status === 403
-            ? LAST_ADMIN_ERROR
-            : failure.message,
-        );
+      onError: (error: Error): void => {
+        // Zdania po polsku trzyma wspólna tabela `describeEngineError`; angielski `detail`
+        // silnika (m.in. droga wyjścia z konfliktu `PENDING` przez `/appeals`) idzie pod spód.
+        setFailure(describeEngineError(error, 'LEASE_DECISION', DECISION_FALLBACK));
       },
     };
 
@@ -114,7 +114,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
 
   function selectChoice(next: ExtensionChoice): void {
     setChoice(next);
-    setError(null);
+    setFailure(null);
   }
 
   function handleCustomDaysChange(value: string): void {
@@ -127,13 +127,13 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
       return;
     }
     if (choice.kind === 'date' && (now === null || daysRemaining(choice.date, now) <= 0)) {
-      setError(PAST_DATE_ERROR);
+      setFailure({ message: PAST_DATE_ERROR, detail: null });
       return;
     }
 
     const extension = buildExtension(choice, customDays);
     if (extension === null) {
-      setError(CUSTOM_DAYS_ERROR);
+      setFailure({ message: CUSTOM_DAYS_ERROR, detail: null });
       return;
     }
 
@@ -171,6 +171,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
       <ExtensionControls
         choice={choice}
         customDays={customDays}
+        disabledReason={extensionBlocked}
         simulatedNow={now}
         onChoiceChange={selectChoice}
         onCustomDaysChange={handleCustomDaysChange}
@@ -179,13 +180,20 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
       <DecisionActions
         currentRole={lease.current_role}
         isPending={isPending}
-        onRevoke={() => sendDecision({ action: 'REVOKE' })}
-        onDownscope={() => sendDecision({ action: 'DOWNSCOPE' })}
+        onRevoke={(justification: string) => sendDecision({ action: 'REVOKE', justification })}
+        onDownscope={(justification: string) =>
+          sendDecision({ action: 'DOWNSCOPE', justification })
+        }
       />
 
-      {error !== null ? (
+      {failure !== null ? (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {failure.message}
+            {failure.detail === null ? null : (
+              <span className="mt-1 block text-xs text-muted-foreground">{failure.detail}</span>
+            )}
+          </AlertDescription>
         </Alert>
       ) : null}
 

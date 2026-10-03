@@ -18,8 +18,9 @@ import type { AppealOverview, LeaseOverview } from '@/types/api';
 /**
  * Tryb odwołania modala decyzji (UC-3).
  *
- * Backend ma dziś wyłącznie `POST /api/v1/appeals/{id}/reject` — nie ma ani endpointu
- * `/decision` w domenie odwołań, ani decyzji o dzierżawie (3.6/5.5). Modal musi więc
+ * Backend ma dziś wyłącznie `POST /api/v1/appeals/{id}/reject` — rozstrzygnięcie odwołania
+ * (`POST /api/v1/appeals/{id}/decision`, zadanie 4.3C) jeszcze nie istnieje, a decyzja
+ * o dzierżawie odsyła dzierżawy z odwołaniem `PENDING` właśnie tam (409, D13). Modal musi więc
  * odrzucać wniosek realnym żądaniem, a ścieżkę zatwierdzenia zostawiać wyłączoną z wyjaśnieniem.
  *
  * Osobny plik od `DecisionModal.test.tsx`: tamten pilnuje ścieżki dzierżawy
@@ -31,7 +32,7 @@ const otherLease: LeaseOverview = leasesFixture[0]; // dzierżawa 1 z fixture'ó
 const REJECTION_JUSTIFICATION = 'Brak konkretnego planu użycia dostępu w tym tygodniu.';
 const REJECTION_REQUIRED = 'Uzasadnienie odrzucenia jest wymagane';
 const APPROVE_UNAVAILABLE =
-  'Zatwierdzenie wymaga endpointu decyzji o dzierżawie (3.6/5.5) — jeszcze go nie ma.';
+  'Zatwierdzenie odwołania wymaga POST /api/v1/appeals/{id}/decision, którego backend jeszcze nie ma (zadanie 4.3C) — działa tylko odrzucenie przez /reject.';
 const HISTORY_TEST_ID = 'appeal-history';
 const ACTIVITY_TEST_ID = 'appeal-activity';
 const LEASE_CONTEXT_TEST_ID = 'appeal-lease-context';
@@ -90,9 +91,13 @@ describe('DecisionModal w trybie odwołania', () => {
     // liczby bierzemy z tego samego źródła zamiast wpisywać je na sztywno (shared/activity.json).
     const stats = await fetchActivityStats(pendingAppeal.lease_id);
     const activity = screen.getByTestId(ACTIVITY_TEST_ID);
-    expect(within(activity).getByTestId('stat-push')).toHaveTextContent(String(stats.push));
-    expect(within(activity).getByTestId('stat-review')).toHaveTextContent(String(stats.review));
-    expect(within(activity).getByTestId('stat-comment')).toHaveTextContent(String(stats.comment));
+    expect(within(activity).getByTestId('stat-push')).toHaveTextContent(String(stats.push_count));
+    expect(within(activity).getByTestId('stat-review')).toHaveTextContent(
+      String(stats.review_count),
+    );
+    expect(within(activity).getByTestId('stat-comment')).toHaveTextContent(
+      String(stats.comment_count),
+    );
     expect(fetchSpy).toHaveBeenCalledWith(
       `/api/v1/leases/${String(pendingAppeal.lease_id)}/activity-stats`,
       expect.anything(),

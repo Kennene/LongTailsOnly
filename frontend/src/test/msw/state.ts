@@ -153,13 +153,23 @@ export function withComputedFields(lease: LeaseOverview, elapsedDays: number): L
       ? null
       : lease.days_remaining - elapsedDays;
 
-  return { ...lease, status: statusFor(days), days_remaining: days };
+  return { ...lease, status: statusFor(lease, days), days_remaining: days };
 }
 
-/** Progi z ADR 0002: `days_remaining <= 0` to termin miniony, okno ostrzegawcze to 7 dni. */
-function statusFor(days: number | null): LeaseStatus {
+/**
+ * Progi z ADR 0002: `days_remaining <= 0` to termin miniony, okno ostrzegawcze to 7 dni.
+ *
+ * Reguła silnika 3.1 (`app/domain/lease_rules.py::lease_status`) najpierw rozstrzyga przypadki
+ * niezależne od zegara: odebrany dostęp to `REVOKED`, a brak terminu (dzierżawa admina) to
+ * `PERMANENT`. Bez tego kroku symulacja zamieniała stałe dzierżawy adminów na `ACTIVE`, przez co
+ * tryb offline pokazywał inny status niż `GET /api/v1/leases`.
+ */
+function statusFor(lease: LeaseOverview, days: number | null): LeaseStatus {
+  if (!lease.is_active) {
+    return 'REVOKED';
+  }
   if (days === null) {
-    return 'ACTIVE';
+    return 'PERMANENT';
   }
   if (days <= 0) {
     return 'EXPIRED';

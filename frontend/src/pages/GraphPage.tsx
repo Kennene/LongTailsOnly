@@ -19,7 +19,8 @@ interface GraphSelection {
  *
  * Kontrakt trzyma w `data.team` slug („dev”), a węzeł zespołu niesie nazwę („DEV”) — filtr musi
  * mówić jedną z tych wartości, więc bierzemy nazwę z węzła zespołu, a slug zostawiamy jako
- * ostatnią deskę ratunku dla odpowiedzi bez węzłów zespołów.
+ * ostatnią deskę ratunku dla odpowiedzi bez węzłów zespołów (tak wygląda graf w trybie live,
+ * dopóki 4.6B nie dostarczy `GET /api/v1/graph` — patrz `api/graph.ts`).
  */
 function teamNameOf(nodes: GraphNode[], slug: string): string {
   return (
@@ -28,7 +29,11 @@ function teamNameOf(nodes: GraphNode[], slug: string): string {
   );
 }
 
-/** Lista zespołów do filtra: etykiety węzłów `team` plus zespoły osób (po nazwie, nie po slugu). */
+/**
+ * Lista zespołów do filtra: etykiety węzłów `team` plus zespoły osób (po nazwie z węzła zespołu,
+ * a gdy węzłów zespołów nie ma — po slugu z `data.team`). Pusta lista nie jest błędem: filtr
+ * pokazuje wtedy samo „Wszystkie”.
+ */
 function collectTeams(nodes: GraphNode[]): string[] {
   const teams = new Set<string>();
 
@@ -47,9 +52,9 @@ function collectTeams(nodes: GraphNode[]): string[] {
 
 /**
  * Widok zawężony do jednego zespołu: węzeł zespołu, jego osoby i repozytoria, do których te osoby
- * mają czynne dzierżawy. Backend robi to samo po stronie `GET /api/v1/graph?team=…`
- * (`app/domain/insights.py::build_graph_layout`) — bez repozytoriów filtr pokazywałby ludzi
- * odciętych od tego, do czego mają dostęp.
+ * mają czynne dzierżawy. Docelowo backend zrobi to samo po stronie `GET /api/v1/graph?team=…`
+ * (`app/domain/insights.py::build_graph_layout`, krok 4.6B) — bez repozytoriów filtr pokazywałby
+ * ludzi odciętych od tego, do czego mają dostęp.
  */
 function selectTeam(nodes: GraphNode[], edges: GraphEdge[], team: string): GraphSelection {
   // `data.team` jest w kontrakcie `string | null`: węzeł zespołu bez sluga nie zawęża filtra.
@@ -92,7 +97,11 @@ function GraphSkeleton(): React.JSX.Element {
 }
 
 /**
- * Widok `/graph`: relacje dostępu między zespołami, osobami i repozytoriami z `GET /api/v1/graph`.
+ * Widok `/graph`: relacje dostępu między osobami i repozytoriami.
+ *
+ * Węzły i krawędzie pochodzą z `useGraph()`, który w trybie live składa je z listy dzierżaw
+ * (`api/graph.ts`) — zespół widać wtedy wyłącznie jako `data.team` osoby, bo lista dzierżaw nie
+ * niesie składu zespołów. Węzły zespołów wrócą razem z `GET /api/v1/graph` (krok 4.6B).
  *
  * Układ kolumnowy liczymy raz, na pełnym zbiorze węzłów — dzięki temu zawężenie filtrów nie
  * przesuwa węzłów, a `applyColumnLayout` (idempotentny) nie nadpisuje `position` z API.
@@ -112,8 +121,8 @@ export function GraphPage(): React.JSX.Element {
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Graf</h1>
         <p className="text-sm text-muted-foreground">
-          Kto ma dostęp do czego: zespoły, osoby i repozytoria. Kolor węzła oraz krawędzi niesie
-          status dzierżawy.
+          Kto ma dostęp do czego: osoby i repozytoria. Kolor węzła oraz krawędzi niesie status
+          dzierżawy, a filtr zespołu zawęża widok do jednej grupy.
         </p>
       </header>
 

@@ -2,13 +2,13 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
-import { fetchActivityStats, type LeaseActivityStats } from '@/api/activity';
+import { fetchActivityStats } from '@/api/activity';
 import { appealsFixture, leasesFixture } from '@/api/fixtures';
 import { DecisionModal } from '@/components/leases/DecisionModal';
 import { getRecommendationBadge } from '@/lib/statusBadges';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import type { AppealOverview, LeaseOverview } from '@/types/api';
+import type { AppealOverview, LeaseActivityStats, LeaseOverview } from '@/types/api';
 
 /**
  * Dowód użycia w modalu decyzji (UC-3, `DESIGN.md` §4): tryb zwykłej dzierżawy pokazuje
@@ -61,9 +61,19 @@ describe('DecisionModal — dowód użycia w trybie dzierżawy', () => {
     const panel = screen.getByTestId(LEASE_ACTIVITY_TEST_ID);
     const expected: LeaseActivityStats = await fetchActivityStats(activeLease.id);
 
-    expect(await within(panel).findByTestId('stat-push')).toHaveTextContent(String(expected.push));
-    expect(within(panel).getByTestId('stat-review')).toHaveTextContent(String(expected.review));
-    expect(within(panel).getByTestId('stat-comment')).toHaveTextContent(String(expected.comment));
+    expect(await within(panel).findByTestId('stat-push')).toHaveTextContent(
+      String(expected.push_count),
+    );
+    expect(within(panel).getByTestId('stat-review')).toHaveTextContent(
+      String(expected.review_count),
+    );
+    expect(within(panel).getByTestId('stat-comment')).toHaveTextContent(
+      String(expected.comment_count),
+    );
+    // Panel nie kończy się na trzech liczbach: pokazuje też okno, w którym je policzono.
+    expect(within(panel).getByTestId('activity-window')).toHaveTextContent(
+      `Ostatnie ${String(expected.window_days)} dni`,
+    );
   });
 
   it('pokazuje szkielet w miejscu liczników, dopóki statystyki się wczytują', async () => {
@@ -145,7 +155,7 @@ describe('DecisionModal — brak duplikatu dowodu w trybie odwołania', () => {
     // (`AppealOverview.lease_id`), a nie tej, którą ktoś podał w propie `lease`.
     const expected: LeaseActivityStats = await fetchActivityStats(pendingAppeal.lease_id);
     expect(await within(appealActivity).findByTestId('stat-push')).toHaveTextContent(
-      String(expected.push),
+      String(expected.push_count),
     );
     expect(screen.getAllByTestId('stat-push')).toHaveLength(1);
   });

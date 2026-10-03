@@ -1,14 +1,17 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+import { toast } from 'sonner';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { appealsFixture } from '@/api/fixtures';
+import { appealsFixture, leasesFixture } from '@/api/fixtures';
 import { AppealsPage } from '@/pages/AppealsPage';
 import {
   getLastAppealRejection,
   getLastAppealRequest,
   resetAppealsMswState,
 } from '@/test/msw/domains/appeals';
+import { server } from '@/test/msw/server';
 import { getLeases } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import type { LeaseOverview } from '@/types/api';
@@ -17,22 +20,48 @@ const UNIQUE_JUSTIFICATION = 'Prowadzę release v2.1 w przyszłym tygodniu';
 const REJECTION_JUSTIFICATION = 'Brak konkretnego planu użycia dostępu w tym tygodniu.';
 const FORM_ERROR = 'Uzasadnienie jest wymagane';
 const DUPLICATE_MESSAGE = 'To uzasadnienie zostało już użyte przy innym odwołaniu. Podaj inne.';
+const NOT_APPEALABLE_MESSAGE =
+  'Odwołanie można złożyć tylko dla odebranej dzierżawy albo takiej, która wygasa w ciągu 7 dni.';
+const PENDING_APPEAL_MESSAGE = 'Ta dzierżawa ma już nierozpatrzone odwołanie.';
+const EMPTY_STATE =
+  'Brak dzierżaw do odwołania — odwołanie przysługuje odebranym dzierżawom oraz tym, które wygasły albo wygasają w ciągu 7 dni.';
 const SUBMITTED_LIST = 'Złożone odwołania';
+const LEASES_URL = '/api/v1/leases';
+const APPEALS_URL = '/api/v1/appeals';
 /** Pierwsze odwołanie z fixture'ów: dzierżawa 5, której **nie ma** wśród kandydatów do odwołania. */
 const PENDING_APPEAL = appealsFixture[0];
 
 /**
- * Kandydaci do odwołania to dzierżawy poza `ACTIVE` — dokładnie ta sama lista, którą
- * `AppealsPage` podaje do `AppealForm` i którą widzi handler `POST /api/v1/appeals`.
- * Bierzemy ją z „backendu” (MSW), a nie z literałów w teście, żeby wymiana fixture'ów
- * dzierżaw (wspólne `shared/fixtures/`) nie robiła z tego testu fałszywej regresji.
+ * Reguła silnika (`appeal_rules.is_appealable`) zapisana w teście **wprost**: odebrana dzierżawa
+ * oraz `WARNING`/`EXPIRED`. Świadomie nie wołamy tu produkcyjnego `isAppealable` — inaczej asercja
+ * „lista oferowanych = lista kandydatów” porównywałaby helper sam ze sobą i przeszłaby także po
+ * regresji w nim. Dzierżawy bierzemy z „backendu” (MSW), żeby wymiana fixture'ów dzierżaw
+ * (wspólne `shared/fixtures/`) nie robiła z tego testu fałszywej regresji.
  */
+function isAppealableByEngineRule(lease: LeaseOverview): boolean {
+  return lease.status === 'REVOKED' || lease.status === 'WARNING' || lease.status === 'EXPIRED';
+}
+
 function appealCandidates(): LeaseOverview[] {
-  return getLeases().filter((lease: LeaseOverview): boolean => lease.status !== 'ACTIVE');
+  return getLeases().filter(isAppealableByEngineRule);
+}
+
+/** Odebrana dzierżawa, której nie ma w fixture'ach (tam każdy wiersz jest aktywny). */
+function revokedLease(): LeaseOverview {
+  return {
+    ...leasesFixture[0],
+    id: 99,
+    is_active: false,
+    status: 'REVOKED',
+    days_remaining: null,
+  };
 }
 
 beforeEach(() => {
   resetAppealsMswState();
+  // Sonner trzyma kolejkę toastów w stanie modułu (a `Toaster` montuje `renderWithProviders`),
+  // więc czyścimy ją między testami — inaczej asercja braku toastu widzi komunikaty z poprzednich.
+  toast.dismiss();
 });
 
 /**
@@ -168,5 +197,79 @@ describe('AppealsPage', () => {
     // Odrzucone odwołanie nie czeka już na decyzję, więc przycisk znika z listy.
     expect(within(submitted).queryByText('Oczekujące')).not.toBeInTheDocument();
     expect(within(submitted).queryByRole('button', { name: 'Rozpatrz' })).not.toBeInTheDocument();
+  });
+
+  it('nie oferuje dzierżawy administratora, a odebraną pokazuje jako kandydata', async () => {
+    const permanentLeases: LeaseOverview[] = getLeases().filter(
+      (lease: LeaseOverview): boolean => lease.status === 'PERMANENT',
+    );
+    // Fixture'y muszą mieć co najmniej jednego admina, inaczej ten test nie pinuje wykluczenia.
+    expect(permanentLeases.length).toBeGreaterThan(0);
+    const revoked: LeaseOverview = revokedLease();
+    server.use(http.get(LEASES_URL, () => HttpResponse.json([...getLeases(), revoked])));
+
+    renderAppealsPage();
+
+    const select = await screen.findByLabelText('Dzierżawa');
+    const offered: (string | null)[] = within(select)
+      .getAllByRole('option')
+      .map((option: HTMLElement): string | null => option.getAttribute('value'));
+
+    expect(offered).toContain(String(revoked.id));
+    for (const lease of permanentLeases) {
+      expect(offered).not.toContain(String(lease.id));
+    }
+    // Kolejność jak z API: najpierw fixture'y, na końcu dołożona dzierżawa odebrana.
+    expect(offered).toEqual(
+      [...appealCandidates(), revoked].map((lease: LeaseOverview): string => String(lease.id)),
+    );
+  });
+
+  it('nazywa po polsku powód odmowy przyjęcia odwołania (409 silnika)', async () => {
+    const detail = 'Appeals are accepted only for revoked leases or leases expiring within 7 days';
+    server.use(http.post(APPEALS_URL, () => HttpResponse.json({ detail }, { status: 409 })));
+    const user = userEvent.setup();
+    renderAppealsPage();
+
+    await selectFirstCandidate(user);
+    await user.type(screen.getByLabelText('Uzasadnienie'), UNIQUE_JUSTIFICATION);
+    await user.click(screen.getByRole('button', { name: 'Złóż odwołanie' }));
+
+    expect(await screen.findByText(NOT_APPEALABLE_MESSAGE)).toBeInTheDocument();
+    // Angielski `detail` silnika zostaje jako szczegół pod zdaniem.
+    expect(screen.getByText(detail)).toBeInTheDocument();
+    expect(screen.queryByText('Odwołanie złożone')).not.toBeInTheDocument();
+  });
+
+  it('nazywa po polsku nierozpatrzone odwołanie tej dzierżawy (409 silnika)', async () => {
+    server.use(
+      http.post(APPEALS_URL, () =>
+        HttpResponse.json({ detail: 'This lease already has a pending appeal' }, { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderAppealsPage();
+
+    await selectFirstCandidate(user);
+    await user.type(screen.getByLabelText('Uzasadnienie'), UNIQUE_JUSTIFICATION);
+    await user.click(screen.getByRole('button', { name: 'Złóż odwołanie' }));
+
+    expect(await screen.findByText(PENDING_APPEAL_MESSAGE)).toBeInTheDocument();
+    expect(screen.queryByText(DUPLICATE_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it('zapowiada pustą listę kandydatów zdaniem obejmującym także dzierżawy odebrane', async () => {
+    server.use(
+      http.get(LEASES_URL, () =>
+        HttpResponse.json(
+          getLeases().filter((lease: LeaseOverview): boolean => !isAppealableByEngineRule(lease)),
+        ),
+      ),
+    );
+
+    renderAppealsPage();
+
+    expect(await screen.findByText(EMPTY_STATE)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Dzierżawa')).not.toBeInTheDocument();
   });
 });

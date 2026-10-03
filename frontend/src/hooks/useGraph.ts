@@ -4,13 +4,15 @@ import { fetchGraph } from '@/api/graph';
 import type { PermissionGraph } from '@/types/api';
 
 /**
- * Graf uprawnień (`GET /api/v1/graph`, krok 4.6).
+ * Graf uprawnień (`fetchGraph`, krok 4.6B podmieni go na `GET /api/v1/graph`).
  *
  * Kształt to kontraktowy `PermissionGraph` (ADR 0009) — własny interfejs zniknął razem z
  * lokalnymi `GraphNode`/`GraphEdge`/`GraphResponse`.
  *
- * Klucz `['graph']` jest unieważniany po każdej decyzji o dzierżawie (spec §7.3), żeby widok
- * pokazywał świeże statusy krawędzi po podróży w czasie i po decyzjach administratora.
+ * Do czasu 4.6B graf powstaje z listy dzierżaw, więc nie ma w nim węzłów zespołów (szczegóły
+ * i uzasadnienie: `api/graph.ts`). Klucz `['graph']` jest unieważniany po każdej decyzji
+ * o dzierżawie (spec §7.3), żeby widok pokazywał świeże statusy krawędzi po podróży w czasie
+ * i po decyzjach administratora.
  */
 export function useGraph(): UseQueryResult<PermissionGraph> {
   return useQuery({ queryKey: ['graph'], queryFn: fetchGraph });

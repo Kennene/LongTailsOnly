@@ -19,18 +19,22 @@ import {
 import { useAppeals } from '@/hooks/useAppeals';
 import { useLeases } from '@/hooks/useLeases';
 import { useSubmitAppeal } from '@/hooks/useSubmitAppeal';
-import { describeApiError } from '@/lib/apiErrors';
+import { type ApiErrorDescription, describeApiError, describeEngineError } from '@/lib/apiErrors';
+import { isAppealable } from '@/lib/appealable';
 import { formatDateTimePl, formatDaysRemaining } from '@/lib/dateTime';
 import { getAppealStatusBadge, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import type { AppealOverview, LeaseOverview } from '@/types/api';
 
 const APPEALS_LIST_HEADING_ID = 'appeals-submitted-heading';
+const SUBMIT_APPEAL_FALLBACK = 'Nie udało się złożyć odwołania.';
+const EMPTY_CANDIDATES =
+  'Brak dzierżaw do odwołania — odwołanie przysługuje odebranym dzierżawom oraz tym, które wygasły albo wygasają w ciągu 7 dni.';
 
 interface LeaseCandidatesTableProps {
   leases: LeaseOverview[];
 }
 
-/** Dzierżawy, które podlegają odwołaniu: okno ostrzegawcze (`WARNING`) i wygasłe (`EXPIRED`). */
+/** Dzierżawy, które silnik przyjmie do odwołania: odebrane oraz `WARNING`/`EXPIRED` (`is_appealable`). */
 function LeaseCandidatesTable({ leases }: LeaseCandidatesTableProps): React.JSX.Element {
   return (
     <Table>
@@ -126,10 +130,14 @@ export function AppealsPage(): React.JSX.Element {
   const [selectedAppeal, setSelectedAppeal] = useState<AppealOverview | null>(null);
 
   const leases: LeaseOverview[] = leasesQuery.data ?? [];
-  const candidates: LeaseOverview[] = leases.filter(
-    (lease: LeaseOverview): boolean => lease.status !== 'ACTIVE',
-  );
+  // Ta sama reguła, którą stosuje `appeal_service.submit_appeal` (`appeal_rules.is_appealable`) —
+  // inaczej lista oferowałaby dzierżawy, których silnik i tak nie przyjmie (409).
+  const candidates: LeaseOverview[] = leases.filter(isAppealable);
   const appeals: AppealOverview[] = appealsQuery.data ?? [];
+  const submitFailure: ApiErrorDescription | null =
+    submitAppeal.error === null
+      ? null
+      : describeEngineError(submitAppeal.error, 'APPEAL_SUBMIT', SUBMIT_APPEAL_FALLBACK);
 
   function handleSubmit(lease_id: number, justification: string): void {
     submitAppeal.mutate(
@@ -156,7 +164,8 @@ export function AppealsPage(): React.JSX.Element {
         <CardHeader className="border-b">
           <CardTitle>Dzierżawy wymagające uwagi</CardTitle>
           <CardDescription>
-            Tylko dzierżawy wygasające i wygasłe mogą zostać przedłużone w drodze odwołania.
+            Odwołanie przysługuje dzierżawom odebranym oraz tym, które wygasły albo wygasają w ciągu
+            7 dni.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -185,9 +194,7 @@ export function AppealsPage(): React.JSX.Element {
           ) : null}
 
           {leasesQuery.isSuccess && candidates.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Brak dzierżaw w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.
-            </p>
+            <p className="text-sm text-muted-foreground">{EMPTY_CANDIDATES}</p>
           ) : null}
 
           {leasesQuery.isSuccess && candidates.length > 0 ? (
@@ -218,7 +225,7 @@ export function AppealsPage(): React.JSX.Element {
 
           {leasesQuery.isSuccess && candidates.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nie ma czego przedłużać — żadna dzierżawa nie jest w oknie ostrzegawczym.
+              Nie ma czego przedłużać — żadna dzierżawa nie podlega odwołaniu.
             </p>
           ) : null}
 
@@ -233,11 +240,16 @@ export function AppealsPage(): React.JSX.Element {
             />
           ) : null}
 
-          {submitAppeal.error === null ? null : (
+          {submitFailure === null ? null : (
             <Alert variant="destructive">
               <AlertTitle>Nie udało się złożyć odwołania</AlertTitle>
               <AlertDescription>
-                {describeApiError(submitAppeal.error, 'Nie udało się złożyć odwołania.')}
+                {submitFailure.message}
+                {submitFailure.detail === null ? null : (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {submitFailure.detail}
+                  </span>
+                )}
               </AlertDescription>
             </Alert>
           )}

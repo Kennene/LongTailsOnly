@@ -89,6 +89,8 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
   });
   await user.click(within(adminRow).getByRole('button', { name: 'Decyzja' }));
   await user.click(await screen.findByRole('button', { name: 'Wyłącz' }));
+  // `REVOKE` wymaga uzasadnienia (silnik: 422 `A justification is required…`), więc demo je podaje.
+  await user.type(screen.getByLabelText('Uzasadnienie'), 'Odbiór dostępu w scenariuszu UC-5.');
   await user.click(screen.getByRole('button', { name: 'Potwierdzam wyłączenie' }));
 
   expect(await screen.findByText(LAST_ADMIN_MESSAGE)).toBeInTheDocument();

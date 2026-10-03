@@ -1,7 +1,8 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { http, type HttpHandler, HttpResponse } from 'msw';
 
+import { appealsFixture } from '@/api/fixtures';
 import { countDashboard, dashboardFixture } from '@/api/fixtures/dashboard';
 import { leasesFixture } from '@/api/fixtures/leases';
 import { formatDaysRemaining } from '@/lib/dateTime';
@@ -33,19 +34,12 @@ function expectedCounters(): DashboardStats {
   return countDashboard(getLeases(), getSimulatedNow());
 }
 
-function zeroCounters(): DashboardStats {
-  return {
-    generated_at: getSimulatedNow(),
-    active: 0,
-    warning: 0,
-    expired: 0,
-    permanent: 0,
-    revoked: 0,
-    downscope_recommendations: 0,
-    revoke_recommendations: 0,
-    pending_appeals: 0,
-    onboarding_candidates: 0,
-  };
+/** Trasa, której backend jeszcze nie ma (4.6B): wołanie jej to regres, nie powód do fallbacku. */
+function forbidRoute(path: string, calls: string[]): HttpHandler {
+  return http.get(path, () => {
+    calls.push(path);
+    return HttpResponse.json({ detail: `${path} not found` }, { status: 404 });
+  });
 }
 
 /** Dzierżawy w oknie ostrzegawczym w kolejności listy: najpilniejsze (najmniej dni) pierwsze. */
@@ -60,6 +54,14 @@ function warningLeases(leases: LeaseOverview[]): LeaseOverview[] {
 
 function fullName(lease: LeaseOverview): string {
   return `${lease.repository.owner}/${lease.repository.name}`;
+}
+
+/**
+ * Tożsamość wiersza to para (osoba, repozytorium), nie sama osoba: ta sama osoba może mieć
+ * jedną dzierżawę w oknie ostrzegawczym, a drugą zupełnie zdrową — i tak jest w fixture'ach.
+ */
+function pairOf(lease: LeaseOverview): string {
+  return `${lease.user.login}@${lease.repository.name}`;
 }
 
 /** Licznik KPI to jedyny element karty, którego treścią jest sama liczba. */
@@ -114,6 +116,25 @@ describe('DashboardPage', () => {
     expectKpi('kpi-downscope', expected.downscope_recommendations);
   });
 
+  it('derives the counters from the lease list without calling the missing /api/v1/dashboard', async () => {
+    const calls: string[] = [];
+    server.use(
+      forbidRoute('/api/v1/dashboard', calls),
+      forbidRoute('/api/v1/dashboard/stats', calls),
+      forbidRoute('/api/v1/graph', calls),
+    );
+
+    const expected: DashboardStats = expectedCounters();
+    renderWithProviders(<DashboardPage />);
+
+    expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
+    expectKpi('kpi-active', expected.active);
+    expectKpi('kpi-warning', expected.warning);
+    expectKpi('kpi-expired', expected.expired);
+    expectKpi('kpi-downscope', expected.downscope_recommendations);
+    expect(calls).toEqual([]);
+  });
+
   it('recounts the counters from the live lease state after the simulated clock moves', async () => {
     advanceSimulatedClock(25);
 
@@ -130,8 +151,8 @@ describe('DashboardPage', () => {
     expect(expected.expired).not.toBe(dashboardFixture.expired);
   });
 
-  it('renders zeros when the API returns empty counters', async () => {
-    server.use(http.get('/api/v1/dashboard', () => HttpResponse.json(zeroCounters())));
+  it('renders zeros when the API returns no leases', async () => {
+    server.use(http.get('/api/v1/leases', () => HttpResponse.json([])));
     renderWithProviders(<DashboardPage />);
 
     expect(await screen.findByTestId('kpi-warning')).toBeInTheDocument();
@@ -141,10 +162,15 @@ describe('DashboardPage', () => {
     }
   });
 
-  it('shows an error state whose retry button refetches the counters', async () => {
+  it('shows an error state whose retry button refetches the derived counters', async () => {
     const user = userEvent.setup();
+    let appealsFailing: boolean = true;
     server.use(
-      http.get('/api/v1/dashboard', () => HttpResponse.json({ detail: 'Boom' }, { status: 500 })),
+      http.get('/api/v1/appeals', () =>
+        appealsFailing
+          ? HttpResponse.json({ detail: 'Boom' }, { status: 500 })
+          : HttpResponse.json(appealsFixture),
+      ),
     );
     renderWithProviders(<DashboardPage />);
 
@@ -152,7 +178,7 @@ describe('DashboardPage', () => {
     expect(alert).toHaveTextContent('Nie udało się pobrać liczników');
     expect(screen.getByRole('button', { name: 'Odśwież' })).toBeInTheDocument();
 
-    server.resetHandlers();
+    appealsFailing = false;
     await user.click(screen.getByRole('button', { name: 'Odśwież' }));
 
     expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
@@ -184,17 +210,19 @@ describe('DashboardPage', () => {
     renderWithProviders(<DashboardPage />);
 
     const section: HTMLElement = await screen.findByTestId('warning-window');
-    const warningUsers = new Set<string>(
-      warningLeases(leasesFixture).map((lease: LeaseOverview): string => lease.user.login),
+    const warningPairs = new Set<string>(
+      warningLeases(getLeases()).map((lease: LeaseOverview): string => pairOf(lease)),
     );
-    const activeLease: LeaseOverview | undefined = leasesFixture.find(
+    const activeLease: LeaseOverview | undefined = getLeases().find(
       (lease: LeaseOverview): boolean =>
-        lease.status === 'ACTIVE' && !warningUsers.has(lease.user.login),
+        lease.status === 'ACTIVE' && !warningPairs.has(pairOf(lease)),
     );
 
     expect(activeLease).toBeDefined();
     expect((await within(section).findAllByRole('link')).length).toBeGreaterThan(0);
-    expect(within(section).queryByText(activeLease?.user.name ?? '')).not.toBeInTheDocument();
+    expect(
+      within(section).queryByText(activeLease === undefined ? '' : fullName(activeLease)),
+    ).not.toBeInTheDocument();
   });
 
   it('moves the warning window with the simulated clock', async () => {
@@ -218,25 +246,35 @@ describe('DashboardPage', () => {
     expect(within(section).queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('keeps the counters when the warning window fails and retries the leases', async () => {
+  it('reports a leases failure in both sections and lets each one retry on its own', async () => {
     const user = userEvent.setup();
-    let isFailing = true;
+    let leasesFailing: boolean = true;
     server.use(
       http.get('/api/v1/leases', () =>
-        isFailing
+        leasesFailing
           ? HttpResponse.json({ detail: 'Boom' }, { status: 500 })
           : HttpResponse.json(getLeases()),
       ),
     );
     renderWithProviders(<DashboardPage />);
 
+    // Liczniki i okno ostrzegawcze czytają ten sam zasób osobnymi zapytaniami, więc każda sekcja
+    // mówi o błędzie własnym alertem i własnym „Odśwież” — liczniki nie znikają po cichu.
     const section: HTMLElement = await screen.findByTestId('warning-window');
     expect(await within(section).findByText('Nie udało się pobrać dzierżaw')).toBeInTheDocument();
-    expectKpi('kpi-active', expectedCounters().active);
 
-    isFailing = false;
+    const countersError: HTMLElement = await screen.findByTestId('kpi-error');
+    expect(countersError).toHaveTextContent('Nie udało się pobrać liczników');
+
+    leasesFailing = false;
     await user.click(within(section).getByRole('button', { name: 'Odśwież' }));
 
     await expectWarningWindow(section, getLeases());
+    // Ponowienie listy nie odświeża liczników — KPI wracają dopiero po własnym ponowieniu.
+    expect(screen.queryByTestId('kpi-active')).not.toBeInTheDocument();
+
+    await user.click(within(countersError).getByRole('button', { name: 'Odśwież' }));
+    expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
+    expectKpi('kpi-active', expectedCounters().active);
   });
 });

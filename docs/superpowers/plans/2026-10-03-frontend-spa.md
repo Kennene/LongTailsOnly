@@ -57,12 +57,13 @@ zostaje na `shared/fixtures/` (dane zgodne z kontraktem, ADR 0011).
 | Audyt                   | `GET /api/v1/audit` → **goła** `list[AuditEntry]` (niesie `actor_login`)         | ✅                                                    |
 | Standard zespołu        | `GET /api/v1/teams/{slug}/baseline` → **goła** `list[BaselineEntry]`             | ✅                                                    |
 | Onboarding              | `GET /api/v1/onboarding/{login}` + `POST /api/v1/onboarding/{login}/apply`       | ✅                                                    |
-| Dzierżawy (lista)       | `GET /api/v1/leases`                                                             | ⏳ brak (zadanie 3.6) — `shared/fixtures/leases.json`  |
-| Decyzja o dzierżawie    | `POST /api/v1/leases/{id}/decision`                                              | ⏳ brak — mutacja przez MSW                            |
-| Liczniki KPI            | `GET /api/v1/dashboard/stats` (plan 4.6B)                                        | ⏳ brak — liczone z fixture'ów dzierżaw                |
-| Graf                    | `GET /api/v1/graph` (plan 4.6B)                                                  | ⏳ brak — fixture w kształcie `GraphNode`/`GraphEdge`  |
-| Aktywność               | `GET /api/v1/leases/{id}/activity-stats`                                         | ⏳ brak — liczone z `shared/fixtures/activity.json`    |
-| Decyzja o odwołaniu     | `POST /api/v1/appeals/{id}/decision` (plan 4.3C)                                 | ⏳ brak — odrzucenie idzie realnym `/reject`           |
+| Dzierżawy (lista)       | `GET /api/v1/leases` → `list[LeaseOverview]`                                     | ✅ (silnik 3.6)                                        |
+| Decyzja o dzierżawie    | `POST /api/v1/leases/{id}/decision` → `LeaseOverview`                            | ✅ (3.6) — `REVOKE`/`DOWNSCOPE` bez uzasadnienia to 422, admina nie da się przedłużyć (422) |
+| Liczniki KPI            | `GET /api/v1/dashboard/stats` (plan 4.6B)                                        | ⏳ brak — liczone z realnej listy dzierżaw, zegara i odwołań (`countDashboard`) |
+| Graf                    | `GET /api/v1/graph` (plan 4.6B)                                                  | ⏳ brak — budowany z realnych dzierżaw; bez węzłów zespołów, bo lista ich nie niesie |
+| Aktywność               | `GET /api/v1/leases/{id}/activity-stats` → `LeaseActivityStats`                  | ✅ (3.6) — okno `window_days`/`window_start`/`window_end`/`last_activity_at` z kontraktu |
+| Decyzja o odwołaniu     | `POST /api/v1/appeals/{id}/decision` (plan 4.3C)                                 | ⏳ brak — odrzucenie idzie realnym `/reject`; backend sam wskazuje tę ścieżkę w komunikacie 409 |
+| Tryb egzekwowania       | `GET/PUT /api/v1/enforcement/mode` (`disabled`/`warning`/`auto`, krok 3.5)       | ⏳ brak UI — do decyzji produktowej                     |
 
 **Scenariusze a backend.** `shared/scenarios/*.json` wołają częściowo endpointy planowane, ale
 nieistniejące: `GET /api/v1/baseline/1` (realnie `/api/v1/teams/{slug}/baseline`),

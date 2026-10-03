@@ -33,13 +33,14 @@ const REJECTION_ERROR_ID = 'appeal-rejection-error';
 const SUCCESS_MESSAGE = 'Odwołanie odrzucone';
 
 /**
- * Zatwierdzenie odwołania wymaga nadania dostępu, czyli decyzji o dzierżawie
- * (`POST /api/v1/leases/{lease_id}/decision`, krok 3.6/5.5). Backend jej jeszcze nie ma,
- * a domena odwołań ma wyłącznie `/reject` — więc przycisk zostaje wyłączony, a nie udaje
- * działającej akcji. Wybór przedłużenia zostaje jako szkic: pokazuje, co odwołanie by dało.
+ * Zatwierdzenie odwołania rozstrzyga się w domenie odwołań: backend odsyła dzierżawy z odwołaniem
+ * `PENDING` na `POST /api/v1/appeals/{id}/decision` (409, decyzja D13), a tego endpointu jeszcze nie
+ * ma (zadanie 4.3C). Domena odwołań wystawia dziś wyłącznie `/reject`, więc przycisk zostaje
+ * wyłączony, a nie udaje działającej akcji. Wybór przedłużenia zostaje jako szkic: pokazuje,
+ * co odwołanie by dało.
  */
 const APPROVE_UNAVAILABLE =
-  'Zatwierdzenie wymaga endpointu decyzji o dzierżawie (3.6/5.5) — jeszcze go nie ma.';
+  'Zatwierdzenie odwołania wymaga POST /api/v1/appeals/{id}/decision, którego backend jeszcze nie ma (zadanie 4.3C) — działa tylko odrzucenie przez /reject.';
 
 interface LeaseContext {
   repository: string;
