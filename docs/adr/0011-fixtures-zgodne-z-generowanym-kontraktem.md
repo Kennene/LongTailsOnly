@@ -1,4 +1,4 @@
-# ADR 0010: Fixtures jako dane zgodne z generowanym kontraktem (`shared/fixtures`)
+# ADR 0011: Fixtures jako dane zgodne z generowanym kontraktem (`shared/fixtures`)
 
 **Status:** Proponowany (do akceptacji zespołu) · **Autor:** Sydor (Osoba 6) · **Data:** 2026-10-03
 **Doprecyzowuje:** ADR 0009, krok 6.1 planu zespołowego

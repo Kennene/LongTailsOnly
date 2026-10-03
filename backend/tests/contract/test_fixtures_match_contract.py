@@ -1,4 +1,4 @@
-"""Validate shared/fixtures against the contract generated from Pydantic (ADR 0010).
+"""Validate shared/fixtures against the contract generated from Pydantic (ADR 0011).
 
 The fixtures are data, not a second contract: every file is validated by the very
 model that generates backend/contract/schema.json, so a rename or an enum change in

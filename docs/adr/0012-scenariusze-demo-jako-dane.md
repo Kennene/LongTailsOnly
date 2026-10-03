@@ -1,4 +1,4 @@
-# ADR 0011: Scenariusze demonstracyjne jako wykonywalne dane (`shared/scenarios`)
+# ADR 0012: Scenariusze demonstracyjne jako wykonywalne dane (`shared/scenarios`)
 
 **Status:** Proponowany (do akceptacji zespołu) · **Autor:** Sydor (Osoba 6) · **Data:** 2026-10-03
 **Doprecyzowuje:** `PRODUKT.md` UC-1…UC-5, krok 6.2 planu zespołowego

@@ -1,4 +1,4 @@
-"""Demo scenario validation (ADR 0011).
+"""Demo scenario validation (ADR 0012).
 
 Scenarios are executable data: shared/scenarios/*.json drive both the demo script
 and, once the view endpoints exist, the end-to-end tests in tests/integration/.

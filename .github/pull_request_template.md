@@ -1,4 +1,4 @@
-<!-- Szablon PR. Lista kontrolna jest wymagana przez ADR 0012. -->
+<!-- Szablon PR. Lista kontrolna jest wymagana przez ADR 0013. -->
 
 ## Co zmienia ten PR
 

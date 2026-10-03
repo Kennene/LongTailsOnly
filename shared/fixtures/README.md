@@ -3,7 +3,7 @@
 Zamrożone dane, na których frontend może budować widoki zanim powstaną endpointy pod te widoki.
 Fixtures **nie są drugim kontraktem** — są danymi zgodnymi z kontraktem generowanym z Pydantic
 ([ADR 0009](../../docs/adr/0009-api-contract-typescript-generation.md),
-[ADR 0010](../../docs/adr/0010-fixtures-zgodne-z-generowanym-kontraktem.md)).
+[ADR 0011](../../docs/adr/0011-fixtures-zgodne-z-generowanym-kontraktem.md)).
 
 Źródło prawdy kształtu: `backend/contract/schema.json`, generowany z `backend/app/schemas/`.
 Każdy plik jest walidowany **tym samym modelem Pydantic**, który generuje kontrakt:

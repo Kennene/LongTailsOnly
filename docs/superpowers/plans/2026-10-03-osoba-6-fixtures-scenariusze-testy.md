@@ -55,9 +55,9 @@ Napisane w tej sesji, numeracja **0010+** — 0006–0009 zajęła Osoba 1 (koli
 
 | ADR | Decyzja | Implementuje |
 | --- | --- | --- |
-| [0010](../../adr/0010-fixtures-zgodne-z-generowanym-kontraktem.md) | Fixtures to dane zgodne z generowanym kontraktem, walidowane modelem Pydantic; koperta paginacyjna odłożona | Task 2 |
-| [0011](../../adr/0011-scenariusze-demo-jako-dane.md) | Scenariusze UC-1…UC-5 jako wykonywalne dane w `shared/scenarios/` | Task 3, 4 |
-| [0012](../../adr/0012-prelint-i-straz-adr-w-procesie-pr.md) | Prelint jako pamięć decyzji, straż ADR-ów, indeks ADR-ów, sprawdzenia repo-owe w `backend/tests/repo/` | Task 1 |
+| [0011](../../adr/0011-fixtures-zgodne-z-generowanym-kontraktem.md) | Fixtures to dane zgodne z generowanym kontraktem, walidowane modelem Pydantic; koperta paginacyjna odłożona | Task 2 |
+| [0012](../../adr/0012-scenariusze-demo-jako-dane.md) | Scenariusze UC-1…UC-5 jako wykonywalne dane w `shared/scenarios/` | Task 3, 4 |
+| [0013](../../adr/0013-prelint-i-straz-adr-w-procesie-pr.md) | Prelint jako pamięć decyzji, straż ADR-ów, indeks ADR-ów, sprawdzenia repo-owe w `backend/tests/repo/` | Task 1 |
 
 ## Struktura plików
 
@@ -90,7 +90,7 @@ Napisane w tej sesji, numeracja **0010+** — 0006–0009 zajęła Osoba 1 (koli
 - Create: `.github/pull_request_template.md` (już utworzony)
 - Create: `.gitignore` (już utworzony)
 - Create: `docs/adr/README.md` (już utworzony, indeks 0001–0012)
-- Consumes: `docs/adr/0012-prelint-i-straz-adr-w-procesie-pr.md`
+- Consumes: `docs/adr/0013-prelint-i-straz-adr-w-procesie-pr.md`
 - Produces: komenda `cd backend; .\.venv\Scripts\python.exe -m pytest tests/repo -q` działająca bez nowych zależności
 
 **Interfejs:** testy czytają pliki spoza `backend/`, wyliczając katalog główny jako `Path(__file__).resolve().parents[3]`.
@@ -140,7 +140,7 @@ Expected: PASS — 79 testów (73 z `main` + 6 nowych).
 
 - [ ] **Step 6: Zapisz decyzję do Prelinta**
 
-Wyślij treść ADR 0012 w całości: śledzenie `.mcp.json`, lista kontrolna ADR w PR, indeks ADR-ów, sprawdzenia repo-owe w `backend/tests/repo/` zamiast osobnego projektu `tools/`, oraz reguła sprawdzania `origin/main` przed nadaniem numeru ADR-a — wraz z uzasadnieniem (kolizja 0006–0008) i odrzuconą opcją osobnego projektu `tools/`.
+Wyślij treść ADR 0013 w całości: śledzenie `.mcp.json`, lista kontrolna ADR w PR, indeks ADR-ów, sprawdzenia repo-owe w `backend/tests/repo/` zamiast osobnego projektu `tools/`, oraz reguła sprawdzania `origin/main` przed nadaniem numeru ADR-a — wraz z uzasadnieniem (kolizja 0006–0008) i odrzuconą opcją osobnego projektu `tools/`.
 
 - [ ] **Step 7: Commit**
 

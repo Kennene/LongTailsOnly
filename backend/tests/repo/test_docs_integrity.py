@@ -1,4 +1,4 @@
-"""Repo-level consistency checks (ADR 0012).
+"""Repo-level consistency checks (ADR 0013).
 
 These tests read files outside ``backend/`` — the ADR index, the PR template,
 the MCP config and .gitignore — so they resolve the repository root from
