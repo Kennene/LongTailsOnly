@@ -61,6 +61,62 @@ export interface AppealCreate {
   lease_id: number;
 }
 /**
+ * Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0010 §4).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "AppealOverview".
+ */
+export interface AppealOverview {
+  created_at: string;
+  days_remaining: number | null;
+  id: number;
+  justification: string;
+  lease_expires_at: string | null;
+  lease_id: number;
+  lease_is_active: boolean;
+  lease_role: Role;
+  previous_appeals: number;
+  recent_activity_count: number;
+  repo_id: number;
+  repository: RepositoryRead;
+  requested_role: Role;
+  resolved_at: string | null;
+  status: AppealStatus;
+  user: UserRead;
+  user_id: number;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "RepositoryRead".
+ */
+export interface RepositoryRead {
+  default_branch: string;
+  default_lease_duration_days: number;
+  id: number;
+  name: string;
+  owner: string;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "UserRead".
+ */
+export interface UserRead {
+  id: number;
+  is_admin: boolean;
+  login: string;
+  name: string;
+  team: TeamRead | null;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "TeamRead".
+ */
+export interface TeamRead {
+  id: number;
+  name: string;
+  slug: string;
+}
+/**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "AppealRead".
  */
@@ -74,6 +130,13 @@ export interface AppealRead {
   resolved_at: string | null;
   status: AppealStatus;
   user_id: number;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "AppealRejectRequest".
+ */
+export interface AppealRejectRequest {
+  justification: string;
 }
 /**
  * Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0010 §4).
@@ -120,17 +183,6 @@ export interface BaselineEntry {
   repository: RepositoryRead;
   team_id: number;
   team_size: number;
-}
-/**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
- * via the `definition` "RepositoryRead".
- */
-export interface RepositoryRead {
-  default_branch: string;
-  default_lease_duration_days: number;
-  id: number;
-  name: string;
-  owner: string;
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
@@ -190,26 +242,6 @@ export interface LeaseOverview {
   repository: RepositoryRead;
   status: LeaseStatus;
   user: UserRead;
-}
-/**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
- * via the `definition` "UserRead".
- */
-export interface UserRead {
-  id: number;
-  is_admin: boolean;
-  login: string;
-  name: string;
-  team: TeamRead | null;
-}
-/**
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
- * via the `definition` "TeamRead".
- */
-export interface TeamRead {
-  id: number;
-  name: string;
-  slug: string;
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema

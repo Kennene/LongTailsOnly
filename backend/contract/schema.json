@@ -72,6 +72,107 @@
       "title": "AppealCreate",
       "type": "object"
     },
+    "AppealOverview": {
+      "description": "Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0010 \u00a74).",
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "days_remaining": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "type": "integer"
+        },
+        "justification": {
+          "type": "string"
+        },
+        "lease_expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lease_id": {
+          "type": "integer"
+        },
+        "lease_is_active": {
+          "type": "boolean"
+        },
+        "lease_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "previous_appeals": {
+          "type": "integer"
+        },
+        "recent_activity_count": {
+          "type": "integer"
+        },
+        "repo_id": {
+          "type": "integer"
+        },
+        "repository": {
+          "$ref": "#/$defs/RepositoryRead"
+        },
+        "requested_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/AppealStatus"
+        },
+        "user": {
+          "$ref": "#/$defs/UserRead"
+        },
+        "user_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "lease_id",
+        "user_id",
+        "repo_id",
+        "requested_role",
+        "justification",
+        "status",
+        "created_at",
+        "resolved_at",
+        "user",
+        "repository",
+        "lease_role",
+        "lease_expires_at",
+        "lease_is_active",
+        "days_remaining",
+        "recent_activity_count",
+        "previous_appeals"
+      ],
+      "title": "AppealOverview",
+      "type": "object"
+    },
     "AppealRead": {
       "properties": {
         "created_at": {
@@ -123,6 +224,20 @@
         "resolved_at"
       ],
       "title": "AppealRead",
+      "type": "object"
+    },
+    "AppealRejectRequest": {
+      "properties": {
+        "justification": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "justification"
+      ],
+      "title": "AppealRejectRequest",
       "type": "object"
     },
     "AppealStatus": {
