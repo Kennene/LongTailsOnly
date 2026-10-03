@@ -65,7 +65,9 @@ Jedna rodzina tekstowa: **Geist Variable** (`--font-sans`, `--font-heading`). Sk
 | Chrome: nazwa produktu w TopBarze      | `text-sm font-medium` (`min-h-14`)                    |
 | Chrome: podtytuł w TopBarze, nawigacja | `text-xs text-muted-foreground`                       |
 
-**Hierarchia stron:** `h1` jest jedynym elementem `text-2xl` na ekranie i jedynym mocnym akcentem typograficznym — przy gęstej treści `text-sm` daje czytelny skok rangi w stosunku do tytułów kart (`text-base`). Chrome (TopBar, Sidebar) nigdy nie przekracza `text-sm`: pasek ma zostać cichy, żeby tytuł strony i dane były jedynym, co przyciąga wzrok. Sekcje wewnątrz widoku nie powtarzają rozmiaru `h1` — schodzą do `text-base font-medium`.
+**Hierarchia stron:** `h1` jest jedynym elementem `text-2xl` w **fonte sans** na ekranie i jedynym mocnym akcentem typograficznym — przy gęstej treści `text-sm` daje czytelny skok rangi w stosunku do tytułów kart (`text-base`). Liczby KPI są jedynymi elementami `text-2xl` w **fonte mono** (tabela wyżej), więc obie 24-pikselowe role są rozłączne: nagłówek mówi „gdzie jesteś”, licznik mówi „ile”. Chrome (TopBar, Sidebar) nigdy nie przekracza `text-sm`: pasek ma zostać cichy, żeby tytuł strony i dane były jedynym, co przyciąga wzrok. Sekcje wewnątrz widoku nie powtarzają rozmiaru `h1` — schodzą do `text-base font-medium`.
+
+**Dolna granica skali:** `text-xs` (12 px) to najmniejszy rozmiar **treści** — tabel, formularzy, komunikatów i etykiet stanu. Poniżej wolno zejść wyłącznie w chrome, które nie niesie informacji krytycznej: pasek czasu symulowanego (`text-[0.7rem]` ≈ 11,2 px) i legenda grafu (`text-[0.65rem]` ≈ 10,4 px). Arbitralne `text-[…]` poza tymi dwoma miejscami są błędem — gdy brakuje rozmiaru, dodajemy token, a nie wartość w locie.
 
 **Mono (`--font-mono`) tylko dla danych, nigdy dla dekoracji:** loginy (`kamil-dev`), nazwy repozytoriów (`payment-gw`), identyfikatory i numery dzierżaw, daty i godziny, liczby w kartach KPI. Nie używamy mono w nagłówkach, przyciskach ani etykietach stanu — wyjątkiem są identyfikatory wewnątrz zdania.
 
@@ -75,6 +77,7 @@ Liczby w tabelach są tabularne globalnie (`table { font-variant-numeric: tabula
 
 - Rytm: skala Tailwinda co `4px`; wewnątrz grupy `gap-1`/`gap-2`, między grupami `gap-4`, między sekcjami `gap-8`. Nad nagłówkiem zawsze więcej powietrza niż pod nim.
 - Gęstość jest cechą tego produktu: wysokość wiersza tabeli ≈ `36–40px`, komórka `p-2`, przyciski `h-8` (`sm: h-7`, `xs: h-6`). Nie rozdymujemy interfejsu dla oddechu — administrator skanuje dziesiątki wierszy.
+- **Jak utrzymać 36–40 px (mechanizm, nie życzenie).** Sam limit wysokości nic nie znaczy, dopóki nie wiadomo, co zrobić z długą treścią — dlatego: (1) komórki tożsamości i repozytorium są jednowierszowe (`whitespace-nowrap`); (2) szerokość **rezerwujemy**, nie tylko ograniczamy — `w-* max-w-*` (sam `max-w-*` w `table-layout: auto` nic nie rezerwuje, a samo `w-*` bywa rozciągane przez treść; trzymają dopiero razem); (3) długa proza (uzasadnienie w dzienniku audytu) dostaje `line-clamp-2` + pełny tekst w `title`, zamiast zawijać się w nieskończoność; (4) gdy kolumn jest więcej, niż mieści kontener, **zwijamy shell** (rail ikon poniżej `xl`) i chowamy kolumny drugorzędne (`hidden 2xl:table-cell`) — nie ucinamy danych — a kolumna z decyzją zostaje `sticky right-0`, żeby akcja była osiągalna przy każdym przewinięciu.
 - `--radius: 0.5rem` (konsola jest ostrzejsza niż domyślne shadcn): `rounded-lg` dla przycisków i pól, `rounded-xl` dla kart, `rounded-4xl` dla badge'y (pigułka), `rounded-md` dla wewnętrznych kafelków.
 - Obramowania: `--border` (12% bieli w dark, `#dbdee2` w light) zamiast cieni; cień tylko dla warstw unoszących się nad treścią (popover, dialog, toast).
 

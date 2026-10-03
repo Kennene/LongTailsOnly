@@ -16,13 +16,14 @@ export function Sidebar(): React.JSX.Element {
   return (
     <aside
       data-slot="sidebar"
-      className="flex h-dvh w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
+      className="flex h-dvh w-16 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground xl:w-60"
     >
-      <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4">
+      <div className="flex h-14 shrink-0 items-center justify-center gap-2.5 border-b border-sidebar-border px-2 xl:justify-start xl:px-4">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
           <ShieldCheck className="size-4" aria-hidden="true" />
         </span>
-        <span className="flex min-w-0 flex-col leading-tight">
+        {/* Nazwa produktu zostaje w drzewie dostępności także w zwiniętym pasku (`sr-only`). */}
+        <span className="sr-only flex min-w-0 flex-col leading-tight xl:not-sr-only">
           <span className="truncate text-sm font-semibold">Lease Governor</span>
           <span className="truncate text-[11px] text-muted-foreground">Dostęp do GitHub</span>
         </span>
@@ -36,9 +37,12 @@ export function Sidebar(): React.JSX.Element {
           <NavLink
             key={item.to}
             to={item.to}
+            title={item.label}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
+                // Poniżej `xl` pasek jest zwinięty do ikon: etykieta jest `sr-only`,
+                // więc nazwa dostępna linku nie zależy od widocznego tekstu.
+                'flex min-h-9 items-center justify-center gap-2.5 rounded-md px-2 py-2 text-sm transition-colors xl:justify-start xl:px-3',
                 isActive
                   ? 'bg-sidebar-primary font-medium text-sidebar-primary-foreground'
                   : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -46,12 +50,12 @@ export function Sidebar(): React.JSX.Element {
             }
           >
             <item.icon className="size-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{item.label}</span>
+            <span className="sr-only xl:not-sr-only xl:truncate">{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
-      <p className="shrink-0 border-t border-sidebar-border px-4 py-3 text-[11px] text-muted-foreground">
+      <p className="hidden shrink-0 border-t border-sidebar-border px-4 py-3 text-[11px] text-muted-foreground xl:block">
         Demo — zegar symulowany
       </p>
     </aside>
