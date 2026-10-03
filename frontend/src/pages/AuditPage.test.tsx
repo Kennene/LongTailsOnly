@@ -8,7 +8,7 @@ import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import type { AuditEntry } from '@/types/api';
 
-const COLUMN_HEADERS: string[] = ['Czas', 'Aktor', 'Akcja', 'Cel', 'Uzasadnienie'];
+const COLUMN_HEADERS: string[] = ['Aktor', 'Czas', 'Akcja', 'Cel', 'Uzasadnienie'];
 const EMPTY_STATE = 'Brak zdarzeń w dzienniku';
 const API_ERROR = 'Dziennik audytu jest niedostępny';
 
@@ -93,7 +93,7 @@ it('keeps the time and actor cells on a single line', async () => {
 
   const rows: HTMLElement[] = within(screen.getByRole('table')).getAllByRole('row');
   const cells: HTMLElement[] = within(rows[1]).getAllByRole('cell');
-  const [timeCell, actorCell] = cells;
+  const [actorCell, timeCell] = cells;
 
   expect(timeCell).toHaveClass('whitespace-nowrap');
   expect(actorCell).toHaveClass('whitespace-nowrap');
@@ -106,16 +106,16 @@ it('shows the actor login the backend resolved instead of the numeric id', async
 
   expect(await screen.findByRole('button', { name: 'Pokaż wpisy: SYSTEM' })).toBeInTheDocument();
 
-  const adminCell: HTMLElement = within(actorRow('tomasz-admin')).getAllByRole('cell')[1];
+  const adminCell: HTMLElement = within(actorRow('tomasz-admin')).getAllByRole('cell')[0];
   expect(adminCell).toHaveTextContent('ADMIN tomasz-admin');
   expect(adminCell).not.toHaveTextContent('#1');
 
-  const userCell: HTMLElement = within(actorRow('kamil')).getAllByRole('cell')[1];
+  const userCell: HTMLElement = within(actorRow('kamil')).getAllByRole('cell')[0];
   expect(userCell).toHaveTextContent('USER kamil');
   expect(userCell).not.toHaveTextContent('#2');
 
   // SYSTEM nie ma człowieka, więc nie ma loginu — komórka pokazuje typ i kreskę, nigdy pustkę.
-  const systemCell: HTMLElement = within(actorRow('SYSTEM')).getAllByRole('cell')[1];
+  const systemCell: HTMLElement = within(actorRow('SYSTEM')).getAllByRole('cell')[0];
   expect(systemCell).toHaveTextContent('SYSTEM —');
   expect(systemCell.textContent?.trim()).not.toBe('');
 });

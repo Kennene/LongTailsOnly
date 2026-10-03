@@ -1,13 +1,11 @@
-import type { ReactNode } from 'react';
-
 import { ExpandAllButton } from '@/components/common/ExpandToggle';
+import { HeadCell } from '@/components/common/TableCells';
 import { LeaseGroupRows } from '@/components/leases/LeaseGroupRows';
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import { groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { ACTION_COLUMN, SECONDARY_COLUMN } from '@/components/leases/leaseTableLayout';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableHeader, TableRow } from '@/components/ui/table';
 import { useExpandedSet } from '@/hooks/useExpandedSet';
-import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
 
 export interface LeaseTableProps {
@@ -42,23 +40,21 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
       <Table>
         <TableHeader>
           <TableRow>
-            <HeadCell className="text-left">Użytkownik</HeadCell>
+            <HeadCell leading>Użytkownik</HeadCell>
             <HeadCell className={SECONDARY_COLUMN}>Zespół</HeadCell>
             <HeadCell>Repozytorium</HeadCell>
             {/* „Poziom”, „Status” i „Akcje” dotyczą dostępu, nie osoby: na ekranie stają w wierszu
                 osoby dopiero po jej rozwinięciu, a nagłówek trzyma je tylko dla czytników ekranu. */}
-            <HeadCell className={SECONDARY_COLUMN}>
-              <span className="sr-only">Poziom</span>
+            <HeadCell srOnly className={SECONDARY_COLUMN}>
+              Poziom
             </HeadCell>
             <HeadCell>Ostatnia aktywność</HeadCell>
             <HeadCell>Pozostało</HeadCell>
-            <HeadCell>
-              <span className="sr-only">Status</span>
-            </HeadCell>
+            <HeadCell srOnly>Status</HeadCell>
             <HeadCell>Rekomendacja</HeadCell>
             {onDecide === undefined ? null : (
-              <HeadCell className={ACTION_COLUMN}>
-                <span className="sr-only">Akcje</span>
+              <HeadCell srOnly className={ACTION_COLUMN}>
+                Akcje
               </HeadCell>
             )}
           </TableRow>
@@ -76,16 +72,5 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
         </TableBody>
       </Table>
     </div>
-  );
-}
-
-interface HeadCellProps {
-  children: ReactNode;
-  className?: string;
-}
-
-function HeadCell({ children, className }: HeadCellProps): React.JSX.Element {
-  return (
-    <TableHead className={cn('text-center text-muted-foreground', className)}>{children}</TableHead>
   );
 }

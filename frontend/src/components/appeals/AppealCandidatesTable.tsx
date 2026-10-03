@@ -1,18 +1,13 @@
 import { ExpandAllButton, ExpandToggle } from '@/components/common/ExpandToggle';
+import { CELL_CENTER, ColumnCaption, HeadCell } from '@/components/common/TableCells';
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import { formatRepositoryCount, groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { RoleBadge } from '@/components/leases/RoleBadge';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import { formatDaysRemaining } from '@/lib/dateTime';
-import { getRoleLabel } from '@/lib/statusBadges';
+import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
 
 export interface AppealCandidatesTableProps {
@@ -39,11 +34,12 @@ export function AppealCandidatesTable({ leases }: AppealCandidatesTableProps): R
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Osoba</TableHead>
-            <TableHead>Repozytorium</TableHead>
-            <TableHead>Poziom</TableHead>
-            <TableHead>Pozostało</TableHead>
-            <TableHead>Status</TableHead>
+            <HeadCell leading>Użytkownik</HeadCell>
+            <HeadCell>Repozytorium</HeadCell>
+            {/* „Poziom” i „Status” opisują dostęp, nie osobę — jak w tabeli Dostępów. */}
+            <HeadCell srOnly>Poziom</HeadCell>
+            <HeadCell>Pozostało</HeadCell>
+            <HeadCell srOnly>Status</HeadCell>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -86,22 +82,34 @@ function CandidateGroupRows({
             <span className="font-medium">{group.user.name}</span>
           </div>
         </TableCell>
-        <TableCell className="text-muted-foreground">
+        <TableCell className={cn(CELL_CENTER, 'text-muted-foreground')}>
           {formatRepositoryCount(group.leases.length)}
         </TableCell>
-        <TableCell />
-        <TableCell>{formatDaysRemaining(group.mostUrgent.days_remaining)}</TableCell>
+        <TableCell className={CELL_CENTER}>
+          {expanded ? <ColumnCaption>Poziom</ColumnCaption> : null}
+        </TableCell>
+        <TableCell className={CELL_CENTER}>
+          {formatDaysRemaining(group.mostUrgent.days_remaining)}
+        </TableCell>
         {/* Status należy do dostępu, nie do osoby — pokazują go dopiero wiersze repozytoriów. */}
-        <TableCell />
+        <TableCell className={CELL_CENTER}>
+          {expanded ? <ColumnCaption>Status</ColumnCaption> : null}
+        </TableCell>
       </TableRow>
       {expanded
         ? group.leases.map((lease: LeaseOverview): React.JSX.Element => (
             <TableRow key={lease.id} className="bg-muted/20">
               <TableCell />
-              <TableCell className="font-mono text-xs">{lease.repository.name}</TableCell>
-              <TableCell>{getRoleLabel(lease.current_role)}</TableCell>
-              <TableCell>{formatDaysRemaining(lease.days_remaining)}</TableCell>
-              <TableCell>
+              <TableCell className={cn(CELL_CENTER, 'font-mono')}>
+                {`${lease.repository.owner}/${lease.repository.name}`}
+              </TableCell>
+              <TableCell className={CELL_CENTER}>
+                <RoleBadge role={lease.current_role} />
+              </TableCell>
+              <TableCell className={CELL_CENTER}>
+                {formatDaysRemaining(lease.days_remaining)}
+              </TableCell>
+              <TableCell className={CELL_CENTER}>
                 <LeaseStatusBadge status={lease.status} />
               </TableCell>
             </TableRow>

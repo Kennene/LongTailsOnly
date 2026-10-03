@@ -1,14 +1,8 @@
+import { CELL_CENTER, HeadCell } from '@/components/common/TableCells';
+import { RoleBadge } from '@/components/leases/RoleBadge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { getRoleLabel } from '@/lib/statusBadges';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import type { BaselineEntry } from '@/types/api';
 
 export interface BaselineTableProps {
@@ -40,9 +34,9 @@ export function BaselineTable({ entries }: BaselineTableProps): React.JSX.Elemen
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Repozytorium</TableHead>
-                <TableHead>Proponowana rola</TableHead>
-                <TableHead>Aktywni członkowie</TableHead>
+                <HeadCell leading>Repozytorium</HeadCell>
+                <HeadCell>Proponowana rola</HeadCell>
+                <HeadCell>Aktywni członkowie</HeadCell>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -51,8 +45,10 @@ export function BaselineTable({ entries }: BaselineTableProps): React.JSX.Elemen
                   <TableCell className="font-mono">
                     {entry.repository.owner}/{entry.repository.name}
                   </TableCell>
-                  <TableCell>{getRoleLabel(entry.proposed_role)}</TableCell>
-                  <TableCell>
+                  <TableCell className={CELL_CENTER}>
+                    <RoleBadge role={entry.proposed_role} />
+                  </TableCell>
+                  <TableCell className={CELL_CENTER}>
                     {entry.active_members}/{entry.team_size}
                   </TableCell>
                 </TableRow>
