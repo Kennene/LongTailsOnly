@@ -7,7 +7,7 @@ from app.domain.jira_roles import JiraRole
 from app.models import Repository
 from app.schemas.jira_payloads import JiraRoleSummary, ProjectRole, api
 
-router = APIRouter()
+router = APIRouter(tags=["Jira · Role projektowe"])
 
 
 def _base(request: Request) -> str:

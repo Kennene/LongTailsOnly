@@ -32,7 +32,7 @@ uv sync --extra dev                       # Python 3.14
 uv run uvicorn app.main:app --reload      # http://127.0.0.1:8000
 ```
 
-* Swagger: `http://127.0.0.1:8000/docs`.
+* Swagger: `http://127.0.0.1:8000/docs` (API produktu) i osobny `http://127.0.0.1:8000/mocks/docs` (mocki GitHuba i Jiry, pogrupowane tematycznie; `app/api/mock_docs.py`).
 * Przy starcie serwer wykonuje migracje, wgrywa seed demo (ADR 0008) i **dokłada aktywność mocka** (`seed_activity_extras`, sekcja 6).
 * **Reset demo:** `POST /api/v1/demo/reset` (czyści bazę, zeruje zegar, ładuje seed + aktywność od nowa).
 * Zegar symulacji jest w pamięci: restart serwera = powrót do czasu rzeczywistego.
