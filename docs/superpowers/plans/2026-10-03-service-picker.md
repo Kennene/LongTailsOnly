@@ -811,6 +811,11 @@ Expected: **exactly 2 failed** — the same two pre-existing collisions. If the 
 
 `frontend/README.md`: document the new `src/services/` module and the `lease-governor.service` `localStorage` key.
 
+**Two things ADR 0014 must state explicitly rather than leave implied:**
+
+1. **Registration is declarative, not functional, today.** Both adapters call `register(...)`, but the catalog is served from the `_BUILTIN` entries, so those calls are a checked no-op (Ruling 10). Say so plainly — the ADR must not read as working plugin discovery.
+2. **Jira is deliberately deferred.** A real second provider (`backend/app/api/jira_mock/`, ADR 0016, the `Repository.provider` column via `alembic/versions/0002_repository_provider.py`) exists on `remotes/origin/jira_mock` and is not merged into `frontend-integration` or `main`. The decision was to finish this branch without it and add its frontend registry entry as a separate task. Also record that because an unregistered service now degrades to the dashboard rather than blanking the shell (Ruling 12), Jira will be immediately usable — with a generic glyph and only the shared routes — the moment it merges. Note that their `Provider` enum (GITHUB/JIRA) is orthogonal to `ServiceKind` (VCS/ISSUE_TRACKER/CLOUD_IAM), so the two do not clash.
+
 - [ ] **Step 5: Commit**
 
 ```bash
