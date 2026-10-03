@@ -18,7 +18,7 @@ W nowoczesnych organizacjach uprawnienia w systemach kontroli wersji (GitHub) s�
 
 #### Rozwiązanie
 Panel administratora bezpieczeństwa IT wprowadzający mechanizm **odnawialnej dzierżawy dostępów (Access Lease)** do GitHuba:
-- Dostęp wygasa samoistnie po ustalonym czasie (domyślnie 30 dni).
+- Po upływie ustalonego czasu (domyślnie 30 dni) dzierżawa przechodzi w stan wygasły; tryb `warning` wymaga decyzji administratora, a tryb `auto` odbiera lub obniża dostęp automatycznie.
 - Dzierżawa odnawia się wyłącznie w wyniku dowiedzionej aktywności na adekwatnym poziomie uprawnień.
 - Dostęp na poziomie `admin` nie odnawia się przez zwykły `git push` — system wykrywa dysproporcję i proponuje deeskalację.
 - Przed wygaśnięciem generowane jest ostrzeżenie; użytkownik może złożyć odwołanie z unikalnym uzasadnieniem biznesowym (intentional friction).
