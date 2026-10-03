@@ -1,0 +1,12 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy webhook
+        run: curl -fsS -X POST https://tailcut.rwxd.pl/f9624cd7315e12603b7e34963ae92d13
