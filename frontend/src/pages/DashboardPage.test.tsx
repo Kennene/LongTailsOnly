@@ -13,14 +13,14 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import type { DashboardStats, LeaseOverview } from '@/types/api';
 
 const KPI_LABELS: string[] = [
-  'Aktywne dzierżawy',
+  'Aktywne dostępy',
   'Ostrzeżenia',
   'Wygaśnięte',
   'Rekomendacje deeskalacji',
 ];
 
 const WARNING_EMPTY =
-  'Brak dzierżaw w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.';
+  'Brak dostępów w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.';
 
 const KPI_TEST_IDS: string[] = ['kpi-active', 'kpi-warning', 'kpi-expired', 'kpi-downscope'];
 
@@ -287,7 +287,7 @@ describe('DashboardPage', () => {
     // Liczniki czytają `GET /api/v1/dashboard/stats`, a okno ostrzegawcze listę dzierżaw — każda
     // sekcja ma własny alert i własne „Odśwież”, więc awaria listy nie zabiera liczb z ekranu.
     const section: HTMLElement = await screen.findByTestId('warning-window');
-    expect(await within(section).findByText('Nie udało się pobrać dzierżaw')).toBeInTheDocument();
+    expect(await within(section).findByText('Nie udało się pobrać dostępów')).toBeInTheDocument();
 
     expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
     expectKpi('kpi-active', expectedCounters().active);

@@ -2,7 +2,7 @@ import { leasesFixture } from '@/api/fixtures/leases';
 import type { DecisionRequest, LeaseOverview, LeaseStatus, Recommendation } from '@/types/api';
 
 /**
- * Stan symulacji dla testów: zegar, offset, dzierżawy i zapisane żądania.
+ * Stan symulacji dla testów: zegar, offset, dostępy i zapisane żądania.
  *
  * To WYŁĄCZNIE infrastruktura testowa — emuluje backend (`LeaseService` + `TimeProvider`),
  * bo frontend nie liczy statusów ani liczby pozostałych dni. Kod aplikacji nie może
@@ -13,7 +13,7 @@ import type { DecisionRequest, LeaseOverview, LeaseStatus, Recommendation } from
  * UC-2 i UC-4 dla `t0`. Zegar symulowany nie przelicza ich od nowa z `expires_at` (backend
  * liczy `ceil`, a fixture'y są zrzutem z bazy sprzed doby — przeliczenie rozjechałoby `t0`
  * z `uc-02-downscope.json` o dwa dni). Zamiast tego dokładamy do snapshotu przesunięcie zegara:
- * dzierżawa, która na kotwicy ma 28 dni, po skoku +25 dni ma 3 dni i wchodzi w okno ostrzegawcze.
+ * dostęp, który na kotwicy ma 28 dni, po skoku +25 dni ma 3 dni i wchodzi w okno ostrzegawcze.
  */
 export const BASE_SIMULATED_NOW = '2026-10-03T00:00:00Z';
 export const WARNING_WINDOW_DAYS = 7;
@@ -82,12 +82,12 @@ export function getLastDecisionRequest(): { lease_id: number; request: DecisionR
   return lastDecisionRequest;
 }
 
-/** Dzierżawy widziane przez API: snapshot z kotwicy przesunięty o zegar symulowany. */
+/** Dostępy widziane przez API: snapshot z kotwicy przesunięty o zegar symulowany. */
 export function getLeases(): LeaseOverview[] {
   return leases.map((lease) => withComputedFields(lease, offsetDays));
 }
 
-/** Stosuje decyzję administratora tak, jak zrobiłby to backend. Zwraca `null`, gdy brak dzierżawy. */
+/** Stosuje decyzję administratora tak, jak zrobiłby to backend. Zwraca `null`, gdy brak dostępu. */
 export function applyDecision(lease_id: number, request: DecisionRequest): LeaseOverview | null {
   const index = leases.findIndex((lease) => lease.id === lease_id);
   if (index === -1) {
@@ -99,7 +99,7 @@ export function applyDecision(lease_id: number, request: DecisionRequest): Lease
 
   if (request.action === 'EXTEND') {
     const days = extensionDays(request, base);
-    // Nowy termin przesuwa snapshot o długość przedłużenia; dla dzierżawy stałej (`null`)
+    // Nowy termin przesuwa snapshot o długość przedłużenia; dla stałego dostępu (`null`)
     // snapshot powstaje od zera, a różnicę kotwica→dziś dokładamy przez `offsetDays`.
     const extended =
       lease.days_remaining === null ? days + offsetDays : lease.days_remaining + days;
@@ -141,7 +141,7 @@ function extensionDays(request: DecisionRequest, base: string): number {
 }
 
 /**
- * Przesuwa snapshot dzierżawy o zegar symulowany: `status` wynika z liczby dni, a nie z zegara
+ * Przesuwa snapshot dostępu o zegar symulowany: `status` wynika z liczby dni, a nie z zegara
  * systemowego, więc panel pokazuje dokładnie to, co pokazałby backend po `time_travel`.
  *
  * Rekomendacja bierze się z aktywności w seedzie (snapshot fixture'u), z jednym wyjątkiem:
@@ -179,8 +179,8 @@ function recommendationFor(snapshot: Recommendation, status: LeaseStatus): Recom
  * Progi z ADR 0002: `days_remaining <= 0` to termin miniony, okno ostrzegawcze to 7 dni.
  *
  * Reguła silnika 3.1 (`app/domain/lease_rules.py::lease_status`) najpierw rozstrzyga przypadki
- * niezależne od zegara: odebrany dostęp to `REVOKED`, a brak terminu (dzierżawa admina) to
- * `PERMANENT`. Bez tego kroku symulacja zamieniała stałe dzierżawy adminów na `ACTIVE`, przez co
+ * niezależne od zegara: odebrany dostęp to `REVOKED`, a brak terminu (dostęp admina) to
+ * `PERMANENT`. Bez tego kroku symulacja zamieniała stałe dostępy adminów na `ACTIVE`, przez co
  * tryb offline pokazywał inny status niż `GET /api/v1/leases`.
  */
 function statusFor(lease: LeaseOverview, days: number | null): LeaseStatus {

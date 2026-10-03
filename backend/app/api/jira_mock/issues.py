@@ -12,7 +12,7 @@ from app.models import User
 from app.services.jira_issue_service import IssueView
 from app.utils.dates import jira_dt
 
-router = APIRouter()
+router = APIRouter(tags=["Jira · Zgłoszenia"])
 Page = Annotated[PageParams, Depends()]
 
 

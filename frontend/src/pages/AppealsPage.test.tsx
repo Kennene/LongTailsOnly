@@ -23,21 +23,21 @@ const REJECTION_JUSTIFICATION = 'Brak konkretnego planu użycia dostępu w tym t
 const FORM_ERROR = 'Uzasadnienie jest wymagane';
 const DUPLICATE_MESSAGE = 'To uzasadnienie zostało już użyte przy innym odwołaniu. Podaj inne.';
 const NOT_APPEALABLE_MESSAGE =
-  'Odwołanie można złożyć tylko dla odebranej dzierżawy albo takiej, która wygasa w ciągu 7 dni.';
-const PENDING_APPEAL_MESSAGE = 'Ta dzierżawa ma już nierozpatrzone odwołanie.';
+  'Odwołanie można złożyć tylko dla odebranego dostępu albo takiego, który wygasa w ciągu 7 dni.';
+const PENDING_APPEAL_MESSAGE = 'Ten dostęp ma już nierozpatrzone odwołanie.';
 const EMPTY_STATE =
-  'Brak dzierżaw do odwołania — odwołanie przysługuje odebranym dzierżawom oraz tym, które wygasły albo wygasają w ciągu 7 dni.';
+  'Brak dostępów do odwołania — odwołanie przysługuje odebranym dostępom oraz tym, które wygasły albo wygasają w ciągu 7 dni.';
 const SUBMITTED_LIST = 'Złożone odwołania';
 const LEASES_URL = '/api/v1/leases';
 const APPEALS_URL = '/api/v1/appeals';
-/** Pierwsze odwołanie z fixture'ów: dzierżawa 5, której **nie ma** wśród kandydatów do odwołania. */
+/** Pierwsze odwołanie z fixture'ów: dostęp 5, którego **nie ma** wśród kandydatów do odwołania. */
 const PENDING_APPEAL = appealsFixture[0];
 
 /**
- * Reguła silnika (`appeal_rules.is_appealable`) zapisana w teście **wprost**: odebrana dzierżawa
+ * Reguła silnika (`appeal_rules.is_appealable`) zapisana w teście **wprost**: odebrany dostęp
  * oraz `WARNING`/`EXPIRED`. Świadomie nie wołamy tu produkcyjnego `isAppealable` — inaczej asercja
  * „lista oferowanych = lista kandydatów” porównywałaby helper sam ze sobą i przeszłaby także po
- * regresji w nim. Dzierżawy bierzemy z „backendu” (MSW), żeby wymiana fixture'ów dzierżaw
+ * regresji w nim. Dostępy bierzemy z „backendu” (MSW), żeby wymiana fixture'ów dostępów
  * (wspólne `shared/fixtures/`) nie robiła z tego testu fałszywej regresji.
  */
 function isAppealableByEngineRule(lease: LeaseOverview): boolean {
@@ -48,7 +48,7 @@ function appealCandidates(): LeaseOverview[] {
   return getLeases().filter(isAppealableByEngineRule);
 }
 
-/** Odebrana dzierżawa, której nie ma w fixture'ach (tam każdy wiersz jest aktywny). */
+/** Odebrany dostęp, którego nie ma w fixture'ach (tam każdy wiersz jest aktywny). */
 function revokedLease(): LeaseOverview {
   return {
     ...leasesFixture[0],
@@ -74,12 +74,12 @@ function renderAppealsPage(): void {
   renderWithProviders(<AppealsPage />);
 }
 
-/** Wybiera pierwszego kandydata z listy i zwraca jego dzierżawę (do asercji na wierszu). */
+/** Wybiera pierwszego kandydata z listy i zwraca jego dostęp (do asercji na wierszu). */
 async function selectFirstCandidate(user: UserEvent): Promise<LeaseOverview> {
   const [candidate] = appealCandidates();
   expect(candidate).toBeDefined();
 
-  await user.selectOptions(await screen.findByLabelText('Dzierżawa'), String(candidate.id));
+  await user.selectOptions(await screen.findByLabelText('Dostęp'), String(candidate.id));
   return candidate;
 }
 
@@ -126,7 +126,7 @@ describe('AppealsPage', () => {
     const submitted = await screen.findByRole('list', { name: SUBMITTED_LIST });
     expect(within(submitted).getByText(UNIQUE_JUSTIFICATION)).toBeInTheDocument();
     // Osoba i repozytorium pochodzą z `AppealOverview` zwróconego przez `POST /api/v1/appeals`,
-    // a nie z łączenia z listą dzierżaw — dlatego wystarczy, że są w tym samym wierszu co wniosek.
+    // a nie z łączenia z listą dostępów — dlatego wystarczy, że są w tym samym wierszu co wniosek.
     expect(within(submitted).getAllByText(candidate.user.name).length).toBeGreaterThan(0);
     expect(within(submitted).getAllByText(candidate.repository.name).length).toBeGreaterThan(0);
   });
@@ -146,19 +146,19 @@ describe('AppealsPage', () => {
     });
   });
 
-  it('renderuje osobę, repozytorium i pozostałe dni z overview, bez łączenia z dzierżawami', async () => {
+  it('renderuje osobę, repozytorium i pozostałe dni z overview, bez łączenia z dostępami', async () => {
     renderAppealsPage();
 
     const submitted = await screen.findByRole('list', { name: SUBMITTED_LIST });
 
-    // Dzierżawy 5 nie ma wśród kandydatów (a `GET /api/v1/leases` nawet nie istnieje),
+    // Dostępu 5 nie ma wśród kandydatów (a `GET /api/v1/leases` nawet nie istnieje),
     // więc te dane mogą pochodzić wyłącznie z `AppealOverview`.
     expect(within(submitted).getByText('Marta')).toBeInTheDocument();
     expect(within(submitted).getByText('qa-automation')).toBeInTheDocument();
     expect(within(submitted).getByText('Pozostało 2 dni')).toBeInTheDocument();
   });
 
-  it('otwiera modal rozpatrzenia także dla odwołania spoza listy dzierżaw', async () => {
+  it('otwiera modal rozpatrzenia także dla odwołania spoza listy dostępów', async () => {
     const user = userEvent.setup();
     renderAppealsPage();
 
@@ -230,7 +230,7 @@ describe('AppealsPage', () => {
     expect(within(submitted).queryByRole('button', { name: 'Rozpatrz' })).not.toBeInTheDocument();
   });
 
-  it('nie oferuje dzierżawy administratora, a odebraną pokazuje jako kandydata', async () => {
+  it('nie oferuje dostępu administratora, a odebrany pokazuje jako kandydata', async () => {
     const permanentLeases: LeaseOverview[] = getLeases().filter(
       (lease: LeaseOverview): boolean => lease.status === 'PERMANENT',
     );
@@ -241,7 +241,7 @@ describe('AppealsPage', () => {
 
     renderAppealsPage();
 
-    const select = await screen.findByLabelText('Dzierżawa');
+    const select = await screen.findByLabelText('Dostęp');
     const offered: (string | null)[] = within(select)
       .getAllByRole('option')
       .map((option: HTMLElement): string | null => option.getAttribute('value'));
@@ -250,7 +250,7 @@ describe('AppealsPage', () => {
     for (const lease of permanentLeases) {
       expect(offered).not.toContain(String(lease.id));
     }
-    // Kolejność jak z API: najpierw fixture'y, na końcu dołożona dzierżawa odebrana.
+    // Kolejność jak z API: najpierw fixture'y, na końcu dołożony dostęp odebrany.
     expect(offered).toEqual(
       [...appealCandidates(), revoked].map((lease: LeaseOverview): string => String(lease.id)),
     );
@@ -272,7 +272,7 @@ describe('AppealsPage', () => {
     expect(screen.queryByText('Odwołanie złożone')).not.toBeInTheDocument();
   });
 
-  it('nazywa po polsku nierozpatrzone odwołanie tej dzierżawy (409 silnika)', async () => {
+  it('nazywa po polsku nierozpatrzone odwołanie tego dostępu (409 silnika)', async () => {
     server.use(
       http.post(APPEALS_URL, () =>
         HttpResponse.json({ detail: 'This lease already has a pending appeal' }, { status: 409 }),
@@ -289,7 +289,7 @@ describe('AppealsPage', () => {
     expect(screen.queryByText(DUPLICATE_MESSAGE)).not.toBeInTheDocument();
   });
 
-  it('zapowiada pustą listę kandydatów zdaniem obejmującym także dzierżawy odebrane', async () => {
+  it('zapowiada pustą listę kandydatów zdaniem obejmującym także dostępy odebrane', async () => {
     server.use(
       http.get(LEASES_URL, () =>
         HttpResponse.json(
@@ -301,6 +301,6 @@ describe('AppealsPage', () => {
     renderAppealsPage();
 
     expect(await screen.findByText(EMPTY_STATE)).toBeInTheDocument();
-    expect(screen.queryByLabelText('Dzierżawa')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Dostęp')).not.toBeInTheDocument();
   });
 });

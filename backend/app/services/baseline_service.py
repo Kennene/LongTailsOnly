@@ -44,6 +44,14 @@ async def get_team_baseline(
     return sorted(entries, key=lambda entry: entry.repository.name)
 
 
+async def list_onboarding_candidates(session: AsyncSession, team: Team) -> list[UserRead]:
+    """Team members with no live lease: who still waits for the baseline (same rule as the dashboard counter)."""
+    with_access = select(Lease.user_id).where(Lease.is_active.is_(True))
+    users = await session.scalars(select(User).where(
+        User.team_id == team.id, User.is_admin.is_(False), User.id.not_in(with_access)).order_by(User.login))
+    return [UserRead.model_validate(user) for user in users]
+
+
 async def get_onboarding_proposal(session: AsyncSession, *, login: str, now: datetime) -> OnboardingProposal:
     user, team = await _team_member(session, login)
     entries = await get_team_baseline(session, team, now)

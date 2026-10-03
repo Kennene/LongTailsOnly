@@ -7,7 +7,7 @@ Projekt jest realizowany jako **Single Page Application (SPA)**:
 
 Wykonuj zadania po kolei. Każde zadanie ma własny zakres plików i test weryfikujący dostarczane zachowanie. Polecenia testowe uruchamiaj z katalogu wskazanego przy zadaniu.
 
-## Faza 1: Fundament backendowy i silnik dzierżawy
+## Faza 1: Fundament backendowy i silnik dostępów
 
 ### Zadanie 1: Szkielet backendu i konfiguracja testów
 
@@ -70,7 +70,7 @@ Oczekiwane: oba testy PASS, tabele są widoczne w bazie testowej.
 - Utwórz: `backend/app/db/seed.py`
 - Test: `backend/tests/db/test_seed.py`
 
-**Interfejs:** `seed_demo_data(session) -> None` tworzy deterministyczny zestaw organizacji, użytkowników, zespołów, repozytoriów, dzierżaw, zdarzeń aktywności i scenariuszy.
+**Interfejs:** `seed_demo_data(session) -> None` tworzy deterministyczny zestaw organizacji, użytkowników, zespołów, repozytoriów, dostępów, zdarzeń aktywności i scenariuszy.
 
 - [ ] **Krok 1: Napisz testy `test_seed_creates_demo_population` i `test_seed_is_idempotent`** sprawdzające 1 organizację, admina `tomasz-admin`, zespoły DEV/QA, 10 repozytoriów, deterministyczne zdarzenia `ActivityEvent` oraz cztery przypadki: (A) developer z `admin`, który wykonuje tylko zdarzenia `push`; (B) QA z dostępem wygasającym za 3 dni; (C) nieużywane repozytorium bez zdarzeń w ostatnich 30 dniach; (D) nowy developer bez dostępów.
 - [ ] **Krok 2: Uruchom:** `cd backend && pytest tests/db/test_seed.py -q`
@@ -132,18 +132,18 @@ Oczekiwane: FAIL, ponieważ endpointy mutujące nie istnieją.
 - [ ] **Krok 4: Uruchom ponownie to samo polecenie.**
 Oczekiwane: wszystkie testy PASS; zabronione usunięcia zwracają dokładnie 403.
 
-### Zadanie 8: Cykl życia dzierżawy i asymetryczne odnawianie
+### Zadanie 8: Cykl życia dostępu i asymetryczne odnawianie
 
 **Pliki:**
 - Utwórz: `backend/app/services/lease_service.py`
 - Test: `backend/tests/services/test_lease_service.py`
 
-**Interfejs:** `record_activity(user_id, repo_id, action_type, required_permission, occurred_at) -> ActivityEvent` zapisuje każde zdarzenie bez nadpisywania historii; `occurred_at` pochodzi z `TimeProvider`, a dzierżawę odnawia tylko wtedy, gdy wymagany poziom zdarzenia jest co najmniej równy `current_role` (ustawia wtedy `expires_at = occurred_at + 30 dni`). `evaluate_lease_status(lease, now) -> LeaseStatus` wyznacza `ACTIVE`, `WARNING` (pozostało najwyżej 7 dni) albo `EXPIRED` na podstawie historii `ActivityEvent`.
+**Interfejs:** `record_activity(user_id, repo_id, action_type, required_permission, occurred_at) -> ActivityEvent` zapisuje każde zdarzenie bez nadpisywania historii; `occurred_at` pochodzi z `TimeProvider`, a dostęp odnawia tylko wtedy, gdy wymagany poziom zdarzenia jest co najmniej równy `current_role` (ustawia wtedy `expires_at = occurred_at + 30 dni`). `evaluate_lease_status(lease, now) -> LeaseStatus` wyznacza `ACTIVE`, `WARNING` (pozostało najwyżej 7 dni) albo `EXPIRED` na podstawie historii `ActivityEvent`.
 
 - [ ] **Krok 1: Napisz testy `test_status_active_warning_expired_boundaries`, `test_push_does_not_renew_admin_lease`, `test_recent_lower_role_activity_recommends_downscope`, `test_no_recent_activity_recommends_revoke` i `test_admin_activity_renews_admin_lease`** dla 30-dniowego okresu i 7-dniowego okna ostrzegawczego.
 - [ ] **Krok 2: Uruchom:** `cd backend && pytest tests/services/test_lease_service.py -q`
-Oczekiwane: FAIL, ponieważ serwis dzierżaw nie istnieje.
-- [ ] **Krok 3: Zaimplementuj zapis zdarzeń i ewaluację przez `TimeProvider` zgodnie z hierarchią z ADR 0002. Dla dzierżawy sprawdź najnowsze zdarzenie o poziomie wymaganym co najmniej równym `current_role` z ostatnich 30 dni; brak takiego zdarzenia oznacza wygaśnięcie tego poziomu. Następnie sprawdź najnowsze zdarzenie niższego poziomu z tego okna: zaproponuj down-scope do jego `required_permission`, a jeśli go brak — revoke.**
+Oczekiwane: FAIL, ponieważ serwis dostępów nie istnieje.
+- [ ] **Krok 3: Zaimplementuj zapis zdarzeń i ewaluację przez `TimeProvider` zgodnie z hierarchią z ADR 0002. Dla dostępu sprawdź najnowsze zdarzenie o poziomie wymaganym co najmniej równym `current_role` z ostatnich 30 dni; brak takiego zdarzenia oznacza wygaśnięcie tego poziomu. Następnie sprawdź najnowsze zdarzenie niższego poziomu z tego okna: zaproponuj down-scope do jego `required_permission`, a jeśli go brak — revoke.**
 - [ ] **Krok 4: Uruchom ponownie to samo polecenie.**
 Oczekiwane: wszystkie testy PASS, w tym granice 7 i 0 dni.
 
@@ -179,7 +179,7 @@ Oczekiwane: FAIL, ponieważ serwisy nie istnieją.
 - [ ] **Krok 4: Uruchom ponownie to samo polecenie.**
 Oczekiwane: wszystkie testy PASS; powtórzone uzasadnienie nie tworzy kolejnego odwołania.
 
-### Zadanie 11: API dzierżaw, odwołań, baseline i sterowania czasem
+### Zadanie 11: API dostępów, odwołań, baseline i sterowania czasem
 
 **Pliki:**
 - Utwórz: `backend/app/api/v1/__init__.py`, `backend/app/api/v1/leases.py`, `backend/app/api/v1/appeals.py`, `backend/app/api/v1/baseline.py`, `backend/app/api/v1/simulation.py`, `backend/app/api/v1/audit.py`
@@ -223,16 +223,16 @@ Oczekiwane: test PASS i build kończy się kodem 0.
 - Utwórz: `frontend/src/pages/DashboardPage.tsx`
 - Test: `frontend/src/pages/DashboardPage.test.tsx`
 
-**Interfejs:** `AppShell` udostępnia nawigację do sześciu widoków i umieszcza kontroler czasu w `TopBar`; `DashboardPage` prezentuje KPI dla dzierżaw aktywnych, ostrzeżeń, wygasłych i rekomendacji down-scope.
+**Interfejs:** `AppShell` udostępnia nawigację do sześciu widoków i umieszcza kontroler czasu w `TopBar`; `DashboardPage` prezentuje KPI dla dostępów aktywnych, ostrzeżeń, wygasłych i rekomendacji down-scope.
 
-- [ ] **Krok 1: Napisz `test_dashboard_displays_lease_kpis_and_navigation`** z odpowiedzią API zawierającą co najmniej po jednej dzierżawie każdego statusu.
+- [ ] **Krok 1: Napisz `test_dashboard_displays_lease_kpis_and_navigation`** z odpowiedzią API zawierającą co najmniej po jednym dostępie każdego statusu.
 - [ ] **Krok 2: Uruchom:** `cd frontend && npm test -- --run src/pages/DashboardPage.test.tsx`
 Oczekiwane: FAIL, strona lub oczekiwane elementy UI nie istnieją.
 - [ ] **Krok 3: Zaimplementuj układ SPA, nawigację i karty KPI.**
 - [ ] **Krok 4: Uruchom ponownie test i `npm run build`.**
 Oczekiwane: test PASS, build kończy się kodem 0.
 
-### Zadanie 14: Inwentarz dzierżaw
+### Zadanie 14: Inwentarz dostępów
 
 **Pliki:**
 - Utwórz: `frontend/src/pages/LeasesPage.tsx`
@@ -287,7 +287,7 @@ Oczekiwane: test PASS, build kończy się kodem 0.
 - Utwórz: `frontend/src/components/PermissionsGraph.tsx`
 - Test: `frontend/src/pages/PermissionsGraphPage.test.tsx`
 
-**Interfejs:** graf `@xyflow/react` prezentuje węzły użytkowników → zespołów → repozytoriów, status dzierżaw oraz filtry zespołu i repozytorium podwyższonego ryzyka.
+**Interfejs:** graf `@xyflow/react` prezentuje węzły użytkowników → zespołów → repozytoriów, status dostępów oraz filtry zespołu i repozytorium podwyższonego ryzyka.
 
 - [ ] **Krok 1: Napisz `test_permissions_graph_renders_relationships_and_filters`** sprawdzający relacje węzłów i wynik filtrowania.
 - [ ] **Krok 2: Uruchom:** `cd frontend && npm test -- --run src/pages/PermissionsGraphPage.test.tsx`

@@ -16,7 +16,7 @@ import { getLeases } from '../state';
  * - `?team=<slug>` zawęża graf do jednego zespołu (`build_graph_layout(..., team)`),
  * - nieznany slug to `404` — dokładnie jak `baseline_service.team_by_slug`.
  *
- * Graf budujemy z **żywego** stanu dzierżaw tym samym builderem co fixture, więc podróż w czasie
+ * Graf budujemy z **żywego** stanu dostępów tym samym builderem co fixture, więc podróż w czasie
  * i decyzje administratora przenoszą statusy na krawędzie (i zapalają `animated`) zamiast
  * zostawiać graf zamrożony na dniu startowym. Widok jest tylko do odczytu — decyzje przechodzą
  * przez `/api/v1/leases/...` i `/api/v1/appeals/...`.

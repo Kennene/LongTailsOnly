@@ -9,11 +9,11 @@
 
 ## 1. Cel i zakres
 
-Zbudować cały frontend jako SPA — konsolę administratora bezpieczeństwa IT (Security Admin Panel) do zarządzania odnawialnymi dzierżawami dostępów GitHuba. Zakres odpowiada krokom **5.1–5.10** z podziału pracy zespołu.
+Zbudować cały frontend jako SPA — konsolę administratora bezpieczeństwa IT (Security Admin Panel) do zarządzania odnawialnymi dostępami czasowymi GitHuba. Zakres odpowiada krokom **5.1–5.10** z podziału pracy zespołu.
 
 **Linia cięcia po 5.6.** Do tego miejsca działa UC-2 (deeskalacja), UC-4 (sterowanie czasem) i UC-5 (ochrona ostatniego administratora) — minimalne demo. Kroki 5.7–5.10 (onboarding UC-1, odwołania UC-3, graf, audyt) są bonusem realizowanym po osiągnięciu linii cięcia.
 
-**W zakresie:** 10 PR-ów z tabeli podziału pracy, `AppShell` z nawigacją, pasek czasu (Time Travel), tabela dzierżaw, modal decyzji, dashboard z licznikami, widok baseline z onboardingiem, formularz i historia odwołań, graf `@xyflow/react`, dziennik audytu, warstwa API, testy jednostkowe/komponentowe/integracyjne.
+**W zakresie:** 10 PR-ów z tabeli podziału pracy, `AppShell` z nawigacją, pasek czasu (Time Travel), tabela dostępów, modal decyzji, dashboard z licznikami, widok baseline z onboardingiem, formularz i historia odwołań, graf `@xyflow/react`, dziennik audytu, warstwa API, testy jednostkowe/komponentowe/integracyjne.
 
 **Poza zakresem (YAGNI):** i18n, przełącznik motywów (ciemny domyślnie), logowanie i role w UI (jedna konsola admina, symulująca także stronę użytkownika składającego odwołanie), generowanie klienta z OpenAPI, Storybook, testy e2e w przeglądarce, biblioteka wykresów, moduł wyjaśnień LLM (M8), MSW w przeglądarce (tylko testy).
 
@@ -26,7 +26,7 @@ Zbudować cały frontend jako SPA — konsolę administratora bezpieczeństwa IT
 | 1.2 | Schematy Pydantic + kontrakt TS | **zrobione** — `backend/contract/schema.json` → `frontend/src/types/api.ts` (ADR 0009) |
 | 1.4–1.6 | TimeProvider, seed, reset demo | **zrobione** — `/health`, `POST /api/v1/demo/reset` |
 | 2.5 | `POST /api/v1/simulation/time-travel` + odczyt zegara | brak |
-| 3.6 | lista dzierżaw z policzonym statusem + decyzje | brak |
+| 3.6 | lista dostępów z policzonym statusem + decyzje | brak |
 | 4.2 | onboarding / baseline (zapis) | brak |
 | 4.3–4.5 | odwołania, historia odwołań, audyt | brak |
 | 4.6 | liczniki dashboardu + dane grafu | brak |
@@ -55,7 +55,7 @@ Dzięki temu rozjazd nazw pól jest błędem kompilacji, a nie pustą kolumną n
 
 Pełne uzasadnienie i konsekwencje: **ADR 0015**.
 
-1. **Nawigacja:** `react-router-dom` v7 w trybie **deklaratywnym** — `App.tsx` definiuje `<Routes>`, a `BrowserRouter` zakłada `main.tsx` (testy podstawiają `MemoryRouter`), więc trasy mają jedno źródło i nie ma zagnieżdżania routerów. Trasy: `/`, `/leases`, `/appeals`, `/baseline`, `/graph`, `/audit`; `*` przekierowuje na `/`. `AppShell` pełni rolę layout route. Etykiety nawigacji: `Pulpit`, `Dzierżawy`, `Odwołania`, `Standard zespołu`, `Graf`, `Audyt`.
+1. **Nawigacja:** `react-router-dom` v7 w trybie **deklaratywnym** — `App.tsx` definiuje `<Routes>`, a `BrowserRouter` zakłada `main.tsx` (testy podstawiają `MemoryRouter`), więc trasy mają jedno źródło i nie ma zagnieżdżania routerów. Trasy: `/`, `/leases`, `/appeals`, `/baseline`, `/graph`, `/audit`; `*` przekierowuje na `/`. `AppShell` pełni rolę layout route. Etykiety nawigacji: `Pulpit`, `Dostępy`, `Odwołania`, `Standard zespołu`, `Graf`, `Audyt`.
 2. **Stan serwerowy:** TanStack Query v5 — cache, stany ładowania/błędu i jednopunktowa inwalidacja po podróży w czasie. Bez globalnego store'a (Redux/Zustand).
 3. **Typy generowane, nie pisane ręcznie:** `src/types/api.ts` pochodzi z kontraktu 1.2 (ADR 0009). Fixture'y używają typów z tego pliku (np. `LeaseOverview`), a flaga `VITE_USE_FIXTURES` przełącza **odczyty** na fixture'y (mutacje zawsze idą do API).
 4. **Czas i status pochodzą z backendu.** „Teraz” czytamy z `GET /api/v1/simulation/clock` (`ClockRead.now`), a `status`, `days_remaining` i `recommendation` przychodzą policzone w `LeaseOverview`. Frontend **nie duplikuje** granic 7/0 dni i nie używa zegara systemowego; `lib/dateTime.ts` odpowiada za formatowanie i pomocnicze porównania (walidacja daty w modalu).
@@ -111,7 +111,7 @@ frontend/src/
 | `DecisionAction` | `"EXTEND" \| "DOWNSCOPE" \| "REVOKE"` | modal decyzji |
 | `Extension` | `preset_days?: 7\|14\|30\|90`, `multiplier?: 1.5\|2`, `custom_days?`, `until_date?` | modal decyzji |
 | `DecisionRequest` | `{ action, extension?: Extension \| null, justification?: string \| null }` | `POST /leases/{id}/decision` |
-| `LeaseOverview` | `{ id, user: UserRead, repository: RepositoryRead, current_role, granted_at, expires_at: string \| null, is_active, status, days_remaining: number \| null, last_activity_at: string \| null, recommendation }` | tabela dzierżaw |
+| `LeaseOverview` | `{ id, user: UserRead, repository: RepositoryRead, current_role, granted_at, expires_at: string \| null, is_active, status, days_remaining: number \| null, last_activity_at: string \| null, recommendation }` | tabela dostępów |
 | `UserRead` / `TeamRead` | `{ id, login, name, team: TeamRead \| null, is_admin }` / `{ id, name, slug }` | kolumny użytkownik i zespół |
 | `ClockRead` | `{ now, offset_days }` | pasek czasu |
 | `TimeTravelRequest` | `{ days: number }` (1…365) | presety i własna liczba dni |
@@ -126,12 +126,12 @@ frontend/src/
 | Czego brakuje | Kto | Do czego | Obejście na czas braku |
 | --- | --- | --- | --- |
 | `GET /api/v1/simulation/clock` | 2.5 | czas symulowany w pasku | fixture + MSW; po dostarczeniu zmiana tylko w `api/simulation.ts` |
-| `GET /api/v1/leases` → `LeaseOverview[]` | 3.6 | tabela dzierżaw | fixture'y w kształcie `LeaseOverview` |
+| `GET /api/v1/leases` → `LeaseOverview[]` | 3.6 | tabela dostępów | fixture'y w kształcie `LeaseOverview` |
 | Liczniki dashboardu | 4.6 | karty KPI | fixture + MSW |
 | Payload grafu (React Flow `{nodes, edges}`) | 4.6 | graf | fixture + `lib/graphLayout.ts` jako fallback pozycji |
 | Zatwierdzenie standardu + typ nowego członka | 4.2 | onboarding UC-1 | fixture + MSW |
-| Statystyki aktywności per dzierżawa | 4.4 | modal decyzji (UC-3) | fixture + MSW |
-| Lista odwołań / historia per dzierżawa | 4.4 | widok odwołań | fixture + MSW |
+| Statystyki aktywności per dostęp | 4.4 | modal decyzji (UC-3) | fixture + MSW |
+| Lista odwołań / historia per dostęp | 4.4 | widok odwołań | fixture + MSW |
 
 **Błędy:** `ApiError { status: number; message: string }` normalizuje `{"detail": ...}` (FastAPI) oraz `{"message": ..., "documentation_url": ...}` (konwencja GitHuba, ADR 0004). Dla `403` przy akcji `REVOKE`/`DOWNSCOPE` modal pokazuje stały komunikat: *„Nie można odebrać uprawnień ostatniemu administratorowi.”*
 
@@ -139,7 +139,7 @@ frontend/src/
 
 ## 6. Semantyka czasu i statusów
 
-- **Źródło czasu:** `GET /api/v1/simulation/clock` → `ClockRead.now` (ISO 8601 UTC) i `offset_days`. Frontend nigdy nie używa zegara systemowego w logice dzierżaw.
+- **Źródło czasu:** `GET /api/v1/simulation/clock` → `ClockRead.now` (ISO 8601 UTC) i `offset_days`. Frontend nigdy nie używa zegara systemowego w logice dostępów.
 - **Źródło statusu:** `LeaseOverview.status`, `days_remaining` i `recommendation` — liczone przez backend (`LeaseService`) z historii zdarzeń i zegara. Frontend **nie powtarza** granic 7/0 dni; po podróży w czasie unieważnia cache i pobiera świeże wartości, więc rozjazd FE/BE jest niemożliwy.
 - **`lib/dateTime.ts`** — jedno źródło formatowania i porównań pomocniczych:
 
@@ -148,7 +148,7 @@ export const DISPLAY_TIME_ZONE = 'Europe/Warsaw';
 export const DAY_MS = 86_400_000;
 
 export function formatDateTimePl(iso: string): string;               // "3 października 2026, 15:24"
-export function formatDaysRemaining(days: number | null): string;    // "Pozostało 12 dni" | "Wygasa dziś" | "Wygasła 3 dni temu" | "—"
+export function formatDaysRemaining(days: number | null): string;    // "Pozostało 12 dni" | "Wygasa dziś" | "Wygasł 3 dni temu" | "—"
 export function formatOffsetDays(offset_days: number): string;       // "+15 dni" | "−15 dni" | "0 dni"
 export function daysRemaining(expires_at: string, now: string): number; // walidacja daty w modalu (Math.ceil, może być ujemne)
 ```
@@ -159,7 +159,7 @@ Funkcja `leaseStatus()` **nie istnieje** po stronie frontendu — świadome odej
 - `Intl.DateTimeFormat('pl-PL', { dateStyle, timeStyle })` skleja datę i godzinę **spacją**, nie przecinkiem; `formatDateTimePl` składa więc wynik z `formatToParts` i wstawia `, ` — dzięki temu format jest zgodny z projektem i deterministyczny w Node i w przeglądarkach.
 - `daysRemaining` może zwrócić `-0` dla ułamka dnia przed wygaśnięciem; `formatDaysRemaining(-0)` daje `Wygasa dziś`. Testy granic przypinamy do dokładnych wartości (`now === expires_at` → 0), a nie do przedziału `(-1, 0)`.
 
-- **`lib/statusBadges.ts`** mapuje: statusy → `Aktywna` / `Wygasa wkrótce` / `Wygasła`, role → `Administrator` / `Zapis (write)` / `Odczyt (read)`, rekomendacje → `Bez zmian` / `Zdeeskaluj` / `Odbierz`, statusy odwołań → `Oczekujące` / `Zatwierdzone` / `Odrzucone`. Poza tym plikiem nie wolno powtarzać tych mapowań.
+- **`lib/statusBadges.ts`** mapuje: statusy → `Aktywny` / `Wygasa wkrótce` / `Wygasł`, role → `Administrator` / `Zapis (write)` / `Odczyt (read)`, rekomendacje → `Bez zmian` / `Zdeeskaluj` / `Odbierz`, statusy odwołań → `Oczekujące` / `Zatwierdzone` / `Odrzucone`. Poza tym plikiem nie wolno powtarzać tych mapowań.
 - **Pasek czasu:** presety `+15 / +30 / +60` dni, pole własnej liczby dni (walidacja `1…365` zgodnie z `TimeTravelRequest`), `Reset` wywołujący `POST /api/v1/demo/reset` (przywraca seed i zeruje zegar — wymaga potwierdzenia, bo kasuje stan; przy `ENABLE_DEMO_RESET=false` zwraca `404`).
 
 ---
@@ -168,12 +168,12 @@ Funkcja `leaseStatus()` **nie istnieje** po stronie frontendu — świadome odej
 
 Wspólne zasady: brak własnych kolorów i etykiet statusów (tylko `statusBadges`), każdy widok obsługuje stan ładowania (Skeleton), błędu (komunikat + „Odśwież”) i pusty („Brak danych do wyświetlenia”).
 
-1. **Dashboard (`/`)** — cztery karty KPI z 4.6: Aktywne dzierżawy, Ostrzeżenia, Wygaśnięte, Rekomendacje deeskalacji. Wartości odświeżają się po podróży w czasie i po decyzjach.
-2. **Dzierżawy (`/leases`)** — tabela: Użytkownik, Zespół, Repozytorium, Poziom, Ostatnia aktywność, Pozostało, Status, Rekomendacja. Sortowanie: `EXPIRED` → `WARNING` → `ACTIVE`, w grupie rosnąco po `days_remaining`, dzierżawy bez terminu (`days_remaining: null`, czyli `admin`) na końcu. Akcja wiersza „Decyzja” otwiera modal.
-3. **Modal decyzji** — kontekst dzierżawy oraz: **Przedłuż** (`extension` z `preset_days` +7/+14/+30/+90, `multiplier` 1,5x/2x, `custom_days`, `until_date`), **Wyłącz** (`REVOKE`, z potwierdzeniem), **Zdeeskaluj** (`DOWNSCOPE`). Po sukcesie toast i inwalidacja `['leases']`, `['dashboard']`, `['audit']`, `['appeals']`, `['graph']`.
-4. **Odwołania (`/appeals`)** — lista dzierżaw w oknie ostrzegawczym i wygasłych, formularz odwołania (`AppealCreate`: wybór dzierżawy + wymagane uzasadnienie) oraz lista złożonych odwołań; pozycja `PENDING` ma akcję „Rozpatrz”, otwierającą modal decyzji z historią odwołań i statystykami użycia (UC-3). Ponieważ `AppealRead` zawiera tylko `user_id`, dane osoby łączymy z listą dzierżaw po `lease_id`.
+1. **Dashboard (`/`)** — cztery karty KPI z 4.6: Aktywne dostępy, Ostrzeżenia, Wygaśnięte, Rekomendacje deeskalacji. Wartości odświeżają się po podróży w czasie i po decyzjach.
+2. **Dostępy (`/leases`)** — tabela: Użytkownik, Zespół, Repozytorium, Poziom, Ostatnia aktywność, Pozostało, Status, Rekomendacja. Sortowanie: `EXPIRED` → `WARNING` → `ACTIVE`, w grupie rosnąco po `days_remaining`, dostępy bez terminu (`days_remaining: null`, czyli `admin`) na końcu. Akcja wiersza „Decyzja” otwiera modal.
+3. **Modal decyzji** — kontekst dostępu oraz: **Przedłuż** (`extension` z `preset_days` +7/+14/+30/+90, `multiplier` 1,5x/2x, `custom_days`, `until_date`), **Wyłącz** (`REVOKE`, z potwierdzeniem), **Zdeeskaluj** (`DOWNSCOPE`). Po sukcesie toast i inwalidacja `['leases']`, `['dashboard']`, `['audit']`, `['appeals']`, `['graph']`.
+4. **Odwołania (`/appeals`)** — lista dostępów w oknie ostrzegawczym i wygasłych, formularz odwołania (`AppealCreate`: wybór dostępu + wymagane uzasadnienie) oraz lista złożonych odwołań; pozycja `PENDING` ma akcję „Rozpatrz”, otwierającą modal decyzji z historią odwołań i statystykami użycia (UC-3). Ponieważ `AppealRead` zawiera tylko `user_id`, dane osoby łączymy z listą dostępów po `lease_id`.
 5. **Standard zespołu (`/baseline`)** — sekcje DEV i QA: repozytorium, proponowana rola (nigdy `admin`), udział aktywnych członków (`active_members / team_size`); zatwierdzenie standardu dla nowego członka zespołu jednym kliknięciem (UC-1).
-6. **Graf (`/graph`)** — `@xyflow/react` na danych z 4.6: węzły użytkowników, zespołów i repozytoriów, krawędzie członkostwa i dzierżaw, kolor wg statusu; filtry: zespół oraz „tylko podwyższone ryzyko”. Gdy backend nie dostarczy `position`, pozycje wylicza deterministycznie `lib/graphLayout.ts` (trzy kolumny: użytkownicy, zespoły, repozytoria).
+6. **Graf (`/graph`)** — `@xyflow/react` na danych z 4.6: węzły użytkowników, zespołów i repozytoriów, krawędzie członkostwa i dostępów, kolor wg statusu; filtry: zespół oraz „tylko podwyższone ryzyko”. Gdy backend nie dostarczy `position`, pozycje wylicza deterministycznie `lib/graphLayout.ts` (trzy kolumny: użytkownicy, zespoły, repozytoria).
 7. **Audyt (`/audit`)** — tabela: Czas, Aktor, Akcja, Cel, Uzasadnienie; `details` (obiekt JSON) pokazywany jako zwięzły podgląd; filtr aktora (`Wszystkie`, `ADMIN`, `USER`, `SYSTEM`) po stronie klienta.
 
 ---
@@ -206,7 +206,7 @@ Wspólne zasady: brak własnych kolorów i etykiet statusów (tylko `statusBadge
 
 **Po linii cięcia (5.6):**
 1. Dashboard pokazuje cztery liczniki z API.
-2. Przesunięcie czasu o `+25 dni` zmienia statusy dzierżaw na `WARNING` i pokazuje rekomendacje deeskalacji.
+2. Przesunięcie czasu o `+25 dni` zmienia statusy dostępów na `WARNING` i pokazuje rekomendacje deeskalacji.
 3. Decyzja „Przedłuż 2x” oraz „Zdeeskaluj” działają z poziomu modala i są widoczne w tabeli.
 4. Próba odebrania uprawnień ostatniemu administratorowi pokazuje komunikat ochrony (UC-5).
 5. `npm test -- --run`, `npm run build`, `npm run lint` — zielone.

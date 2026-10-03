@@ -17,7 +17,7 @@ const ADMIN_LEASE: LeaseOverview | undefined = leasesFixture.find(
   (lease: LeaseOverview): boolean => lease.current_role === 'admin',
 );
 
-/** Dzierżawa w oknie ostrzegawczym po skoku +25 dni — najmniej dni, więc pierwsza do decyzji. */
+/** Dostęp w oknie ostrzegawczym po skoku +25 dni — najmniej dni, więc pierwsza do decyzji. */
 function firstWarningAfterJump(): LeaseOverview {
   const warnings: LeaseOverview[] = getLeases()
     .filter((lease: LeaseOverview): boolean => lease.status === 'WARNING')
@@ -34,7 +34,7 @@ function firstWarningAfterJump(): LeaseOverview {
  * stan wyjściowy → podróż w czasie → okno ostrzegawcze → próba odebrania uprawnień
  * ostatniemu administratorowi.
  *
- * Liczby bierzemy z tego samego źródła co widoki: `countDashboard` na stanie dzierżaw z
+ * Liczby bierzemy z tego samego źródła co widoki: `countDashboard` na stanie dostępów z
  * `shared/fixtures/leases*.json` (audyt: „Aktywne 12” przy czterech wierszach tabeli).
  *
  * Scenariusze po linii cięcia (odwołanie z decyzją, onboarding, graf, audyt) dokładamy
@@ -49,7 +49,7 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
   expect(ADMIN_LEASE).toBeDefined();
   renderWithProviders(<App />, { route: '/' });
 
-  // 1. Stan wyjściowy — liczniki z API (4.6) i dzierżawy z fixture'ów.
+  // 1. Stan wyjściowy — liczniki z API (4.6) i dostępy z fixture'ów.
   const kpiActive: HTMLElement = await screen.findByTestId('kpi-active');
   expect(within(kpiActive).getByText(String(dashboardFixture.active))).toBeInTheDocument();
   expect(
@@ -61,8 +61,8 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
   await user.click(screen.getByRole('button', { name: 'Przesuń' }));
   await waitFor(() => expect(getSimulatedNow()).toBe('2026-10-28T00:00:00.000Z'));
 
-  // 3. Dzierżawy: dzierżawa, która była zielona, wchodzi w okno ostrzegawcze (UC-2).
-  await user.click(screen.getByRole('link', { name: 'Dzierżawy' }));
+  // 3. Dostępy: dostęp, który był zielony, wchodzi w okno ostrzegawcze (UC-2).
+  await user.click(screen.getByRole('link', { name: 'Dostępy' }));
   const warning: LeaseOverview | undefined = firstWarningAfterJump();
   expect(warning).toBeDefined();
   expect(
@@ -79,7 +79,7 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
       ),
     ).toBeInTheDocument();
   });
-  await user.click(screen.getByRole('link', { name: 'Dzierżawy' }));
+  await user.click(screen.getByRole('link', { name: 'Dostępy' }));
 
   // 4. Ochrona ostatniego administratora (UC-5) — próba wyłączenia musi się skończyć 403.
   const adminRow: HTMLElement = await screen.findByRole('row', {

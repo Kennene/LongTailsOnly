@@ -27,7 +27,7 @@ export function DashboardPage(): React.JSX.Element {
 
       {isError ? (
         // `data-testid`, bo okno ostrzegawcze pod spodem ma własny alert z własnym „Odśwież” —
-        // test musi wiedzieć, który przycisk ponawia liczniki, a który listę dzierżaw.
+        // test musi wiedzieć, który przycisk ponawia liczniki, a który listę dostępów.
         <Alert variant="destructive" data-testid="kpi-error">
           <AlertTitle>Nie udało się pobrać liczników</AlertTitle>
           <AlertDescription>
@@ -54,7 +54,7 @@ export function DashboardPage(): React.JSX.Element {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
             data-testid="kpi-active"
-            label="Aktywne dzierżawy"
+            label="Aktywne dostępy"
             tone="ACTIVE"
             value={data.active}
             hint="Uprawnienia w mocy"

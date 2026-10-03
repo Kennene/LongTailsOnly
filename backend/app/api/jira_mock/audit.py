@@ -8,7 +8,7 @@ from app.api.jira_mock.http import JiraError
 from app.domain.jira_roles import account_id
 from app.utils.dates import jira_dt
 
-router = APIRouter()
+router = APIRouter(tags=["Jira · Audyt"])
 MAX_LIMIT = 1000
 
 

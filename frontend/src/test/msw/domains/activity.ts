@@ -7,15 +7,15 @@ import type { LeaseActivityStats, LeaseOverview } from '@/types/api';
 import { getLeases, getSimulatedNow } from '../state';
 
 /**
- * Handlery domeny „activity” — statystyki użycia per dzierżawa w kształcie kontraktu
+ * Handlery domeny „activity” — statystyki użycia per dostęp w kształcie kontraktu
  * `LeaseActivityStats` (`backend/app/schemas/lease.py`, krok 3.6).
  *
- * Liczymy je ze wspólnego `shared/fixtures/activity.json` dla dzierżawy wskazanej w ścieżce,
+ * Liczymy je ze wspólnego `shared/fixtures/activity.json` dla dostępu wskazanego w ścieżce,
  * biorąc parę `(user_id, repo_id)` z żywego stanu i odsiewając zdarzenia późniejsze niż zegar
- * symulowany — a nie z jednej, wpisanej liczby, która pasowałaby do każdej dzierżawy. Dzięki
+ * symulowany — a nie z jednej, wpisanej liczby, która pasowałaby do każdego dostępu. Dzięki
  * temu okno (`window_days`, `window_start`) i liczniki przesuwają się razem z podróżą w czasie.
  *
- * Nieznana dzierżawa to `404`, tak jak w backendzie (`lease_service.get_lease`).
+ * Nieznany dostęp to `404`, tak jak w backendzie (`lease_service.get_lease`).
  */
 export const activityHandlers: HttpHandler[] = [
   http.get('/api/v1/leases/:leaseId/activity-stats', ({ params }) => {

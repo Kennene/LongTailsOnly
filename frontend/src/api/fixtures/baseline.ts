@@ -8,7 +8,7 @@ import type { BaselineEntry, OnboardingProposal } from '@/types/api';
  * poziom większości (`write`/`read`), a `admin` nigdy nie wchodzi do standardu. Slugi zespołów
  * (`dev`, `qa`) pochodzą z `shared/fixtures/teams.json`.
  *
- * `nowy-dev` (scenariusz D, ADR 0008) nie ma żadnej aktywnej dzierżawy, więc cały standard DEV
+ * `nowy-dev` (scenariusz D, ADR 0008) nie ma żadnego aktywnego dostępu, więc cały standard DEV
  * trafia do `to_grant`, a `already_granted` jest puste — dokładnie tak, jak liczy to backend
  * (`get_onboarding_proposal`, ADR 0011 §5.2).
  *

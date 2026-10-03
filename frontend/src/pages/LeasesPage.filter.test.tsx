@@ -29,7 +29,7 @@ const NO_TEAM_LEASE: LeaseOverview = leasesFixture.filter(
   (lease: LeaseOverview): boolean => lease.user.team === null,
 )[0];
 
-/** Renderuje stronę i zwraca wiersze tabeli (nagłówek + dzierżawy). */
+/** Renderuje stronę i zwraca wiersze tabeli (nagłówek + dostępy). */
 async function loadRows(): Promise<HTMLElement[]> {
   renderWithProviders(<LeasesPage />);
   await screen.findByRole('table');

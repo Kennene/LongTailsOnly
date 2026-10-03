@@ -26,15 +26,15 @@ import type { LeaseOverview } from '@/types/api';
 const UNIQUE_JUSTIFICATION = 'W przyszłym tygodniu prowadzę testy regresyjne wydania v2.1';
 
 /**
- * Kandydat do odwołania (dzierżawa poza `ACTIVE`) z „backendu” MSW, a nie z literału w teście:
- * fixture'y dzierżaw są wspólne (`shared/fixtures/`) i zmieniają się razem z seedem.
+ * Kandydat do odwołania (dostęp poza `ACTIVE`) z „backendu” MSW, a nie z literału w teście:
+ * fixture'y dostępów są wspólne (`shared/fixtures/`) i zmieniają się razem z seedem.
  */
 function appealableLease(): LeaseOverview {
   const lease: LeaseOverview | undefined = getLeases().find(
     (candidate: LeaseOverview): boolean => candidate.status !== 'ACTIVE',
   );
   if (lease === undefined) {
-    throw new Error('Fixture dzierżaw nie zawiera kandydata do odwołania');
+    throw new Error('Fixture dostępów nie zawiera kandydata do odwołania');
   }
 
   return lease;

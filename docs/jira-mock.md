@@ -5,7 +5,7 @@ Plan wykonania: `docs/superpowers/plans/2026-10-03-jira-mock-and-activity.md`. M
 
 ## 1. Po co to jest
 
-Ten sam silnik dzierżaw ma zarządzać rolami w Jirze tak jak dostępem do GitHuba: rola w projekcie to dzierżawa, odnawiana dowodem użycia
+Ten sam silnik dostępów ma zarządzać rolami w Jirze tak jak dostępem do GitHuba: rola w projekcie to dostęp, odnawiana dowodem użycia
 (zmiana statusu zgłoszenia, komentarz). Mock udaje Jirę Cloud: te same ścieżki, format błędów `{"errorMessages": [], "errors": {}}` i stronicowanie `startAt/maxResults`.
 
 ```
@@ -30,6 +30,7 @@ Projekt Jiry to wiersz `repositories` z `provider='jira'`, `name=KEY` (np. `PAY`
 
 Jak w `docs/github-mock.md`: `cd backend; uv sync --extra dev; uv run uvicorn app.main:app --reload`. Seed (GitHub, aktywność, Jira) ładuje się przy starcie i po `POST /api/v1/demo/reset`.
 Ustawienie `JIRA_SITE` (domyślnie `longtails`) w `.env`.
+Swagger mocka: `http://127.0.0.1:8000/mocks/docs` (endpointy Jiry i GitHuba są ukryte w głównym `/docs`).
 
 ## 3. Endpointy (`/rest/api/3`)
 
@@ -71,7 +72,7 @@ Paginacja tokenem `nextPageToken`, `maxResults` do 100.
 
 W bazie są tylko `ActivityEvent` (użytkownik, projekt, czas, typ). Zgłoszenia są wyliczane:
 
-| Typ zdarzenia (`action_type`) | Wymaga | Odnawia dzierżawę? | W API |
+| Typ zdarzenia (`action_type`) | Wymaga | Odnawia dostęp? | W API |
 | --- | --- | --- | --- |
 | `jira:issue_created` | write | tak | zgłoszenie (reporter = autor najwcześniejszego zdarzenia) |
 | `jira:issue_updated` | write | tak | wpis w changelogu (zmiana statusu), `assignee` = autor ostatniej zmiany |

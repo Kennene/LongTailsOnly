@@ -22,10 +22,10 @@ const ACTIVITY_COUNTERS: ActivityCounter[] = [
 ];
 
 /**
- * Statystyki użycia dzierżawy (push / review / komentarze) w modalu decyzji — UC-3.
+ * Statystyki użycia dostępu (push / review / komentarze) w modalu decyzji — UC-3.
  *
  * Liczby i okno pochodzą wprost z `LeaseActivityStats`; frontend ich nie przelicza. Panel mówi
- * też, **w jakim oknie** je policzono i kiedy dzierżawa była ostatnio używana — bez tego trzy
+ * też, **w jakim oknie** je policzono i kiedy dostęp był ostatnio używany — bez tego trzy
  * liczby nie odpowiadają na pytanie, czy dowód użycia jest jeszcze aktualny. Kolorów stanu tu nie
  * ma (żadna z tych liczb nie jest statusem), więc kafelki zostają na tokenach neutralnych,
  * a liczba jest daną i idzie w `font-mono`.
@@ -73,12 +73,12 @@ function lastActivityLabel(last_activity_at: string | null): string {
 
 /**
  * Puste okno to nie „0 / 0 / 0”, tylko materiał do decyzji: brak dowodu użycia. Zdanie mówi,
- * czy dzierżawa nie ma żadnej aktywności, czy ma ją starszą niż okno — te dwa przypadki prowadzą
+ * czy dostęp nie ma żadnej aktywności, czy ma ją starszą niż okno — te dwa przypadki prowadzą
  * do różnych wniosków przy przedłużaniu dostępu.
  */
 function emptyWindowLabel(stats: LeaseActivityStats): string {
   if (stats.last_activity_at === null) {
-    return `Brak pushów, review i komentarzy w ostatnich ${stats.window_days} dniach — ta dzierżawa nie ma żadnej aktywności.`;
+    return `Brak pushów, review i komentarzy w ostatnich ${stats.window_days} dniach — ten dostęp nie ma żadnej aktywności.`;
   }
 
   return `Ostatnia aktywność jest starsza niż ${stats.window_days} dni — w tym oknie nie ma dowodu użycia.`;

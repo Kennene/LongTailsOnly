@@ -1,9 +1,9 @@
 import type { LeaseOverview, LeaseStatus } from '@/types/api';
 
 /**
- * Czy z tej dzierżawy wolno złożyć odwołanie — odpowiednik `is_appealable`
+ * Czy z tego dostępu wolno złożyć odwołanie — odpowiednik `is_appealable`
  * (`backend/app/domain/appeal_rules.py`), które woła `appeal_service.submit_appeal`:
- * odebrana dzierżawa zawsze, `PERMANENT` (admin albo brak terminu) nigdy, a dzierżawa
+ * odebrany dostęp zawsze, `PERMANENT` (admin albo brak terminu) nigdy, a dostęp
  * w oknie ostrzegawczym (7 dni, ADR 0002) albo już wygasła — tak. Dokładnie te same
  * przypadki rozstrzyga `lease_rules.lease_status`, więc status niesie całą potrzebną wiedzę.
  *

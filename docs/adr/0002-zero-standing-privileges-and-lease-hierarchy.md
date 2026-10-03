@@ -1,19 +1,19 @@
-# ADR 0002: Model dzierżawy dostępu (Access Lease) i hierarchia uprawnień (MVP)
+# ADR 0002: Model dostępu czasowego (Access Lease) i hierarchia uprawnień (MVP)
 
 ## Kontekst
 Głównym problemem bezpieczeństwa jest pełzanie uprawnień (privilege creep) i bezterminowy dostęp do repozytoriów. Każde uprawnienie operacyjne powinno wygasać, jeśli nie jest aktywnie wykorzystywane. Jednocześnie zadania administracyjne wykonuje się rzadko, a pełna 5-stopniowa hierarchia w MVP generowałaby nadmierną złożoność i fałszywe wygaśnięcia kont właścicieli.
 
 ## Decyzja
-1. **Dzierżawa zamiast stałych uprawnień (ZSP)**:
-   - Przypisania uprawnień deweloperskich mają postać dzierżawy (`Lease`) z datą wygaśnięcia `expires_at`.
-   - Domyślny okres dzierżawy jest konfigurowany przez administratora (domyślnie: **30 dni**; okno ostrzegawcze: **7 dni**).
+1. **Dostęp zamiast stałych uprawnień (ZSP)**:
+   - Przypisania uprawnień deweloperskich mają postać dostępu (`Lease`) z datą wygaśnięcia `expires_at`.
+   - Domyślny okres dostępu jest konfigurowany przez administratora (domyślnie: **30 dni**; okno ostrzegawcze: **7 dni**).
 2. **Uproszczona hierarchia uprawnień MVP (`write` -> `read`)**:
-   - Dzierżawie podlegają wyłącznie dwa poziomy operacyjne:
+   - Wygasaniu podlegają wyłącznie dwa poziomy operacyjne:
      - `write` (dostęp z prawem zapisu / push)
      - `read` (dostęp z prawem odczytu / review / issues)
-   - **Rola `admin` jako stała (Break-Glass)**: Konta właścicieli organizacji i administratorów IT są wyłączone z automatycznego wygasania dzierżawy i chronione przez twardą regułę *Last Admin Protection*.
+   - **Rola `admin` jako stała (Break-Glass)**: Konta właścicieli organizacji i administratorów IT są wyłączone z automatycznego wygasania dostępu i chronione przez twardą regułę *Last Admin Protection*.
 3. **Mapowanie na autentyczne zdarzenia GitHub Events API**:
-   - Stan i odnawianie dzierżawy weryfikowane są na podstawie strumienia zdarzeń (`ActivityEvent` odpowiadającego `/events` GitHuba):
+   - Stan i odnawianie dostępu weryfikowane są na podstawie strumienia zdarzeń (`ActivityEvent` odpowiadającego `/events` GitHuba):
      - **Poziom `write`**: potwierdzany przez `PushEvent` (wypchnięcie commitów lub tagów).
      - **Poziom `read`**: potwierdzany przez `PullRequestReviewEvent` (recenzja PR) oraz `IssueCommentEvent` (komentarz w dyskusji).
    - Aktywność poziomu `write` odnawia zarówno prawo zapisu, jak i odczytu.

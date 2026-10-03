@@ -4,8 +4,8 @@ import { cn } from '@/lib/utils';
 import type { LeaseStatus } from '@/types/api';
 
 /**
- * Tonacja karty KPI: status dzierżawy albo doradcza rodzina `DOWNSCOPE` (DESIGN.md §1, §4).
- * Rekomendacja deeskalacji nie jest statusem dzierżawy, ale ma własną rodzinę tokenów.
+ * Tonacja karty KPI: status dostępu albo doradcza rodzina `DOWNSCOPE` (DESIGN.md §1, §4).
+ * Rekomendacja deeskalacji nie jest statusem dostępu, ale ma własną rodzinę tokenów.
  */
 export type KpiTone = LeaseStatus | 'DOWNSCOPE';
 
@@ -19,7 +19,7 @@ export type KpiCardProps = React.ComponentProps<'div'> & {
 /**
  * Klasy tła i obramowania karty w rodzinie tonu.
  *
- * Statusy dzierżawy biorą je z `getStatusBadge` — jedynego mapowania status → kolor
+ * Statusy dostępu biorą je z `getStatusBadge` — jedynego mapowania status → kolor
  * (CODING_STANDARDS.md §3). Dla `DOWNSCOPE` sięgamy wprost po tokeny `status-downscope`,
  * bo `statusBadges` opisuje statusy, a nie rekomendacje.
  */

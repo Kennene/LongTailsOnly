@@ -6,7 +6,7 @@ from app.domain.github_events import build_event_payload
 from app.schemas.github_payloads import GHEvent
 from app.services.github_events_service import GitHubEventsService
 
-router = APIRouter()
+router = APIRouter(tags=["GitHub · Zdarzenia"])
 
 
 @router.get("/repos/{owner}/{repo}/events")

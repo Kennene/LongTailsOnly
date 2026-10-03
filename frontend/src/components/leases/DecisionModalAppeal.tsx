@@ -41,7 +41,7 @@ const REJECTION_SUCCESS = 'Odwołanie odrzucone';
 const APPROVAL_SUCCESS = 'Odwołanie zatwierdzone';
 const DECISION_SUCCESS = 'Decyzja zapisana';
 const PAST_DATE_ERROR = 'Data musi być późniejsza niż czas symulowany';
-const DECISION_FALLBACK = 'Nie udało się zapisać decyzji o dzierżawie.';
+const DECISION_FALLBACK = 'Nie udało się zapisać decyzji o dostępie.';
 const ALREADY_RESOLVED = 'To odwołanie zostało już rozstrzygnięte.';
 
 interface LeaseContext {
@@ -59,9 +59,7 @@ function buildLeaseContext(appeal: AppealOverview): LeaseContext {
     repository: `${appeal.repository.owner}/${appeal.repository.name}`,
     requested_role: getRoleLabel(appeal.requested_role),
     lease_role: getRoleLabel(appeal.lease_role),
-    days: appeal.lease_is_active
-      ? formatDaysRemaining(appeal.days_remaining)
-      : 'Dzierżawa nieaktywna',
+    days: appeal.lease_is_active ? formatDaysRemaining(appeal.days_remaining) : 'Dostęp nieaktywny',
     previous_appeals: appeal.previous_appeals,
     status: getAppealStatusBadge(appeal.status).label,
   };
@@ -194,7 +192,7 @@ export function DecisionModalAppeal({
         <dd className="font-medium">{context.repository}</dd>
         <dt className="text-muted-foreground">Wnioskowana rola</dt>
         <dd className="font-medium">{context.requested_role}</dd>
-        <dt className="text-muted-foreground">Rola w dzierżawie</dt>
+        <dt className="text-muted-foreground">Rola w dostępie</dt>
         <dd className="font-medium">{context.lease_role}</dd>
         <dt className="text-muted-foreground">Status wniosku</dt>
         <dd className="font-medium">{context.status}</dd>

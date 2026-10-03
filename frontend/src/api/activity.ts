@@ -7,7 +7,7 @@ import { clockFixture } from './fixtures/clock';
 import { leasesFixture } from './fixtures/leases';
 
 /**
- * Statystyki użycia dzierżawy dla modala decyzji (UC-3) — odpowiedź
+ * Statystyki użycia dostępu dla modala decyzji (UC-3) — odpowiedź
  * `GET /api/v1/leases/{lease_id}/activity-stats` (krok backendu 3.6).
  *
  * Typ pochodzi wprost z generowanego kontraktu (`src/types/api.ts`, ADR 0009) i **nie jest**
@@ -16,7 +16,7 @@ import { leasesFixture } from './fixtures/leases';
  * rozjechałby się z backendem po cichu.
  *
  * W trybie fixture'ów (brak backendu) tę samą odpowiedź buduje `countActivityStats`
- * z `shared/fixtures/activity.json` — w tym samym kształcie, z oknem dzierżawy i zegarem demo.
+ * z `shared/fixtures/activity.json` — w tym samym kształcie, z oknem dostępu i zegarem demo.
  */
 export async function fetchActivityStats(lease_id: number): Promise<LeaseActivityStats> {
   if (shouldUseFixtures()) {

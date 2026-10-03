@@ -144,7 +144,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   return (
     <DialogContent className="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Decyzja o dzierżawie</DialogTitle>
+        <DialogTitle>Decyzja o dostępie</DialogTitle>
         <DialogDescription>{`${lease.user.name} (${lease.user.login})`}</DialogDescription>
       </DialogHeader>
 

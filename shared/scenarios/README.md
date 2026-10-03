@@ -38,7 +38,7 @@ uv run pytest tests/scenarios -q                            # z uv
 }
 ```
 
-`given` **nie deklaruje** dzierżaw ani zdarzeń. Deterministyczny seed z ADR 0008 już je produkuje,
+`given` **nie deklaruje** dostępów ani zdarzeń. Deterministyczny seed z ADR 0008 już je produkuje,
 a druga kopia rozjechałaby się przy pierwszej zmianie persony.
 
 ## Kroki `when`
@@ -94,7 +94,7 @@ pominięte, gdy krok zwraca pojedynczy obiekt.
   `time_travel`. Dzięki temu ten sam scenariusz daje ten sam wynik dziś i za miesiąc.
 - Roli `admin` w danych wejściowych. Seed nadaje admina wyłącznie `tomasz-admin`; przypadek
   „dwóch administratorów" w UC-5 powstaje **akcją**, żeby asercja `403` nie była pusta.
-- Własnych dzierżaw i zdarzeń — patrz `given` powyżej.
+- Własnych dostępów i zdarzeń — patrz `given` powyżej.
 
 ## Dodawanie scenariusza
 

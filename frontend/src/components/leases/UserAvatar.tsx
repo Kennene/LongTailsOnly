@@ -9,7 +9,7 @@ export interface UserAvatarProps {
 }
 
 /**
- * Awatar dzierżawy: generowana ilustracja w neutralnym kręgu, z inicjałami jako podkładem.
+ * Awatar dostępu: generowana ilustracja w neutralnym kręgu, z inicjałami jako podkładem.
  *
  * Obraz pochodzi z `lib/avatarUrl.ts` (DiceBear, seed = login) — **nie** z `github.com/<login>.png`,
  * bo loginy demo kolidują z prawdziwymi kontami GitHuba i do konsoli trafiłyby twarze obcych osób.
@@ -20,7 +20,7 @@ export interface UserAvatarProps {
  * 2. `onError` gasi obraz i zostawia inicjały — brak sieci psuje obraz, nie tabelę,
  * 3. `onLoad` usuwa inicjały, żeby nie przeświecały przez półprzezroczyste fragmenty ilustracji.
  *
- * Krąg jest **taki sam dla wszystkich**: kolor niesie stan dzierżawy, nie osobę (`DESIGN.md` §1).
+ * Krąg jest **taki sam dla wszystkich**: kolor niesie stan dostępu, nie osobę (`DESIGN.md` §1).
  * Stały rozmiar `size-6` (24 px) trzyma wiersz w paśmie 36–40 px (`DESIGN.md` §3) — `size-7`
  * rozdymał go zmierzone do 45 px.
  */
