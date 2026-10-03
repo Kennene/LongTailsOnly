@@ -21,6 +21,13 @@ W firmach, które tworzą oprogramowanie, dostęp do kodu daje się „na wszelk
 
 W TailCut każdy dostęp działa jak bilet okresowy: jest ważny przez określony czas i trzeba go odnawiać.
 
+## Użycie AI i zasobów zewnętrznych
+
+Pracowaliśmy z asystentami kodu (GitHub Copilot, Claude) w zadaniach weryfikowalnych automatycznie lub w review: testy, schematy, komponenty UI, refaktoryzacja, szkice planów. Architektura, model domeny, kontrakty API, zakres MVP i ADR-y powstały w zespole; decyzje projektowe należały do nas, a zmiany trafiały do `main` po testach i review. Produkt nie korzysta z zewnętrznych modeli AI — mocki GitHuba i Jiry działają lokalnie, a dane demo są syntetyczne. Biblioteki open source opisuje sekcja [Stack](#stack), a komendy weryfikacyjne — [Szybki start](#szybki-start).
+
+---
+
+## Dokumentacja
 1. **Każdy dostęp ma datę ważności.** Domyślnie 30 dni.
 2. **Kto korzysta, nie musi nic robić.** System widzi, że dana osoba pracuje z kodem, i sam przedłuża jej dostęp.
 3. **Kto nie korzysta, temu dostęp wygasa.** Jeśli ktoś tylko czyta i komentuje, a niczego nie zmienia, system proponuje mniejszy zakres dostępu zamiast odbierać wszystko.
