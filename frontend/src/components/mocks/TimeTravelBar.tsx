@@ -20,12 +20,11 @@ import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { useTimeTravel } from '@/hooks/useTimeTravel';
 import { formatDateTimePl, formatOffsetDays } from '@/lib/dateTime';
 
-const PRESET_DAYS: readonly number[] = [15, 30, 60];
 const MIN_CUSTOM_DAYS = 1;
 const MAX_CUSTOM_DAYS = 365;
 const CUSTOM_DAYS_INPUT_ID = 'time-travel-custom-days';
 const CUSTOM_DAYS_ERROR_ID = 'time-travel-custom-days-error';
-const CUSTOM_DAYS_LABEL = 'Własna liczba dni';
+const CUSTOM_DAYS_LABEL = 'Liczba dni';
 const NON_POSITIVE_MESSAGE = 'Podaj dodatnią liczbę dni';
 const OUT_OF_RANGE_MESSAGE = 'Podaj liczbę dni z zakresu 1–365';
 const JUMP_TOAST = 'Zmieniono czas symulowany';
@@ -62,7 +61,8 @@ function validateCustomDays(rawValue: string): CustomDaysValidation {
 
 /**
  * Pasek czasu symulowanego: bieżący czas z `GET /simulation/clock` oraz sterowanie
- * podróżą w czasie (presety, własna liczba dni, reset scenariusza demo).
+ * podróżą w czasie (wpisana liczba dni, reset scenariusza demo). API przesuwa zegar tylko
+ * do przodu — jedynym „cofnięciem” jest reset.
  */
 export function TimeTravelBar(): React.JSX.Element {
   const clock = useSimulatedClock();
@@ -129,98 +129,94 @@ export function TimeTravelBar(): React.JSX.Element {
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1">
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-        <span className="truncate text-xs font-medium text-foreground">
+    <div className="flex w-full min-w-0 flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-2xl font-semibold tracking-tight text-foreground">
           {clock.data ? formatDateTimePl(clock.data.now) : '—'}
         </span>
-        <span className="text-[0.7rem] text-muted-foreground">
+        <span className="text-sm text-muted-foreground">
           Przesunięcie: {clock.data ? formatOffsetDays(clock.data.offset_days) : '—'}
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1">
-        {PRESET_DAYS.map((days: number): React.JSX.Element => (
-          <Button
-            key={days}
-            type="button"
-            size="xs"
-            variant="outline"
-            disabled={isBusy}
-            onClick={(): void => jump(days)}
-          >
-            +{days} dni
+      <form className="flex flex-col gap-1.5" onSubmit={submitCustomDays}>
+        <Label htmlFor={CUSTOM_DAYS_INPUT_ID}>{CUSTOM_DAYS_LABEL}</Label>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Input
+              id={CUSTOM_DAYS_INPUT_ID}
+              name={CUSTOM_DAYS_INPUT_ID}
+              className="w-28 pr-10 tabular-nums"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="30"
+              value={customDays}
+              disabled={isBusy}
+              aria-invalid={validationMessage !== null}
+              aria-describedby={validationMessage === null ? undefined : CUSTOM_DAYS_ERROR_ID}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
+                setCustomDays(event.target.value);
+                setValidationMessage(null);
+              }}
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground"
+            >
+              dni
+            </span>
+          </div>
+          <Button type="submit" disabled={isBusy}>
+            Przesuń
           </Button>
-        ))}
-      </div>
 
-      <form className="flex flex-wrap items-center gap-1" onSubmit={submitCustomDays}>
-        <Label htmlFor={CUSTOM_DAYS_INPUT_ID} className="sr-only">
-          {CUSTOM_DAYS_LABEL}
-        </Label>
-        <Input
-          id={CUSTOM_DAYS_INPUT_ID}
-          name={CUSTOM_DAYS_INPUT_ID}
-          className="h-6 w-12 px-1.5 text-xs md:text-xs"
-          inputMode="numeric"
-          autoComplete="off"
-          placeholder="dni"
-          value={customDays}
-          disabled={isBusy}
-          aria-invalid={validationMessage !== null}
-          aria-describedby={validationMessage === null ? undefined : CUSTOM_DAYS_ERROR_ID}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
-            setCustomDays(event.target.value);
-            setValidationMessage(null);
-          }}
-        />
-        <Button type="submit" size="xs" disabled={isBusy}>
-          Przesuń
-        </Button>
+          {/* Kreska oddziela przesunięcie od resetu, który działa na cały scenariusz. */}
+          <span aria-hidden="true" className="mx-1 h-6 w-px bg-border" />
 
-        <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-          <DialogTrigger asChild>
-            {/* `outline`, nie `destructive`: czerwony jest zarezerwowany dla odbioru dostępu
+          <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+            <DialogTrigger asChild>
+              {/* `outline`, nie `destructive`: czerwony jest zarezerwowany dla odbioru dostępu
                 (DESIGN.md §1), a sam reset ma już ostrzeżenie w dialogu potwierdzenia. */}
-            <Button type="button" size="xs" variant="outline" disabled={isBusy}>
-              Reset
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Zresetować scenariusz demo?</DialogTitle>
-              <DialogDescription>
-                Reset kasuje bazę danych demo, przywraca dane startowe i zeruje zegar symulowany.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline" size="sm" disabled={isBusy}>
-                  Anuluj
-                </Button>
-              </DialogClose>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                disabled={isBusy}
-                onClick={confirmReset}
-              >
-                Potwierdzam reset
+              <Button type="button" variant="outline" disabled={isBusy}>
+                Reset
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Zresetować scenariusz demo?</DialogTitle>
+                <DialogDescription>
+                  Reset kasuje bazę danych demo, przywraca dane startowe i zeruje zegar symulowany.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" size="sm" disabled={isBusy}>
+                    Anuluj
+                  </Button>
+                </DialogClose>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={isBusy}
+                  onClick={confirmReset}
+                >
+                  Potwierdzam reset
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </form>
 
       {validationMessage !== null && (
-        <p id={CUSTOM_DAYS_ERROR_ID} role="alert" className="text-[0.7rem] text-destructive">
+        <p id={CUSTOM_DAYS_ERROR_ID} role="alert" className="text-sm text-destructive">
           {validationMessage}
         </p>
       )}
 
       {mutationError !== null && (
-        <p role="alert" className="text-[0.7rem] text-destructive">
+        <p role="alert" className="text-sm text-destructive">
           {mutationError}
         </p>
       )}

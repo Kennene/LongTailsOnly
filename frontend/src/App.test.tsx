@@ -25,7 +25,7 @@ it('renders navigation for all seven views and switches route', async () => {
 it('keeps the simulated clock out of the top bar', () => {
   renderWithProviders(<App />, { route: '/' });
 
-  expect(screen.queryByRole('button', { name: '+15 dni' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Przesuń' })).not.toBeInTheDocument();
 });
 
 it('opens the mocks view with the simulated clock from the navigation', async () => {
@@ -35,5 +35,5 @@ it('opens the mocks view with the simulated clock from the navigation', async ()
   await user.click(screen.getByRole('link', { name: 'Mocki' }));
 
   expect(await screen.findByRole('heading', { level: 1, name: 'Mocki' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '+15 dni' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Przesuń' })).toBeInTheDocument();
 });
