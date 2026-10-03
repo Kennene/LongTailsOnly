@@ -7,6 +7,7 @@ import { BaselinePage } from '@/pages/BaselinePage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { GraphPage } from '@/pages/GraphPage';
 import { LeasesPage } from '@/pages/LeasesPage';
+import { MocksPage } from '@/pages/MocksPage';
 
 /**
  * Trasy w trybie deklaratywnym. Router zakłada `main.tsx` (`BrowserRouter`), a testy —
@@ -22,6 +23,7 @@ export function App(): React.JSX.Element {
         <Route path="baseline" element={<BaselinePage />} />
         <Route path="graph" element={<GraphPage />} />
         <Route path="audit" element={<AuditPage />} />
+        <Route path="mocks" element={<MocksPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

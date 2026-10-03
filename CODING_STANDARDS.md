@@ -68,7 +68,8 @@ frontend/
     │   └── fixtures/      # Dane demo w kształcie kontraktu + typowany re-export
     ├── components/        # Modułowe komponenty (każdy < 300 linii)
     │   ├── ui/            # Komponenty bazowe (shadcn/ui — kod generowany)
-    │   ├── layout/        # AppShell, Sidebar, TopBar, TimeTravelBar
+    │   ├── layout/        # AppShell, Sidebar, TopBar
+    │   ├── mocks/         # TimeTravelBar, MockSystemCard (widok „Mocki”)
     │   ├── dashboard/     # Karty KPI
     │   ├── leases/        # Tabela dostępów, modal decyzji
     │   ├── appeals/       # Formularz i historia odwołań
@@ -86,7 +87,7 @@ frontend/
 
 #### Standardy frontendu
 - **Architektura SPA**:
-  - Całość działa jako Single Page Application z płynną nawigacją modułową (Dashboard, Leases, Baseline, Graph, Audit).
+  - Całość działa jako Single Page Application z płynną nawigacją modułową (Dashboard, Leases, Baseline, Graph, Audit, Mocks).
 - **React 19 & React Compiler**:
   - Korzystamy z automatycznej memoizacji zapewnianej przez React Compiler — **nie używamy ręcznie `useMemo` i `useCallback`**, chyba że w skrajnych przypadkach integracji z zewnętrznymi bibliotekami.
 - **Komponenty shadcn/ui**:
