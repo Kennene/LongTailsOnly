@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Baza danych demo
+*.sqlite3
+*.db
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# Edytory i system
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
