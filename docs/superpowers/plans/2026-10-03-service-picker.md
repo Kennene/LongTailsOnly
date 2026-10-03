@@ -821,8 +821,8 @@ Expected: **exactly 2 failed** (the pre-existing ADR collisions), with the passe
 
 - [ ] **Step 3: Confirm the contract guard and the registration invariant**
 
-Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest tests/schemas/test_contract_is_fresh.py tests/contract -q && grep -rn "register(" app/adapters`
-Expected: tests PASS; exactly two `register(` matches.
+Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest tests/schemas/test_contract_is_fresh.py tests/contract -q && grep -rn --include='*.py' "register(" app/adapters`
+Expected: tests PASS; exactly two `register(` matches, in `database_vcs.py` and `demo_service.py`. **Use `--include='*.py'`** — without it the command also matches byte-compiled `__pycache__/*.pyc` once tests have run, and a future run would misread three extra binary-match lines as extra call sites.
 
 - [ ] **Step 4: Confirm no file exceeds the enforced line limit**
 
