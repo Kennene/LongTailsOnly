@@ -10,8 +10,8 @@ import type { AuditEntry } from '@/types/api';
  * Klucz `['audit', <id usługi>]` jest tym, który inwalidują decyzje o dzierżawach (spec §7.3),
  * więc dziennik odświeża się razem z listą dzierżaw i pulpitem.
  *
- * `enabled: !isPending` — patrz `useLeases`: bez tej bramki dziennik startowałby w namespace
- * „brak usługi”, czyli z dodatkowym żądaniem i podmianą tabeli po dojściu katalogu.
+ * `enabled` — patrz `useLeases`: bramka nie pyta o dane, dopóki nie ma identyfikatora usługi,
+ * której można by je przypisać.
  */
 export function useAuditLog(): UseQueryResult<AuditEntry[]> {
   const { activeService, isPending } = useActiveService();

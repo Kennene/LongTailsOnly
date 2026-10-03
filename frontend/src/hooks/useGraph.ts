@@ -15,8 +15,8 @@ import type { PermissionGraph } from '@/types/api';
  * decyzji o dzierżawie (spec §7.3), żeby widok pokazywał świeże statusy krawędzi po podróży
  * w czasie i po decyzjach administratora.
  *
- * `enabled: !isPending` — patrz `useLeases`: dopóki katalog jest w drodze, `activeService.id` to
- * `''`, więc bez bramki graf startowałby w namespace „brak usługi”.
+ * `enabled` — patrz `useLeases`: bramka nie pyta o dane, dopóki nie ma identyfikatora usługi,
+ * której można by je przypisać.
  */
 export function useGraph(team: string | null = null): UseQueryResult<PermissionGraph> {
   const { activeService, isPending } = useActiveService();

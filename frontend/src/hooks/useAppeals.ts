@@ -11,7 +11,8 @@ import type { AppealOverview } from '@/types/api';
  * dzierżawy (`{ lease_id }`) to osobne wpisy cache; inwalidacja po prefiksie
  * `['appeals', <id usługi>]` pokrywa oba.
  *
- * `enabled: !isPending` — patrz `useLeases`: bramka trzyma odczyt poza namespace „brak usługi”.
+ * `enabled` — patrz `useLeases`: bramka nie pyta o dane, dopóki nie ma identyfikatora usługi,
+ * której można by je przypisać.
  */
 export function useAppeals(query: AppealsQuery = {}): UseQueryResult<AppealOverview[]> {
   const { activeService, isPending } = useActiveService();

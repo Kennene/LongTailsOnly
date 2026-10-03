@@ -11,9 +11,8 @@ import type { DashboardStats } from '@/types/api';
  * (patrz `api/dashboard.ts`), więc klucz `['dashboard', <id usługi>]` unieważniany po decyzji,
  * odwołaniu, onboardingu i podróży w czasie odświeża całą trójkę odczytów.
  *
- * `enabled: !isPending` — patrz `useLeases`: bez tej bramki odczyt startuje w namespace
- * „brak usługi” (`activeService.id === ''`), czyli po żądaniu na każdą usługę i z mignięciem
- * cudzych danych.
+ * `enabled` — patrz `useLeases`: bramka nie pyta o dane, dopóki nie ma identyfikatora usługi,
+ * której można by je przypisać.
  */
 export function useDashboard(): UseQueryResult<DashboardStats> {
   const { activeService, isPending } = useActiveService();

@@ -19,9 +19,11 @@ import { useServices } from '@/hooks/useServices';
 import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { useSubmitAppeal } from '@/hooks/useSubmitAppeal';
 import { useTeamBaseline } from '@/hooks/useTeamBaseline';
+import { useActiveService } from '@/services/ServicesContext';
 import { resetAppealsMswState } from '@/test/msw/domains/appeals';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { ServiceSwitcherProbe } from '@/test/serviceProbe';
 
 /**
  * Cache TanStack Query jest namespace'owany **po usłudze**: `[<zasób>, <id usługi>, ...]`.
@@ -106,6 +108,16 @@ function AllReadersProbe(): React.JSX.Element {
   useOnboarding(ONBOARDING_LOGIN);
 
   return <span data-testid="all-readers-probe" />;
+}
+
+/**
+ * Sonda stanu katalogu — pozwala poczekać na **osiadły** błąd, zamiast zgadywać, czy żądanie
+ * katalogu już się rozstrzygnęło.
+ */
+function CatalogErrorProbe(): React.JSX.Element {
+  const { isError } = useActiveService();
+
+  return <span data-testid="catalog-error">{String(isError)}</span>;
 }
 
 function SubmitAppealProbe(): React.JSX.Element {
@@ -206,6 +218,79 @@ describe('service-scoped query keys', () => {
       expect(cachedKeys(queryClient)).toContainEqual(['leases', GITHUB]);
     });
     // Dokładnie jedno żądanie — już w namespace rozstrzygniętej usługi.
+    expect(requestedLeaseUrls).toHaveLength(1);
+  });
+
+  it('does not request data in the placeholder namespace when the catalog fails', async () => {
+    // Ruling 28: „katalog padł” nie jest stwierdzeniem, więc czytnik nie pyta w namespace `''`.
+    const requestedLeaseUrls: string[] = [];
+    server.use(
+      http.get('/api/v1/leases', ({ request }) => {
+        requestedLeaseUrls.push(request.url);
+        return HttpResponse.json(leasesFixture);
+      }),
+      http.get('/api/v1/services', () =>
+        HttpResponse.json({ detail: 'Katalog niedostępny' }, { status: 500 }),
+      ),
+    );
+
+    const { queryClient } = renderWithProviders(
+      <>
+        <CatalogErrorProbe />
+        <LeasesProbe />
+      </>,
+    );
+
+    // Kluczowy warunek tego testu: czekamy na **osiadły** błąd katalogu. Bez tego asercje
+    // przechodzą na stanie „katalog w drodze” i nie mówią nic o oknie błędu (Ruling 28).
+    await waitFor(() => {
+      expect(screen.getByTestId('catalog-error')).toHaveTextContent('true');
+    });
+    await waitFor(() => {
+      expect(cachedKeys(queryClient)).toContainEqual(['leases', '']);
+    });
+
+    const placeholder = queryClient.getQueryCache().find({ queryKey: ['leases', ''], exact: true });
+    expect(placeholder?.state.fetchStatus).toBe('idle');
+    expect(placeholder?.state.dataUpdateCount).toBe(0);
+    expect(requestedLeaseUrls).toEqual([]);
+  });
+
+  it('still loads the service the user picks while the catalog is down', async () => {
+    // Ruling 25: wybór przyjęty w oknie błędu katalogu ma **zadziałać** — także dla danych.
+    // Ten test jest granicą Ruling 28: `!isError` blokuje nie tylko namespace `''`, ale i realny
+    // identyfikator, który użytkownik właśnie wybrał.
+    const user = userEvent.setup();
+    const requestedLeaseUrls: string[] = [];
+    server.use(
+      http.get('/api/v1/leases', ({ request }) => {
+        requestedLeaseUrls.push(request.url);
+        return HttpResponse.json(leasesFixture);
+      }),
+      http.get('/api/v1/services', () =>
+        HttpResponse.json({ detail: 'Katalog niedostępny' }, { status: 500 }),
+      ),
+    );
+
+    const { queryClient } = renderWithProviders(
+      <>
+        <CatalogErrorProbe />
+        <ServiceSwitcherProbe />
+        <LeasesProbe />
+      </>,
+    );
+
+    // Klikamy **po** osiadłym błędzie katalogu — inaczej test nie odróżniłby bramki
+    // „katalog w drodze” od „katalog padł”.
+    await waitFor(() => {
+      expect(screen.getByTestId('catalog-error')).toHaveTextContent('true');
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Przełącz na demo-tracker' }));
+
+    await waitFor(() => {
+      expect(cachedKeys(queryClient)).toContainEqual(['leases', DEMO_TRACKER]);
+    });
     expect(requestedLeaseUrls).toHaveLength(1);
   });
 
