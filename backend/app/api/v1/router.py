@@ -2,7 +2,8 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import audit
+from app.api.v1 import audit, baseline
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(audit.router)
+v1_router.include_router(baseline.router)
