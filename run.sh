@@ -27,7 +27,7 @@ done
 step() { printf '\n==> %s\n' "$*"; }
 die() { echo "BŁĄD: $*" >&2; exit 1; }
 
-# Lokalny Node w .tools/node ma pierwszeństwo przed systemowym (Vite 8 wymaga Node >= 20.19).
+# Lokalny Node w .tools/node ma pierwszeństwo przed systemowym (frontend wymaga Node >= 24).
 if [[ -x "$ROOT/.tools/node/bin/node" ]]; then
   export PATH="$ROOT/.tools/node/bin:$PATH"
 fi

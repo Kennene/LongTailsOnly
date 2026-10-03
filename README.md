@@ -160,7 +160,7 @@ Aplikacja jest SPA z wydzielonym silnikiem reguł, ułożonym w **architekturze 
 
 ## Szybki start
 
-Wymagania: [`uv`](https://docs.astral.sh/uv/), Node.js 20.19+ lub 22.12+, `curl`. Backend wymaga Pythona 3.14, który `uv` pobierze automatycznie.
+Wymagania: [`uv`](https://docs.astral.sh/uv/), Node.js 24+, `curl`. Backend wymaga Pythona 3.14, który `uv` pobierze automatycznie.
 
 ```bash
 ./run.sh --reset      # backend + panel; reset danych demo

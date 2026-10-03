@@ -20,7 +20,7 @@ done
 step() { printf '\n==> %s\n' "$*"; }
 die() { echo "BŁĄD: $*" >&2; exit 1; }
 
-# Lokalny Node w .tools/node ma pierwszeństwo przed systemowym (Vite 8 wymaga Node >= 20.19).
+# Lokalny Node w .tools/node ma pierwszeństwo przed systemowym (frontend wymaga Node >= 24).
 if [[ -x "$ROOT/.tools/node/bin/node" ]]; then
   export PATH="$ROOT/.tools/node/bin:$PATH"
 fi
@@ -34,9 +34,9 @@ command -v node >/dev/null || die "brak 'node'"
 command -v npm >/dev/null || die "brak 'npm'"
 
 node -e '
-  const [maj, min] = process.versions.node.split(".").map(Number);
-  const ok = (maj === 20 && min >= 19) || (maj === 22 && min >= 12) || maj > 22;
-  if (!ok) { console.error("Node " + process.versions.node + " jest za stary, wymagany ^20.19 lub >=22.12"); process.exit(1); }
+  const [maj] = process.versions.node.split(".").map(Number);
+  const ok = maj >= 24;
+  if (!ok) { console.error("Node " + process.versions.node + " jest za stary, wymagany >=24"); process.exit(1); }
 ' || die "niewspierana wersja Node"
 
 step "Backend: instalacja zależności"
