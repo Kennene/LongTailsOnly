@@ -24,3 +24,16 @@ pytest
 - Nowa biblioteka: `uv add nazwa` (narzędzie tylko do developmentu: `uv add --optional dev nazwa`).
 
 > Jeśli `uv` ostrzega `VIRTUAL_ENV ... does not match the project environment`, masz aktywne inne venv (np. z katalogu głównego repo) — zrób `deactivate` albo je zignoruj: `uv run` i tak użyje `backend/.venv`.
+
+## Kontrakt API (typy dla frontendu)
+
+Źródłem prawdy są schematy Pydantic w `app/schemas/` i enumy w `app/domain/enums.py` (ADR 0009).
+Po **każdej** ich zmianie wygeneruj kontrakt i typy TypeScript:
+
+```bash
+cd backend
+uv run python scripts/export_contract.py
+npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false --bannerComment "/* AUTO-GENERATED from backend/contract/schema.json - do not edit. Regenerate: see backend/README.md */"
+```
+
+`frontend/src/types/api.ts` nie edytujemy ręcznie. Test `tests/schemas/test_contract_is_fresh.py` pada, jeśli `contract/schema.json` jest nieaktualny.

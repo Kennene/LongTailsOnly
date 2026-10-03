@@ -10,13 +10,13 @@ ADR 0001 wymaga, by interfejsy TypeScript odpowiadały schematom Pydantic, ale n
 ## Decyzja
 
 1. **Źródłem prawdy są schematy Pydantic** w `backend/app/schemas/` i enumy w `backend/app/domain/`.
-2. **Skrypt `backend/scripts/export_contract.py`** zbiera wszystkie schematy z `app.schemas.CONTRACT_MODELS` do jednego pliku JSON Schema: `backend/contract/schema.json`.
-3. **Typy TS generujemy** z tego pliku narzędziem `json-schema-to-typescript` (przez `npx`, bez dodawania zależności do backendu) do `frontend/src/types/api.ts`. Pliku nie edytuje się ręcznie (nagłówek „AUTO-GENERATED”).
+2. **Skrypt `backend/scripts/export_contract.py`** zbiera wszystkie schematy z `app.schemas.CONTRACT_REQUEST_MODELS` (żądania) i `CONTRACT_RESPONSE_MODELS` (odpowiedzi) do jednego pliku JSON Schema: `backend/contract/schema.json`.
+3. **Typy TS generujemy** z tego pliku narzędziem `json-schema-to-typescript` (przez `npx`, bez dodawania zależności do backendu) do `frontend/src/types/api.ts`. Pliku nie edytuje się ręcznie (nagłówek „AUTO-GENERATED”). `build_contract()` usuwa tytuły pól (inaczej generator tworzy aliasy `Id1`, `Name2`), a `--additionalProperties=false` zamyka interfejsy, żeby literówki w nazwach pól były błędem kompilacji.
 4. **Test `tests/schemas/test_contract_is_fresh.py`** porównuje zawartość `contract/schema.json` z aktualnymi schematami — CI zaświeci na czerwono, jeśli ktoś zmieni schemat i nie wygeneruje kontraktu.
 5. Polecenie dla zespołu (opisane w `backend/README.md`):
    ```bash
    cd backend && uv run python scripts/export_contract.py
-   npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions
+   npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false
    ```
 
 ## Konsekwencje
