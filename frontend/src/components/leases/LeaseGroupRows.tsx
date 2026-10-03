@@ -62,8 +62,8 @@ interface GroupRowProps {
 
 /**
  * Podsumowanie osoby: kim jest, ile ma repozytoriów i jak pilny jest jej najgorszy dostęp.
- * Termin i status pochodzą z **najpilniejszego** dostępu, bo to on decyduje, czy admin ma
- * tu zajrzeć; aktywność to najświeższa z wszystkich repozytoriów osoby.
+ * Termin pochodzi z **najpilniejszego** dostępu, bo to on decyduje, czy admin ma tu zajrzeć;
+ * aktywność to najświeższa z wszystkich repozytoriów osoby. Statusu wiersz osoby nie pokazuje.
  */
 function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): React.JSX.Element {
   const pending: number = countPendingRecommendations(group.leases);
@@ -99,9 +99,8 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
         {lastActivity === null ? '—' : formatDateTimeShortPl(lastActivity)}
       </TableCell>
       <TableCell>{formatDaysRemaining(group.mostUrgent.days_remaining)}</TableCell>
-      <TableCell>
-        <LeaseStatusBadge status={group.mostUrgent.status} />
-      </TableCell>
+      {/* Status należy do dostępu, nie do osoby — pokazują go dopiero wiersze repozytoriów. */}
+      <TableCell />
       <TableCell className="text-muted-foreground">
         {pending === 0 ? '—' : `${pending} do decyzji`}
       </TableCell>

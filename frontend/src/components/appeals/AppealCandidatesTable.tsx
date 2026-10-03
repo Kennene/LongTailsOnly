@@ -91,9 +91,8 @@ function CandidateGroupRows({
         </TableCell>
         <TableCell />
         <TableCell>{formatDaysRemaining(group.mostUrgent.days_remaining)}</TableCell>
-        <TableCell>
-          <StatusBadge status={group.mostUrgent.status} />
-        </TableCell>
+        {/* Status należy do dostępu, nie do osoby — pokazują go dopiero wiersze repozytoriów. */}
+        <TableCell />
       </TableRow>
       {expanded
         ? group.leases.map((lease: LeaseOverview): React.JSX.Element => (

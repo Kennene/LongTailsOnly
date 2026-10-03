@@ -1,0 +1,21 @@
+# Demo w jednym kontenerze: obraz z Dockerfile (./build.sh przy buildzie, ./run.sh przy starcie).
+#
+#   docker compose up -d --build     # build i start w tle
+#   docker compose logs -f           # logi backendu i panelu
+#   docker compose down              # stop (baza demo znika razem z kontenerem)
+#
+# Panel: http://<host>:5173   API: http://<host>:8000/docs
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        RUN_TESTS: ""   # "1" uruchamia ./build.sh --test
+    image: longtails
+    # Opcje ./run.sh, np. ["--reset"] albo ["--fixtures"].
+    command: []
+    ports:
+      - "5173:5173"
+      - "8000:8000"
+    restart: unless-stopped

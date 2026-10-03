@@ -20,6 +20,8 @@ export default defineConfig({
     fs: {
       allow: ['..'],
     },
+    // Demo stoi za reverse proxy pod różnymi domenami; `true` wpuszcza każdy nagłówek Host.
+    allowedHosts: true,
     proxy: {
       '/api': 'http://localhost:8000',
       // Osobne Swaggery mocków GitHuba i Jiry z backendu; sama trasa SPA `/mocks` zostaje we froncie.

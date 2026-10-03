@@ -218,6 +218,13 @@
   textarea {
     caret-color: var(--primary);
   }
+  /* Natywny `<select>` maluje listę opcji poza CSS strony, więc tokeny motywu nie docierają do niej
+     same. Bez jawnego tła przeglądarka sięga po jasny motyw systemowy, a że opcje dziedziczą jasny
+     `color`, stają się nieczytelne (Audyt, Graf, Odwołania). */
+  select option {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
   table {
     font-variant-numeric: tabular-nums;
   }

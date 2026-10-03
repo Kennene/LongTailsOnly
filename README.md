@@ -183,6 +183,26 @@ Przy pierwszym starcie backend sam buduje bazę i wgrywa dane demo: jedną organ
 
 Szczegóły uruchamiania i testów: [`backend/README.md`](backend/README.md), [`frontend/README.md`](frontend/README.md).
 
+### Docker
+
+Obraz demo zawiera Pythona 3.14, `uv`, Node 24 i `npm`. Buduje aplikację przez `./build.sh`, a uruchamia przez `./run.sh` (backend i panel w jednym kontenerze).
+
+```bash
+docker build -t longtails .                          # build bez testów
+docker build -t longtails --build-arg RUN_TESTS=1 .  # build z ./build.sh --test
+docker run --rm -it -p 5173:5173 -p 8000:8000 longtails [--reset] [--fixtures]
+```
+
+Panel: <http://localhost:5173>, API: <http://localhost:8000/docs>. Baza demo powstaje w kontenerze przy każdym starcie (`--rm`).
+
+Na serwerze wygodniej przez Docker Compose (`docker-compose.yml`, opcje `run.sh` w polu `command`):
+
+```bash
+docker compose up -d --build
+docker compose logs -f
+docker compose down
+```
+
 ---
 
 ## Struktura repozytorium
