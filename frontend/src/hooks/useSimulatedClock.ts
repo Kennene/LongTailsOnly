@@ -1,4 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+
 import { fetchClock } from '@/api/simulation';
 import type { ClockRead } from '@/types/api';
 

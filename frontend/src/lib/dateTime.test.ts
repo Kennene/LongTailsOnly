@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+
 import {
   DAY_MS,
-  DISPLAY_TIME_ZONE,
   daysRemaining,
+  DISPLAY_TIME_ZONE,
   formatDateTimePl,
   formatDaysRemaining,
   formatOffsetDays,
@@ -80,4 +81,17 @@ describe('formatOffsetDays', () => {
   it('uses the typographic minus sign for negative offsets', () => {
     expect(formatOffsetDays(-15).codePointAt(0)).toBe(0x2212);
   });
+});
+
+describe('formatDateTimePl with malformed input', () => {
+  it('formats an ISO timestamp in the fixed display time zone', () => {
+    expect(formatDateTimePl('2026-10-03T13:24:00Z')).toBe('3 października 2026, 15:24');
+  });
+
+  it.each(['', 'not-a-date', '2026-13-45T99:99:99Z'])(
+    'returns an em dash for the malformed timestamp "%s" instead of throwing',
+    (iso: string) => {
+      expect(formatDateTimePl(iso)).toBe('—');
+    },
+  );
 });

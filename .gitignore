@@ -21,3 +21,6 @@ coverage/
 # Logi
 *.log
 npm-debug.log*
+
+# Artefakty narzędzi przeglądarkowych (Playwright MCP i podobne)
+.playwright-mcp/

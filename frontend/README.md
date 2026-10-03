@@ -43,10 +43,9 @@ Hook `pre-commit` (husky + lint-staged) formatuje i naprawia lintem pliki ze sta
 cd ../backend && uv run python scripts/export_contract.py
 npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts \
   --unreachableDefinitions --additionalProperties=false
-cd ../frontend && npx prettier --write src/types/api.ts
 ```
 
-Ostatni krok jest obowiązkowy: generator ma własny styl (m.in. podwójne cudzysłowy), a `npm run format:check` pilnuje konfiguracji Prettiera — bez formatowania po regeneracji bramka „format" będzie czerwona.
+Plik jest wpisany w `.prettierignore` (formatuje go generator, ADR 0009), więc regeneracja nie zapala bramki `format:check`.
 
 ## Dane bez backendu
 

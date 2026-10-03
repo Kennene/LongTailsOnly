@@ -8,11 +8,12 @@ import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 /**
- * jsdom nie implementuje `ResizeObserver`, a `@xyflow/react` mierzy nim kontener grafu.
+ * jsdom nie implementuje `ResizeObserver`, a `@xyflow/react` mierzy nim kontener grafu
+ * (bez niego graf się nie renderuje — biblioteka tylko się wtedy nie mierzy).
  * Polyfill trzymamy lokalnie, żeby nie zmieniać współdzielonego `test/setup.ts` (zadanie 5.1).
  */
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserverStub {
+  globalThis.ResizeObserver = class ResizeObserverStub {
     observe(): void {}
     unobserve(): void {}
     disconnect(): void {}

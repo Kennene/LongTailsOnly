@@ -9,6 +9,8 @@ import type { LeaseOverview } from '@/types/api';
 export interface AppealFormProps {
   leases: LeaseOverview[];
   onSubmit: (lease_id: number, justification: string) => void;
+  /** Blokuje ponowne wysłanie, gdy mutacja jest w toku (drugi POST kończy się konfliktem 409). */
+  isSubmitting?: boolean;
 }
 
 /** Komunikat walidacji; `trim()` odsiewa też uzasadnienie z samych białych znaków. */
@@ -19,7 +21,11 @@ const JUSTIFICATION_REQUIRED = 'Uzasadnienie jest wymagane';
 const SELECT_CLASSES =
   'h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30';
 
-export function AppealForm({ leases, onSubmit }: AppealFormProps): React.JSX.Element {
+export function AppealForm({
+  leases,
+  onSubmit,
+  isSubmitting = false,
+}: AppealFormProps): React.JSX.Element {
   const [leaseId, setLeaseId] = useState<string>(leases.length === 0 ? '' : String(leases[0].id));
   const [justification, setJustification] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +85,7 @@ export function AppealForm({ leases, onSubmit }: AppealFormProps): React.JSX.Ele
         )}
       </div>
 
-      <Button className="self-start" type="submit">
+      <Button className="self-start" disabled={isSubmitting} type="submit">
         Złóż odwołanie
       </Button>
     </form>

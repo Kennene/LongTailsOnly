@@ -1,6 +1,8 @@
-import { HttpResponse, http } from 'msw';
 import type { HttpHandler } from 'msw';
+import { http, HttpResponse } from 'msw';
+
 import type { TimeTravelRequest } from '@/types/api';
+
 import {
   advanceSimulatedClock,
   getSimulatedNow,

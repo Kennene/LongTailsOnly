@@ -1,5 +1,5 @@
-import type { DecisionRequest, LeaseOverview, LeaseStatus, Recommendation } from '@/types/api';
 import { leasesFixture } from '@/api/fixtures/leases';
+import type { DecisionRequest, LeaseOverview, LeaseStatus, Recommendation } from '@/types/api';
 
 /**
  * Stan symulacji dla testów: zegar, offset, dzierżawy i zapisane żądania.

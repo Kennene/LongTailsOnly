@@ -2,10 +2,10 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { toast } from 'sonner';
+import { beforeEach, expect, it, vi } from 'vitest';
 
 import { leasesFixture } from '@/api/fixtures';
 import { DecisionModal } from '@/components/leases/DecisionModal';
-import { Toaster } from '@/components/ui/sonner';
 import { server } from '@/test/msw/server';
 import { getLastDecisionRequest } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -28,12 +28,7 @@ async function renderModal(
   lease: LeaseOverview,
   onOpenChange: (open: boolean) => void = () => {},
 ): Promise<void> {
-  renderWithProviders(
-    <>
-      <DecisionModal lease={lease} open onOpenChange={onOpenChange} />
-      <Toaster theme="light" />
-    </>,
-  );
+  renderWithProviders(<DecisionModal lease={lease} open onOpenChange={onOpenChange} />);
 
   // Wybór daty wymaga czasu symulowanego z API — czekamy, aż modal będzie gotowy.
   await waitFor(() => {
@@ -41,7 +36,8 @@ async function renderModal(
   });
 }
 
-// Sonner trzyma kolejkę toastów w stanie modułu — czyścimy ją, żeby testy się nie nakładały.
+// Sonner trzyma kolejkę toastów w stanie modułu (a `Toaster` montuje `renderWithProviders`),
+// więc czyścimy ją między testami — inaczej asercja toasta widzi komunikaty z wcześniejszych testów.
 beforeEach(() => {
   toast.dismiss();
 });
@@ -208,18 +204,21 @@ it('shows the API message for other failures', async () => {
   expect(await screen.findByText('Baza danych jest niedostępna')).toBeInTheDocument();
 });
 
+it('explains the unavailable date picker while the simulated clock is missing', async () => {
+  server.use(
+    http.get('/api/v1/simulation/clock', () =>
+      HttpResponse.json({ detail: 'Zegar jest niedostępny' }, { status: 500 }),
+    ),
+  );
+  renderWithProviders(<DecisionModal lease={activeLease} open onOpenChange={() => {}} />);
+
+  expect(await screen.findByText('Czekam na czas symulowany…')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Data' })).toBeDisabled();
+});
+
 it('renders nothing when there is no lease', () => {
   renderWithProviders(<DecisionModal lease={null} open onOpenChange={() => {}} />);
 
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(screen.queryByText('Decyzja o dzierżawie')).not.toBeInTheDocument();
-});
-
-it('DEBUG probes toaster mounts', async () => {
-  await renderModal(activeLease);
-  const summary = Array.from(document.body.children).map(
-    (el) =>
-      `${el.tagName}|${el.getAttribute('data-slot') ?? '-'}|toasters:${el.querySelectorAll('ol[data-sonner-toaster]').length}|dialogs:${el.querySelectorAll('[data-slot="dialog-content"]').length}`,
-  );
-  expect(summary).toEqual(['PROBE']);
 });

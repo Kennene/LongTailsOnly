@@ -1,5 +1,6 @@
 import { FileCheck2, Gavel, LayoutDashboard, Network, ScrollText, ShieldCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [

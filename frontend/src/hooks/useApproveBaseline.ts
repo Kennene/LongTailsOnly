@@ -11,7 +11,8 @@ export interface ApproveBaselineVariables {
  * Zatwierdzenie standardu dla nowego członka zespołu (UC-1).
  *
  * Po sukcesie unieważniamy standard (nowy członek znika z listy), dzierżawy (backend właśnie
- * je utworzył) i audyt (nowe zdarzenie) — bez tego demo pokazywałoby nieaktualne dane.
+ * je utworzył), liczniki dashboardu (nowe dzierżawy wchodzą do KPI) i audyt (nowe zdarzenie) —
+ * bez tego demo pokazywałoby nieaktualne dane.
  */
 export function useApproveBaseline(): UseMutationResult<void, Error, ApproveBaselineVariables> {
   const queryClient = useQueryClient();
@@ -22,6 +23,7 @@ export function useApproveBaseline(): UseMutationResult<void, Error, ApproveBase
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['baseline'] });
       void queryClient.invalidateQueries({ queryKey: ['leases'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       void queryClient.invalidateQueries({ queryKey: ['audit'] });
     },
   });

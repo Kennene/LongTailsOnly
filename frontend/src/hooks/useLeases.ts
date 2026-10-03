@@ -1,4 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+
 import { fetchLeases } from '@/api/leases';
 import type { LeaseOverview } from '@/types/api';
 

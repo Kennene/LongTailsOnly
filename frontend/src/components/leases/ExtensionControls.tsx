@@ -6,15 +6,15 @@ import { pl } from 'react-day-picker/locale';
 import {
   CUSTOM_DAYS_MAX,
   CUSTOM_DAYS_MIN,
+  type ExtensionChoice,
   formatMultiplier,
   isMultiplierChosen,
   isPresetChosen,
+  type Multiplier,
   MULTIPLIERS,
   PRESET_DAYS,
-  toIsoDate,
-  type ExtensionChoice,
-  type Multiplier,
   type PresetDays,
+  toIsoDate,
 } from '@/components/leases/extensionChoice';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -112,6 +112,9 @@ export function ExtensionControls({
         </Popover>
         {choice?.kind === 'date' ? (
           <span className="text-sm text-muted-foreground">{choice.date}</span>
+        ) : null}
+        {simulatedNow === null ? (
+          <span className="text-xs text-muted-foreground">Czekam na czas symulowany…</span>
         ) : null}
       </div>
     </section>

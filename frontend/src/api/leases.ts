@@ -1,4 +1,5 @@
 import type { DecisionRequest, LeaseOverview } from '@/types/api';
+
 import { getJson, postJson } from './client';
 import { shouldUseFixtures } from './config';
 import { leasesFixture } from './fixtures/leases';

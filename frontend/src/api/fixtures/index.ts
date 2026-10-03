@@ -10,5 +10,6 @@
 export { appealsFixture } from './appeals';
 export { auditFixture } from './audit';
 export { baselineFixture } from './baseline';
+export { clockFixture } from './clock';
 export { dashboardFixture } from './dashboard';
 export { leasesFixture } from './leases';

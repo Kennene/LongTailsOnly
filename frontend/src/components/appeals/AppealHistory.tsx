@@ -37,7 +37,7 @@ export function AppealHistory({ appeals }: AppealHistoryProps): React.JSX.Elemen
                 {badge.label}
               </Badge>
             </div>
-            <p className="max-w-prose break-words text-sm">{appeal.justification}</p>
+            <p className="max-w-prose text-sm break-words">{appeal.justification}</p>
           </li>
         );
       })}

@@ -1,6 +1,8 @@
-import { HttpResponse, http } from 'msw';
 import type { HttpHandler } from 'msw';
+import { http, HttpResponse } from 'msw';
+
 import type { DecisionRequest } from '@/types/api';
+
 import { applyDecision, getLeases, recordDecision } from '../state';
 
 export const leasesHandlers: HttpHandler[] = [

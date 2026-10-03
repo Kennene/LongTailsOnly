@@ -51,6 +51,9 @@ export function isPresetChosen(choice: ExtensionChoice | null, days: PresetDays)
   return choice?.kind === 'preset' && choice.days === days;
 }
 
-export function isMultiplierChosen(choice: ExtensionChoice | null, multiplier: Multiplier): boolean {
+export function isMultiplierChosen(
+  choice: ExtensionChoice | null,
+  multiplier: Multiplier,
+): boolean {
   return choice?.kind === 'multiplier' && choice.multiplier === multiplier;
 }

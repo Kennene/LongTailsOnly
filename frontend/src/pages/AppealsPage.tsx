@@ -175,13 +175,30 @@ export function AppealsPage(): React.JSX.Element {
           <CardDescription>Uzasadnienie jest wymagane i nie może się powtarzać.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {candidates.length === 0 ? (
+          {leasesQuery.isPending ? <Skeleton className="h-24 w-full" /> : null}
+
+          {leasesQuery.isError ? (
+            <p className="text-sm text-muted-foreground">
+              Formularz pojawi się, gdy lista dzierżaw zostanie pobrana.
+            </p>
+          ) : null}
+
+          {leasesQuery.isSuccess && candidates.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nie ma czego przedłużać — żadna dzierżawa nie jest w oknie ostrzegawczym.
             </p>
-          ) : (
-            <AppealForm leases={candidates} onSubmit={handleSubmit} />
-          )}
+          ) : null}
+
+          {leasesQuery.isSuccess && candidates.length > 0 ? (
+            // `key` resetuje wybór dzierżawy, gdy kandydaci się zmienią (np. po przedłużeniu
+            // albo resecie scenariusza) — inaczej formularz wysłałby nieaktualne `lease_id`.
+            <AppealForm
+              isSubmitting={submitAppeal.isPending}
+              key={candidates.map((lease: LeaseOverview): number => lease.id).join('-')}
+              leases={candidates}
+              onSubmit={handleSubmit}
+            />
+          ) : null}
 
           {submitAppeal.error === null ? null : (
             <Alert variant="destructive">

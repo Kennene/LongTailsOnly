@@ -1,5 +1,7 @@
 import '@testing-library/jest-dom/vitest';
+
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
+
 import { server } from './msw/server';
 import { resetMswState } from './msw/state';
 

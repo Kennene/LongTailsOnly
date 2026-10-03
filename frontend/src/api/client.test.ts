@@ -1,5 +1,6 @@
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
+
 import { ApiError, getJson, postJson } from '@/api/client';
 import { server } from '@/test/msw/server';
 

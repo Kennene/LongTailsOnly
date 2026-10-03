@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+
 import { AppShell } from '@/components/layout/AppShell';
 import { AppealsPage } from '@/pages/AppealsPage';
 import { AuditPage } from '@/pages/AuditPage';

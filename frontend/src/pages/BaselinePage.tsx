@@ -1,4 +1,5 @@
 import type { UseQueryResult } from '@tanstack/react-query';
+
 import type { BaselineResponse } from '@/api/baseline';
 import { BaselineApproval } from '@/components/baseline/BaselineApproval';
 import { BaselineTable, BaselineTableSkeleton } from '@/components/baseline/BaselineTable';
@@ -65,11 +66,7 @@ export function BaselinePage(): React.JSX.Element {
         </p>
       </header>
       {isPending ? (
-        <div
-          role="status"
-          aria-label="Ładowanie standardu zespołu"
-          className="flex flex-col gap-8"
-        >
+        <div role="status" aria-label="Ładowanie standardu zespołu" className="flex flex-col gap-8">
           <BaselineTableSkeleton />
           <BaselineTableSkeleton />
         </div>

@@ -3,3 +3,6 @@ node_modules/
 package-lock.json
 .npm-cache/
 coverage/
+# Generowany kontrakt (ADR 0009) — formatuje go generator, nie Prettier;
+# dzięki temu regeneracja nie zapala bramki `format:check`.
+src/types/api.ts

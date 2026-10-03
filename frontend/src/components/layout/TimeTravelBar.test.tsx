@@ -134,3 +134,39 @@ it('announces a successful jump with a toast', async () => {
   await waitFor(() => expect(toastTitles()).toHaveLength(toastsBefore + 1));
   expect(toastTitles().at(-1)).toBe('Zmieniono czas symulowany');
 });
+
+it('surfaces a failed jump instead of looking like a hung button', async () => {
+  const user = userEvent.setup();
+  server.use(
+    http.post('/api/v1/simulation/time-travel', () =>
+      HttpResponse.json({ detail: 'Backend nie odpowiada' }, { status: 503 }),
+    ),
+  );
+  renderWithProviders(<TimeTravelBar />);
+  await screen.findByText(INITIAL_CLOCK);
+
+  await user.click(screen.getByRole('button', { name: '+15 dni' }));
+
+  const message = 'Nie udało się zmienić czasu symulowanego.';
+  expect(await screen.findByRole('alert')).toHaveTextContent(message);
+  await waitFor(() => expect(toastTitles()).toContain(message));
+});
+
+it('explains a disabled demo reset (404) instead of looking like a hung button', async () => {
+  const user = userEvent.setup();
+  server.use(
+    http.post('/api/v1/demo/reset', () =>
+      HttpResponse.json({ detail: 'Not Found' }, { status: 404 }),
+    ),
+  );
+  renderWithProviders(<TimeTravelBar />);
+  await screen.findByText(INITIAL_CLOCK);
+
+  await user.click(screen.getByRole('button', { name: 'Reset' }));
+  await user.click(await screen.findByRole('button', { name: 'Potwierdzam reset' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Reset demo jest wyłączony na serwerze (ENABLE_DEMO_RESET=false).',
+  );
+  expect(getDemoResetCount()).toBe(0);
+});

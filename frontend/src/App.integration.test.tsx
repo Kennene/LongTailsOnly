@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
 import { App } from '@/App';
 import { getSimulatedNow } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';

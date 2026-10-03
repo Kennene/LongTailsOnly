@@ -18,7 +18,15 @@ const TIME_PART_TYPES: ReadonlySet<string> = new Set([
 // `Intl` joins the pl-PL date and time with a plain space ("3 października 2026 15:24"),
 // while the contract pins "3 października 2026, 15:24" — so we join the two halves ourselves.
 export function formatDateTimePl(iso: string): string {
-  const parts: Intl.DateTimeFormatPart[] = DATE_TIME_FORMATTER.formatToParts(new Date(iso));
+  const timestamp: number = Date.parse(iso);
+
+  // Jeden zły znacznik czasu z backendu nie może wywalić całego widoku — aplikacja nie ma
+  // error boundary, a `Intl.formatToParts(new Date(NaN))` rzuca `RangeError`.
+  if (Number.isNaN(timestamp)) {
+    return '—';
+  }
+
+  const parts: Intl.DateTimeFormatPart[] = DATE_TIME_FORMATTER.formatToParts(new Date(timestamp));
   const timeStart: number = parts.findIndex((part: Intl.DateTimeFormatPart): boolean =>
     TIME_PART_TYPES.has(part.type),
   );

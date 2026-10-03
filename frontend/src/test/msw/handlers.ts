@@ -1,4 +1,6 @@
 import type { HttpHandler } from 'msw';
+
+import { activityHandlers } from './domains/activity';
 import { appealsHandlers } from './domains/appeals';
 import { auditHandlers } from './domains/audit';
 import { baselineHandlers } from './domains/baseline';
@@ -17,6 +19,7 @@ export const handlers: HttpHandler[] = [
   ...dashboardHandlers,
   ...baselineHandlers,
   ...appealsHandlers,
+  ...activityHandlers,
   ...graphHandlers,
   ...auditHandlers,
 ];
