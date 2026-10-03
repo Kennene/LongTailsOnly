@@ -1,5 +1,4 @@
-import { ChevronRight } from 'lucide-react';
-
+import { ExpandToggle } from '@/components/common/ExpandToggle';
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import {
   countPendingRecommendations,
@@ -76,21 +75,12 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
         {/* Jedna linia: strzałka, nazwa, login i awatar (pasmo 36–40 px, DESIGN.md §3). Klik w cały
             wiersz też rozwija, ale stan niesie przycisk z `aria-expanded`, nie kolor ani kursor. */}
         <div className="flex items-center gap-1.5">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-expanded={expanded}
-            aria-label={`${expanded ? 'Ukryj' : 'Pokaż'} dostępy: ${group.user.name}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggle();
-            }}
-          >
-            <ChevronRight
-              aria-hidden
-              className={cn('transition-transform', expanded ? 'rotate-90' : null)}
-            />
-          </Button>
+          <ExpandToggle
+            expanded={expanded}
+            onToggle={onToggle}
+            subject="dostępy"
+            owner={group.user.name}
+          />
           <span className="shrink-0 font-medium">{group.user.name}</span>
           <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
             {group.user.login}

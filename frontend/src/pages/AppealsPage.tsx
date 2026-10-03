@@ -1,127 +1,26 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { AppealCandidatesTable } from '@/components/appeals/AppealCandidatesTable';
 import { AppealForm } from '@/components/appeals/AppealForm';
+import { AppealList } from '@/components/appeals/AppealList';
 import { DecisionModal } from '@/components/leases/DecisionModal';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useAppeals } from '@/hooks/useAppeals';
 import { useLeases } from '@/hooks/useLeases';
 import { useSubmitAppeal } from '@/hooks/useSubmitAppeal';
 import { type ApiErrorDescription, describeApiError, describeEngineError } from '@/lib/apiErrors';
 import { isAppealable } from '@/lib/appealable';
-import { formatDateTimePl, formatDaysRemaining } from '@/lib/dateTime';
-import { getAppealStatusBadge, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import type { AppealOverview, LeaseOverview } from '@/types/api';
 
+const CANDIDATES_HEADING_ID = 'appeals-candidates-heading';
 const APPEALS_LIST_HEADING_ID = 'appeals-submitted-heading';
 const SUBMIT_APPEAL_FALLBACK = 'Nie udało się złożyć odwołania.';
 const EMPTY_CANDIDATES =
   'Brak dostępów do odwołania — odwołanie przysługuje odebranym dostępom oraz tym, które wygasły albo wygasają w ciągu 7 dni.';
-
-interface LeaseCandidatesTableProps {
-  leases: LeaseOverview[];
-}
-
-/** Dostępy, które silnik przyjmie do odwołania: odebrane oraz `WARNING`/`EXPIRED` (`is_appealable`). */
-function LeaseCandidatesTable({ leases }: LeaseCandidatesTableProps): React.JSX.Element {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Osoba</TableHead>
-          <TableHead>Repozytorium</TableHead>
-          <TableHead>Poziom</TableHead>
-          <TableHead>Pozostało</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {leases.map((lease: LeaseOverview): React.JSX.Element => {
-          const badge = getStatusBadge(lease.status);
-
-          return (
-            <TableRow key={lease.id}>
-              <TableCell className="font-medium">{lease.user.name}</TableCell>
-              <TableCell className="font-mono text-xs">{lease.repository.name}</TableCell>
-              <TableCell>{getRoleLabel(lease.current_role)}</TableCell>
-              <TableCell>{formatDaysRemaining(lease.days_remaining)}</TableCell>
-              <TableCell>
-                <Badge className={badge.className} variant="outline">
-                  {badge.label}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
-  );
-}
-
-interface AppealListItemProps {
-  appeal: AppealOverview;
-  onResolve: (appeal: AppealOverview) => void;
-}
-
-/**
- * `AppealOverview` niesie osobę, repozytorium i pozostałe dni, więc lista **nie** łączy się
- * z `useLeases()` — działa też, gdy dostępu spoza okna ostrzegawczego nie ma na liście.
- * Jedynym naprawdę zerowym polem jest `days_remaining` (dla nieaktywnego dostępu) i to ono
- * ma zapasową kreskę w `formatDaysRemaining`.
- */
-function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.Element {
-  const badge = getAppealStatusBadge(appeal.status);
-  const days: string = appeal.lease_is_active
-    ? formatDaysRemaining(appeal.days_remaining)
-    : 'Dostęp nieaktywny';
-
-  return (
-    <li className="flex flex-col gap-2 border-b border-border py-3 last:border-b-0">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Badge className={badge.className} variant="outline">
-          <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-          {badge.label}
-        </Badge>
-        <span className="text-sm font-medium">{appeal.user.name}</span>
-        <span className="font-mono text-xs text-muted-foreground">{appeal.repository.name}</span>
-        <span className="text-xs text-muted-foreground">{`Wniosek: ${getRoleLabel(
-          appeal.requested_role,
-        )}`}</span>
-        <span className="text-xs text-muted-foreground">{`W dostępie: ${getRoleLabel(
-          appeal.lease_role,
-        )}`}</span>
-        <span className="text-xs text-muted-foreground">{days}</span>
-        <span className="ml-auto font-mono text-xs text-muted-foreground">
-          {formatDateTimePl(appeal.created_at)}
-        </span>
-      </div>
-      <p className="max-w-prose text-sm break-words">{appeal.justification}</p>
-      {appeal.status === 'PENDING' ? (
-        <Button
-          className="self-start"
-          onClick={() => onResolve(appeal)}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          Rozpatrz
-        </Button>
-      ) : null}
-    </li>
-  );
-}
 
 export function AppealsPage(): React.JSX.Element {
   const leasesQuery = useLeases();
@@ -160,9 +59,9 @@ export function AppealsPage(): React.JSX.Element {
         </p>
       </header>
 
-      <Card>
+      <Card role="region" aria-labelledby={CANDIDATES_HEADING_ID}>
         <CardHeader className="border-b">
-          <CardTitle>Dostępy wymagające uwagi</CardTitle>
+          <CardTitle id={CANDIDATES_HEADING_ID}>Dostępy wymagające uwagi</CardTitle>
           <CardDescription>
             Odwołanie przysługuje dostępom odebranym oraz tym, które wygasły albo wygasają w ciągu 7
             dni.
@@ -198,7 +97,7 @@ export function AppealsPage(): React.JSX.Element {
           ) : null}
 
           {leasesQuery.isSuccess && candidates.length > 0 ? (
-            <LeaseCandidatesTable leases={candidates} />
+            <AppealCandidatesTable leases={candidates} />
           ) : null}
         </CardContent>
       </Card>
@@ -256,11 +155,11 @@ export function AppealsPage(): React.JSX.Element {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card role="region" aria-labelledby={APPEALS_LIST_HEADING_ID}>
         <CardHeader className="border-b">
           <CardTitle id={APPEALS_LIST_HEADING_ID}>Złożone odwołania</CardTitle>
           <CardDescription>
-            Najnowsze pierwsze; pozycje oczekujące czekają na decyzję.
+            Pogrupowane po osobie — osoby z oczekującymi wnioskami na górze.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -295,11 +194,11 @@ export function AppealsPage(): React.JSX.Element {
           ) : null}
 
           {appealsQuery.isSuccess && appeals.length > 0 ? (
-            <ul aria-labelledby={APPEALS_LIST_HEADING_ID} className="flex flex-col">
-              {appeals.map((appeal: AppealOverview): React.JSX.Element => (
-                <AppealListItem appeal={appeal} key={appeal.id} onResolve={setSelectedAppeal} />
-              ))}
-            </ul>
+            <AppealList
+              appeals={appeals}
+              labelledBy={APPEALS_LIST_HEADING_ID}
+              onResolve={setSelectedAppeal}
+            />
           ) : null}
         </CardContent>
       </Card>

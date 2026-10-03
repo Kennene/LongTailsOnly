@@ -68,6 +68,7 @@ frontend/
     │   └── fixtures/      # Dane demo w kształcie kontraktu + typowany re-export
     ├── components/        # Modułowe komponenty (każdy < 300 linii)
     │   ├── ui/            # Komponenty bazowe (shadcn/ui — kod generowany)
+    │   ├── common/        # Klocki wspólne dla widoków (ExpandToggle: rozwijane grupy list)
     │   ├── layout/        # AppShell, Sidebar, TopBar
     │   ├── mocks/         # TimeTravelBar, MockSystemCard (widok „Mocki”)
     │   ├── dashboard/     # Karty KPI
@@ -77,6 +78,7 @@ frontend/
     │   ├── graph/         # Graf uprawnień (@xyflow/react)
     │   └── audit/         # Dziennik audytu
     ├── hooks/             # Custom hooks (TanStack Query)
+    ├── lib/               # dateTime, statusBadges, graphLayout, grouping, utils (cn)
     ├── lib/               # dateTime, statusBadges, graphLayout, graphForceLayout, graphHighlight, utils (cn)
     ├── pages/             # Widoki składane z hooków i komponentów
     ├── test/              # setup, renderWithProviders, handlery MSW
@@ -95,6 +97,7 @@ frontend/
 - **Konsolidacja Utilów (`src/lib/`)**:
   - `src/lib/dateTime.ts`: Wszystkie operacje na datach i porównaniach z czasem symulowanym.
   - `src/lib/statusBadges.ts`: Mapowanie statusów (`ACTIVE`, `WARNING`, `EXPIRED`) na kolory i etykiety.
+  - `src/lib/grouping.ts`: `groupBy` i polska odmiana liczebników (`formatCountPl`) dla list grupowanych po osobie/aktorze.
   - `src/lib/utils.ts`: `cn()` dla klas Tailwind.
 - **Kontrakt typów**:
   - `src/types/api.ts` jest **generowany** z backendu (`backend/contract/schema.json`, ADR 0009) — nie edytujemy go ręcznie. Brakujące DTO dodajemy w `backend/app/schemas/` i regenerujemy kontrakt.

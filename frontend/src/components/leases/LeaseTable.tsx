@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
 
+import { ExpandAllButton } from '@/components/common/ExpandToggle';
 import { LeaseGroupRows } from '@/components/leases/LeaseGroupRows';
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import { groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { ACTION_COLUMN, SECONDARY_COLUMN } from '@/components/leases/leaseTableLayout';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useExpandedSet } from '@/hooks/useExpandedSet';
 import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
 
@@ -22,39 +22,22 @@ export interface LeaseTableProps {
  * to, co wymaga decyzji, nadal jest na górze — tylko zwinięte.
  */
 export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Element {
-  const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
+  const expanded = useExpandedSet<number>();
 
   if (leases.length === 0) {
     return <p className="text-sm text-muted-foreground">Brak dostępów do wyświetlenia</p>;
   }
 
   const groups: LeaseGroup[] = groupLeasesByUser(leases);
-  const allExpanded: boolean = groups.every((group: LeaseGroup): boolean =>
-    expanded.has(group.user.id),
-  );
-
-  function toggle(userId: number): void {
-    const next: Set<number> = new Set(expanded);
-    if (next.has(userId)) {
-      next.delete(userId);
-    } else {
-      next.add(userId);
-    }
-    setExpanded(next);
-  }
-
-  function toggleAll(): void {
-    setExpanded(
-      allExpanded ? new Set() : new Set(groups.map((group: LeaseGroup): number => group.user.id)),
-    );
-  }
+  const userIds: number[] = groups.map((group: LeaseGroup): number => group.user.id);
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={toggleAll}>
-          {allExpanded ? 'Zwiń wszystkie' : 'Rozwiń wszystkie'}
-        </Button>
+        <ExpandAllButton
+          allExpanded={expanded.areAllExpanded(userIds)}
+          onToggleAll={() => expanded.toggleAll(userIds)}
+        />
       </div>
       <Table>
         <TableHeader>
@@ -75,8 +58,8 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
             <LeaseGroupRows
               key={group.user.id}
               group={group}
-              expanded={expanded.has(group.user.id)}
-              onToggle={() => toggle(group.user.id)}
+              expanded={expanded.isExpanded(group.user.id)}
+              onToggle={() => expanded.toggle(group.user.id)}
               onDecide={onDecide}
             />
           ))}

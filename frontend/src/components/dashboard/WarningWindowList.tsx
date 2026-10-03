@@ -1,11 +1,15 @@
 import type { UseQueryResult } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
+import { ExpandAllButton, ExpandToggle } from '@/components/common/ExpandToggle';
+import type { LeaseGroup } from '@/components/leases/leaseGroups';
+import { formatRepositoryCount, groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import { useLeases } from '@/hooks/useLeases';
 import { formatDaysRemaining } from '@/lib/dateTime';
 import type { LeaseOverview } from '@/types/api';
@@ -20,16 +24,18 @@ const SKELETON_ROWS: readonly number[] = [0, 1];
  * decyzji, zanim uprawnienia wygasną. Gęsta lista wierszy (`h-9`) zamiast drugiej tabeli —
  * DESIGN.md §4 zakazuje stawiania kart w kartach i rozdymania pulpitu.
  *
- * Wiersz jest linkiem do `/leases` (tam zapada decyzja), więc cała lista prowadzi do jednego
- * miejsca akcji. Status bierzemy z `LeaseStatusBadge` (jedno mapowanie status → kolor),
- * a pozostały czas z `formatDaysRemaining` — nic nie formatujemy lokalnie.
+ * Jak w tabeli dostępów: jedna pozycja na osobę (najpilniejszy termin i status), a jej
+ * repozytoria rozwijają się pod nią. Wiersz repozytorium jest linkiem do `/leases` (tam zapada
+ * decyzja). Status bierzemy z `LeaseStatusBadge`, a pozostały czas z `formatDaysRemaining`.
  */
 export function WarningWindowList(): React.JSX.Element {
   const leasesQuery: UseQueryResult<LeaseOverview[]> = useLeases();
+  const expanded: ExpandedSet<number> = useExpandedSet<number>();
   const leases: LeaseOverview[] = leasesQuery.data ?? [];
-  const warnings: LeaseOverview[] = leases
-    .filter((lease: LeaseOverview): boolean => lease.status === 'WARNING')
-    .toSorted(compareDaysRemaining);
+  const groups: LeaseGroup[] = groupLeasesByUser(
+    leases.filter((lease: LeaseOverview): boolean => lease.status === 'WARNING'),
+  );
+  const userIds: number[] = groups.map((group: LeaseGroup): number => group.user.id);
 
   return (
     <Card data-testid="warning-window">
@@ -56,33 +62,84 @@ export function WarningWindowList(): React.JSX.Element {
           </Alert>
         ) : null}
 
-        {leasesQuery.isSuccess && warnings.length === 0 ? (
+        {leasesQuery.isSuccess && groups.length === 0 ? (
           <p className="px-4 py-3 text-sm text-muted-foreground">{EMPTY_WARNING_WINDOW}</p>
         ) : null}
 
-        {leasesQuery.isSuccess && warnings.length > 0 ? (
-          <ul className="divide-y divide-border">
-            {warnings.map((lease: LeaseOverview): React.JSX.Element => (
-              <li key={lease.id}>
-                <Link
-                  to="/leases"
-                  className="flex h-9 items-center gap-3 px-4 text-sm transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                >
-                  <span className="truncate font-medium">{lease.user.name}</span>
-                  <span className="truncate font-mono text-muted-foreground">
-                    {`${lease.repository.owner}/${lease.repository.name}`}
-                  </span>
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                    {formatDaysRemaining(lease.days_remaining)}
-                  </span>
-                  <LeaseStatusBadge status={lease.status} />
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {leasesQuery.isSuccess && groups.length > 0 ? (
+          <>
+            <div className="flex justify-end px-2 pt-1">
+              <ExpandAllButton
+                allExpanded={expanded.areAllExpanded(userIds)}
+                onToggleAll={() => expanded.toggleAll(userIds)}
+              />
+            </div>
+            <ul className="divide-y divide-border">
+              {groups.map((group: LeaseGroup): React.JSX.Element => (
+                <WarningGroup
+                  key={group.user.id}
+                  group={group}
+                  expanded={expanded.isExpanded(group.user.id)}
+                  onToggle={() => expanded.toggle(group.user.id)}
+                />
+              ))}
+            </ul>
+          </>
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+interface WarningGroupProps {
+  group: LeaseGroup;
+  expanded: boolean;
+  onToggle: () => void;
+}
+
+/** Osoba: nazwa, liczba repozytoriów i najpilniejszy termin; po rozwinięciu jej repozytoria. */
+function WarningGroup({ group, expanded, onToggle }: WarningGroupProps): React.JSX.Element {
+  return (
+    <li>
+      {/* Poza tabelą przełącza tylko przycisk ze strzałką: `div` z `onClick` nie jest dostępny
+          z klawiatury (jsx-a11y), a stan i tak niesie `aria-expanded`. */}
+      <div className="flex h-9 items-center gap-3 px-4 text-sm">
+        <ExpandToggle
+          expanded={expanded}
+          onToggle={onToggle}
+          subject="dostępy"
+          owner={group.user.name}
+        />
+        <span className="truncate font-medium">{group.user.name}</span>
+        <span className="truncate text-muted-foreground">
+          {formatRepositoryCount(group.leases.length)}
+        </span>
+        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+          {formatDaysRemaining(group.mostUrgent.days_remaining)}
+        </span>
+        <LeaseStatusBadge status={group.mostUrgent.status} />
+      </div>
+      {expanded ? (
+        <ul className="divide-y divide-border border-t bg-muted/20">
+          {group.leases.map((lease: LeaseOverview): React.JSX.Element => (
+            <li key={lease.id}>
+              <Link
+                to="/leases"
+                className="flex h-9 items-center gap-3 pr-4 pl-14 text-sm transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                <span className="truncate font-mono text-muted-foreground">
+                  {`${lease.repository.owner}/${lease.repository.name}`}
+                </span>
+                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                  {formatDaysRemaining(lease.days_remaining)}
+                </span>
+                <LeaseStatusBadge status={lease.status} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </li>
   );
 }
 
@@ -96,9 +153,4 @@ function WarningWindowSkeleton(): React.JSX.Element {
       ))}
     </div>
   );
-}
-
-/** Najpilniejsze najpierw — dostęp z najmniejszym `days_remaining` wymaga decyzji pierwszy. */
-function compareDaysRemaining(a: LeaseOverview, b: LeaseOverview): number {
-  return (a.days_remaining ?? 0) - (b.days_remaining ?? 0);
 }
