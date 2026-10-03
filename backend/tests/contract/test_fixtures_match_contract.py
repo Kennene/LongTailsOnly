@@ -145,7 +145,8 @@ def test_fixture_references_resolve_inside_fixture_set() -> None:
 
 def test_lease_fixtures_cover_all_statuses_roles_and_recommendations() -> None:
     leases = fixture_records("LeaseOverview")
-    assert {lease["status"] for lease in leases} == {"ACTIVE", "WARNING", "EXPIRED"}
+    # Admin (break-glass) leases never expire, so the lease engine reports them as PERMANENT.
+    assert {lease["status"] for lease in leases} == {"ACTIVE", "WARNING", "EXPIRED", "PERMANENT"}
     assert {lease["current_role"] for lease in leases} == {"write", "read", "admin"}
     assert {lease["recommendation"] for lease in leases} == {"KEEP", "DOWNSCOPE", "REVOKE"}
 

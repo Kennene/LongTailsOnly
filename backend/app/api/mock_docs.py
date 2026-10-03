@@ -1,57 +1,95 @@
-"""Separate Swagger page for the GitHub and Jira mocks (`/mocks/docs`).
+"""Separate Swagger pages for the GitHub mock (`/mocks/github/docs`) and the Jira mock (`/mocks/jira/docs`).
 
 The mocks stay mounted on the main app under their real paths, but are hidden from `/docs`,
-so the product API and the fake external systems are documented on two different pages.
+so the product API and each fake external system are documented on their own page.
 """
+from dataclasses import dataclass
 from typing import Any
 
 from fastapi import APIRouter
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse
+from fastapi.routing import BaseRoute
 
 from app.api.github_mock.router import router as github_mock_router
 from app.api.jira_mock.router import router as jira_mock_router
 
-MOCK_DOCS_URL = "/mocks/docs"
-MOCK_OPENAPI_URL = "/mocks/openapi.json"
 
-MOCK_TAGS = [
-    {"name": "GitHub · Organizacja i repozytoria", "description": "Członkowie, zespoły i repozytoria organizacji `longtails`."},
-    {"name": "GitHub · Dostęp do repozytoriów", "description": "Collaboratorzy: odczyt, nadanie i odebranie uprawnień (= dzierżawa)."},
-    {"name": "GitHub · Zdarzenia", "description": "Strumień aktywności repozytorium."},
-    {"name": "Jira · Projekty", "description": "Projekty Jiry (1:1 z repozytoriami)."},
-    {"name": "Jira · Role projektowe", "description": "Role projektowe i ich aktorzy: odczyt i zapis."},
-    {"name": "Jira · Użytkownicy i grupy", "description": "Konta użytkowników i grupy (zespoły)."},
-    {"name": "Jira · Zgłoszenia", "description": "Wyszukiwanie JQL, zgłoszenia, historia zmian i komentarze."},
-    {"name": "Jira · Audyt", "description": "Rekordy dziennika audytu Jiry."},
-]
+@dataclass(frozen=True)
+class MockDocs:
+    slug: str
+    title: str
+    description: str
+    routes: list[BaseRoute]
+    tags: list[dict[str, str]]
 
-MAIN_DESCRIPTION = f"API produktu. Mocki GitHuba i Jiry mają osobną stronę: [{MOCK_DOCS_URL}]({MOCK_DOCS_URL})."
-MOCK_DESCRIPTION = (
-    "Udawane API zewnętrznych systemów: GitHub REST v3 (`/api/v3`) i Jira Cloud REST v3 (`/rest/api/3`). "
-    "API produktu: [/docs](/docs)."
+    @property
+    def docs_url(self) -> str:
+        return f"/mocks/{self.slug}/docs"
+
+    @property
+    def openapi_url(self) -> str:
+        return f"/mocks/{self.slug}/openapi.json"
+
+
+GITHUB_DOCS = MockDocs(
+    slug="github",
+    title="LongTailsOnly: mock GitHuba",
+    description="Udawane GitHub REST API v3 (`/api/v3`). API produktu: [/docs](/docs).",
+    routes=github_mock_router.routes,
+    tags=[
+        {"name": "GitHub · Organizacja i repozytoria", "description": "Członkowie, zespoły i repozytoria organizacji `longtails`."},
+        {"name": "GitHub · Dostęp do repozytoriów", "description": "Collaboratorzy: odczyt, nadanie i odebranie uprawnień (= dzierżawa)."},
+        {"name": "GitHub · Zdarzenia", "description": "Strumień aktywności repozytorium."},
+    ],
+)
+
+JIRA_DOCS = MockDocs(
+    slug="jira",
+    title="LongTailsOnly: mock Jiry",
+    description="Udawane Jira Cloud REST API v3 (`/rest/api/3`). API produktu: [/docs](/docs).",
+    routes=jira_mock_router.routes,
+    tags=[
+        {"name": "Jira · Projekty", "description": "Projekty Jiry (1:1 z repozytoriami)."},
+        {"name": "Jira · Role projektowe", "description": "Role projektowe i ich aktorzy: odczyt i zapis."},
+        {"name": "Jira · Użytkownicy i grupy", "description": "Konta użytkowników i grupy (zespoły)."},
+        {"name": "Jira · Zgłoszenia", "description": "Wyszukiwanie JQL, zgłoszenia, historia zmian i komentarze."},
+        {"name": "Jira · Audyt", "description": "Rekordy dziennika audytu Jiry."},
+    ],
+)
+
+MAIN_DESCRIPTION = (
+    "API produktu. Mocki mają osobne strony: "
+    f"GitHub [{GITHUB_DOCS.docs_url}]({GITHUB_DOCS.docs_url}), "
+    f"Jira [{JIRA_DOCS.docs_url}]({JIRA_DOCS.docs_url})."
 )
 
 router = APIRouter(include_in_schema=False)
-_schema: dict[str, Any] = {}
 
 
-@router.get(MOCK_OPENAPI_URL)
-async def mock_openapi() -> dict[str, Any]:
-    if not _schema:
-        _schema.update(
-            get_openapi(
-                title="LongTailsOnly: mocki GitHub i Jira",
-                version="1.0.0",
-                description=MOCK_DESCRIPTION,
-                routes=[*github_mock_router.routes, *jira_mock_router.routes],
-                tags=MOCK_TAGS,
+def _register(docs: MockDocs) -> None:
+    schema: dict[str, Any] = {}
+
+    async def openapi() -> dict[str, Any]:
+        if not schema:
+            schema.update(
+                get_openapi(
+                    title=docs.title,
+                    version="1.0.0",
+                    description=docs.description,
+                    routes=docs.routes,
+                    tags=docs.tags,
+                )
             )
-        )
-    return _schema
+        return schema
+
+    async def swagger_ui() -> HTMLResponse:
+        return get_swagger_ui_html(openapi_url=docs.openapi_url, title=f"{docs.title} - Swagger UI")
+
+    router.add_api_route(docs.openapi_url, openapi, methods=["GET"])
+    router.add_api_route(docs.docs_url, swagger_ui, methods=["GET"])
 
 
-@router.get(MOCK_DOCS_URL)
-async def mock_swagger_ui() -> HTMLResponse:
-    return get_swagger_ui_html(openapi_url=MOCK_OPENAPI_URL, title="LongTailsOnly: mocki - Swagger UI")
+_register(GITHUB_DOCS)
+_register(JIRA_DOCS)
