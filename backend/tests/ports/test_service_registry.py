@@ -1,4 +1,7 @@
 from collections.abc import Iterator
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +13,23 @@ from app.ports.service_registry import (
     register,
 )
 
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+
+# A fresh interpreter is the only faithful way to reproduce the import order the invariant is
+# about: `tests/conftest.py` already imported the app during collection, this module's fixture
+# clears `_EXTRA` before every test body, and a second in-process `import app.main` is a no-op —
+# so an in-process probe would pass even for an adapter whose service never comes back.
+_DURABILITY_PROBE = """
+import app.main  # noqa: F401  # importing the app runs every adapter's registration
+from app.ports import service_registry
+
+before = {service.id for service in service_registry.all_services()}
+service_registry._EXTRA.clear()
+after = {service.id for service in service_registry.all_services()}
+missing = sorted(before - after)
+assert not missing, f"services registered only into _EXTRA vanish on a clear: {missing}"
+"""
+
 
 @pytest.fixture(autouse=True)
 def _isolated_extras() -> Iterator[None]:
@@ -17,6 +37,25 @@ def _isolated_extras() -> Iterator[None]:
     service_registry._EXTRA.clear()
     yield
     service_registry._EXTRA.clear()
+
+
+def test_every_registered_service_survives_a_clear_of_the_extras_tier() -> None:
+    """The registry's durability boundary, made executable (Ruling 39).
+
+    Only `_BUILTIN` ids survive a clear of `_EXTRA`, and Python imports a module once — so a
+    service a future adapter registers solely into `_EXTRA` works at runtime and then disappears
+    for the rest of any process that clears `_EXTRA`, which this module's fixture does. The
+    docstring names that boundary; this test is what enforces it.
+    """
+    result = subprocess.run(
+        [sys.executable, "-c", _DURABILITY_PROBE],
+        cwd=BACKEND_DIR,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_production_surface_exposes_no_test_only_helper() -> None:

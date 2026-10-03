@@ -24,7 +24,9 @@ The durability boundary is narrow, and worth stating exactly: only the **built-i
 survive a clear of `_EXTRA`. Because Python imports a module once, a service that a future
 adapter registers solely into `_EXTRA` is gone for the rest of the process the first time
 something clears that list — its module is never re-imported to register again. A
-descriptor that must outlive test isolation belongs in `_BUILTIN`.
+descriptor that must outlive test isolation belongs in `_BUILTIN`, and
+`tests/ports/test_service_registry.py` enforces it: it re-imports the app in a fresh
+interpreter and fails if any catalog id is missing after `_EXTRA` is cleared.
 """
 
 from dataclasses import dataclass
