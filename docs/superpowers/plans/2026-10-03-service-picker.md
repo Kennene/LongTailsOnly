@@ -711,6 +711,8 @@ Move the duplicated string from `AppealForm.tsx:21-22`, `GraphFilters.tsx:21-22`
 Run: `cd frontend && npx vitest --run src/components/layout/ && npm test -- --run`
 Expected: PASS, including the pre-existing `App.test.tsx` and `App.integration.test.tsx` whose six-link assertions must still hold under the default `github` service.
 
+**Carry-forward from Task 6 (do not rediscover this as a mystery failure):** `renderWithProviders` now mounts `ServicesProvider`, which issues `GET /api/v1/services` on **every** mount. So any assertion of the form `expect(fetchSpy).not.toHaveBeenCalled()` on a *global* `vi.spyOn(globalThis, 'fetch')` is unsatisfiable, and any brand-new assertion you write must be scoped to a specific endpoint (`toHaveBeenCalledWith('/api/v1/...', expect.anything())`) rather than to total call count. Task 6 hit exactly this and narrowed one pre-existing assertion in `frontend/src/components/appeals/ActivityStats.test.tsx:95` under Ruling 18; a repo-wide scan found the other three global-fetch spies safe. If a pre-existing assertion in your path fails for this reason, narrow it to its endpoint and say so in your report — do not weaken it to nothing.
+
 - [ ] **Step 7: Commit**
 
 ```bash
@@ -767,6 +769,8 @@ Each hook reads `const { activeService } = useActiveService();` and builds its k
 
 Run: `cd frontend && npm test -- --run`
 Expected: PASS. Existing tests that spy on `invalidateQueries` may need their expected key arrays updated to the namespaced form; update the expectation, not the production code, and only where the assertion names the key explicitly.
+
+**Carry-forward from Task 6:** `renderWithProviders` now mounts `ServicesProvider`, which issues `GET /api/v1/services` on every mount, so a *global* `expect(fetchSpy).not.toHaveBeenCalled()` is unsatisfiable and any new fetch assertion must name a specific endpoint. A repo-wide scan found all remaining global-fetch spies safe, so this should not fire here — it is recorded so an unexpected failure is recognised rather than guessed at (see Ruling 18). Read the keys you namespace against the current hook sources, not against memory of them.
 
 - [ ] **Step 5: Commit**
 
