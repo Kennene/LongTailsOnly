@@ -10,7 +10,7 @@
   },
   "when": [
     { "type": "reset" },
-    { "type": "api", "method": "GET", "path": "/api/v1/baseline/1", "as": "baseline" }
+    { "type": "api", "method": "GET", "path": "/api/v1/teams/dev/baseline", "as": "baseline" }
   ],
   "then": [
     {
