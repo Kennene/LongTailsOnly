@@ -1,4 +1,4 @@
-# PRODUKT: GitHub Access Lease Governor (Zero Standing Privileges)
+# PRODUKT: TailCut
 
 > **Hasło przewodnie:** *Żaden dostęp nie jest wieczny.* Wszystkie uprawnienia są odnawialnymi dostępami czasowymi, opartymi na dowodach rzeczywistego użycia.
 

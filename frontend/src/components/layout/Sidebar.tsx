@@ -22,7 +22,7 @@ export function Sidebar(): React.JSX.Element {
         <img src={logoUrl} alt="" aria-hidden="true" className="size-8 shrink-0" />
         {/* Nazwa produktu zostaje w drzewie dostępności także w zwiniętym pasku (`sr-only`). */}
         <span className="sr-only flex min-w-0 flex-col leading-tight xl:not-sr-only">
-          <span className="truncate text-sm font-semibold">Lease Governor</span>
+          <span className="truncate text-sm font-semibold">TailCut</span>
           <span className="truncate text-[11px] text-muted-foreground">
             {`Dostęp: ${activeService.name}`}
           </span>

@@ -10,7 +10,7 @@ export function TopBar(): React.JSX.Element {
       {/* Obszar kontekstu widoku — nazwa produktu, nie nazwa integracji: usługa jest widoczna
           w kontrolce obok (spec §5.7), więc nie powtarzamy jej w tytule. */}
       <div className="flex min-w-0 flex-col leading-tight">
-        <span className="truncate text-sm font-medium text-foreground">Lease Governor</span>
+        <span className="truncate text-sm font-medium text-foreground">TailCut</span>
         <span className="truncate text-xs text-muted-foreground">Nadzór nad czasowym dostępem</span>
       </div>
 
