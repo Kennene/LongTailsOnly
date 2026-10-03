@@ -1,3 +1,4 @@
+import { formatCountPl, groupBy } from '@/lib/grouping';
 import type { LeaseOverview, LeaseStatus, UserRead } from '@/types/api';
 
 /** Dostępy jednej osoby: tabela pokazuje ją raz, a repozytoria dopiero po rozwinięciu. */
@@ -42,10 +43,10 @@ export function compareLeases(left: LeaseOverview, right: LeaseOverview): number
 
 /** Jedna grupa na osobę; osoby po najpilniejszym dostępie, przy remisie po nazwie. */
 export function groupLeasesByUser(leases: LeaseOverview[]): LeaseGroup[] {
-  const byUser: Map<number, LeaseOverview[]> = new Map();
-  for (const lease of leases) {
-    byUser.set(lease.user.id, [...(byUser.get(lease.user.id) ?? []), lease]);
-  }
+  const byUser: Map<number, LeaseOverview[]> = groupBy(
+    leases,
+    (lease: LeaseOverview): number => lease.user.id,
+  );
 
   const groups: LeaseGroup[] = [...byUser.values()].map(
     (userLeases: LeaseOverview[]): LeaseGroup => {
@@ -63,16 +64,7 @@ export function groupLeasesByUser(leases: LeaseOverview[]): LeaseGroup[] {
 
 /** „1 repozytorium”, „2 repozytoria”, „5 repozytoriów” — polska odmiana liczebnika. */
 export function formatRepositoryCount(count: number): string {
-  const lastDigit: number = count % 10;
-  const lastTwoDigits: number = count % 100;
-  if (count === 1) {
-    return '1 repozytorium';
-  }
-  if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14)) {
-    return `${count} repozytoria`;
-  }
-
-  return `${count} repozytoriów`;
+  return formatCountPl(count, { one: 'repozytorium', few: 'repozytoria', many: 'repozytoriów' });
 }
 
 /** Ile dostępów osoby silnik proponuje zmienić (obniżyć albo odebrać). */

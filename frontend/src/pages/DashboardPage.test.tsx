@@ -4,6 +4,8 @@ import { http, type HttpHandler, HttpResponse } from 'msw';
 
 import { countDashboard, dashboardFixture } from '@/api/fixtures/dashboard';
 import { leasesFixture } from '@/api/fixtures/leases';
+import type { LeaseGroup } from '@/components/leases/leaseGroups';
+import { formatRepositoryCount, groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { formatDaysRemaining } from '@/lib/dateTime';
 import { getStatusBadge } from '@/lib/statusBadges';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -77,23 +79,46 @@ function expectKpi(testId: string, value: number): void {
   expect(kpiValue(testId).textContent).toBe(String(value));
 }
 
-/** Wiersze okna ostrzegawczego muszą zgadzać się z dzierżawami `WARNING` co do treści i kolejności. */
-async function expectWarningWindow(section: HTMLElement, leases: LeaseOverview[]): Promise<void> {
-  const expected: LeaseOverview[] = warningLeases(leases);
+/** Przełącznik grupy osoby — etykieta niesie nazwę, więc kolejność grup czytamy z etykiet. */
+const GROUP_TOGGLE = /^Pokaż dostępy: /;
 
-  if (expected.length === 0) {
+/** Rozwija wszystkie grupy okna ostrzegawczego (repozytoria są domyślnie zwinięte). */
+async function expandWarningWindow(section: HTMLElement): Promise<void> {
+  await userEvent.setup().click(within(section).getByRole('button', { name: 'Rozwiń wszystkie' }));
+}
+
+/**
+ * Okno ostrzegawcze pokazuje jedną grupę na osobę (kolejność jak w `groupLeasesByUser`), a po
+ * rozwinięciu — dzierżawy `WARNING` tej osoby jako linki do `/leases`, w tej samej kolejności.
+ */
+async function expectWarningWindow(section: HTMLElement, leases: LeaseOverview[]): Promise<void> {
+  const groups: LeaseGroup[] = groupLeasesByUser(warningLeases(leases));
+
+  if (groups.length === 0) {
     expect(within(section).queryAllByRole('link')).toHaveLength(0);
+    expect(within(section).queryAllByRole('button', { name: GROUP_TOGGLE })).toHaveLength(0);
     return;
   }
 
-  const rows: HTMLElement[] = await within(section).findAllByRole('link');
+  const toggles: HTMLElement[] = await within(section).findAllByRole('button', {
+    name: GROUP_TOGGLE,
+  });
+  expect(
+    toggles.map((toggle: HTMLElement): string | null => toggle.getAttribute('aria-label')),
+  ).toEqual(groups.map((group: LeaseGroup): string => `Pokaż dostępy: ${group.user.name}`));
+  expect(within(section).queryAllByRole('link')).toHaveLength(0);
+
+  await expandWarningWindow(section);
+  const expected: LeaseOverview[] = groups.flatMap(
+    (group: LeaseGroup): LeaseOverview[] => group.leases,
+  );
+  const rows: HTMLElement[] = within(section).getAllByRole('link');
 
   expect(rows).toHaveLength(expected.length);
 
   expected.forEach((lease: LeaseOverview, index: number): void => {
     const row: HTMLElement = rows[index];
 
-    expect(within(row).getByText(lease.user.name)).toBeInTheDocument();
     expect(within(row).getByText(fullName(lease))).toBeInTheDocument();
     expect(within(row).getByText(formatDaysRemaining(lease.days_remaining))).toBeInTheDocument();
     expect(within(row).getByText(getStatusBadge(lease.status).label)).toBeInTheDocument();
@@ -245,7 +270,10 @@ describe('DashboardPage', () => {
     );
 
     expect(activeLease).toBeDefined();
-    expect((await within(section).findAllByRole('link')).length).toBeGreaterThan(0);
+    expect(
+      (await within(section).findAllByRole('button', { name: GROUP_TOGGLE })).length,
+    ).toBeGreaterThan(0);
+    await expandWarningWindow(section);
     expect(
       within(section).queryByText(activeLease === undefined ? '' : fullName(activeLease)),
     ).not.toBeInTheDocument();
@@ -324,4 +352,30 @@ describe('DashboardPage', () => {
     expect(await screen.findByTestId('kpi-active')).toBeInTheDocument();
     expectKpi('kpi-active', expectedCounters().active);
   });
+});
+
+it('collapses the warning window to one row per person with a repository count and urgency', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<DashboardPage />);
+
+  const section: HTMLElement = await screen.findByTestId('warning-window');
+  const [group]: LeaseGroup[] = groupLeasesByUser(warningLeases(getLeases()));
+  const toggle: HTMLElement = await within(section).findByRole('button', {
+    name: `Pokaż dostępy: ${group.user.name}`,
+  });
+
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  expect(within(section).getAllByText(group.user.name)).toHaveLength(1);
+  expect(
+    within(section).getAllByText(formatRepositoryCount(group.leases.length)).length,
+  ).toBeGreaterThan(0);
+
+  await user.click(toggle);
+
+  expect(
+    within(section).getByRole('button', { name: `Ukryj dostępy: ${group.user.name}` }),
+  ).toHaveAttribute('aria-expanded', 'true');
+  for (const lease of group.leases) {
+    expect(within(section).getByText(fullName(lease))).toBeInTheDocument();
+  }
 });
