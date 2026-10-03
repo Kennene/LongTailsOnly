@@ -41,3 +41,6 @@ npm-debug.log*
 
 # Artefakty narzędzi przeglądarkowych (Playwright MCP i podobne)
 .playwright-mcp/
+
+# Lokalny Node dla build.sh / run.sh (systemowy bywa za stary dla Vite 8)
+.tools/
