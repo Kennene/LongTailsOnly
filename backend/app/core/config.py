@@ -6,6 +6,11 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite+aiosqlite:///./longtails.db"
     github_org: str = "longtails"
+    enable_demo_reset: bool = True
 
 
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    return settings
