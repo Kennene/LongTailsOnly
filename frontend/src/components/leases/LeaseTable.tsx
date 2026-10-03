@@ -30,10 +30,12 @@ const STATUS_RANK: Record<LeaseStatus, number> = { EXPIRED: 0, WARNING: 1, ACTIV
  * a `Ostatnia aktywność` rosła do ~234 px, spychając `Status`, `Rekomendację` i akcję wiersza
  * poza ekran), natomiast samo `w-*` nie trzyma kolumny, gdy treść jest szersza od rezerwacji.
  * Wartości zmierzone w Chromium (`text-sm`, 1024–1920 px): `w-60 max-w-60` = 240 px mieści
- * najdłuższą tożsamość („Tomasz Wiśniewski” 127 px + „tomasz-admin” 86 px + odstęp) i pełne
- * `owner/repo` w `font-mono` (`longtails/legacy-reports` = 210 px), `w-16 max-w-16` = 64 px
- * mieści nazwy zespołów (`DEV`, `QA`) oraz myślnik dla braku wartości. Sufit zostaje na wypadek
- * dłuższych danych z backendu — wtedy komórka się ucina, zamiast rozsadzać całą tabelę.
+ * najdłuższą tożsamość i pełne `owner/repo` w `font-mono` (`longtails/legacy-reports` = 210 px),
+ * `w-16 max-w-16` = 64 px mieści nazwy zespołów (`DEV`, `QA`) oraz myślnik dla braku wartości.
+ * Po przejściu na wspólne fixture'y sprawdzone ponownie (1440 px, `shared/fixtures`): 15 wierszy,
+ * najdłuższa tożsamość „Tomasz (IT Security)” + „tomasz-admin”, zero przyciętych komórek i zero
+ * poziomego przewijania tabeli. Sufit zostaje na wypadek dłuższych danych z backendu — wtedy
+ * komórka się ucina, zamiast rozsadzać całą tabelę.
  */
 const COLUMN_WIDTH = {
   user: 'w-60 max-w-60',

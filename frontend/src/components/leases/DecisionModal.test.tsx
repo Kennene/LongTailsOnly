@@ -6,14 +6,30 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import { leasesFixture } from '@/api/fixtures';
 import { DecisionModal } from '@/components/leases/DecisionModal';
+import { formatDaysRemaining } from '@/lib/dateTime';
+import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import { server } from '@/test/msw/server';
 import { getLastDecisionRequest } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import type { Extension, LeaseOverview } from '@/types/api';
+import type { Extension, LeaseOverview, Role } from '@/types/api';
 
-const activeLease = leasesFixture[0]; // Kamil Nowak, write, 30 dni do końca
-const readOnlyLease = leasesFixture[1]; // Marta Zielińska, read
-const adminLease = leasesFixture[3]; // Tomasz Wiśniewski, admin (ostatni administrator)
+/** Dzierżawa o zadanym kształcie ze wspólnych fixture'ów — testy nie liczą na kolejność pliku. */
+function findLease(predicate: (lease: LeaseOverview) => boolean): LeaseOverview {
+  const lease: LeaseOverview | undefined = leasesFixture.find(predicate);
+  if (lease === undefined) {
+    throw new Error('Fixture dzierżaw nie zawiera dzierżawy o oczekiwanym kształcie');
+  }
+
+  return lease;
+}
+
+function leaseWithRole(role: Role): LeaseOverview {
+  return findLease((lease: LeaseOverview): boolean => lease.current_role === role);
+}
+
+const activeLease = leasesFixture[0]; // kamil@core-api, write, ACTIVE
+const readOnlyLease = leaseWithRole('read'); // marta@frontend-app
+const adminLease = leaseWithRole('admin'); // tomasz-admin@core-api (ostatni administrator)
 
 const EXTENSION_CASES: [string, Extension][] = [
   ['+7', { preset_days: 7 }],
@@ -53,11 +69,17 @@ async function chooseAndSubmit(label: string): Promise<void> {
 it('shows the lease context with labels from the shared helpers', async () => {
   await renderModal(activeLease);
 
-  expect(screen.getByText('Kamil Nowak (kamil)')).toBeInTheDocument();
-  expect(screen.getByText('longtails/core-api')).toBeInTheDocument();
-  expect(screen.getByText('Zapis (write)')).toBeInTheDocument();
-  expect(screen.getByText('Aktywna')).toHaveClass('text-status-active');
-  expect(screen.getByText('Pozostało 30 dni')).toBeInTheDocument();
+  expect(
+    screen.getByText(`${activeLease.user.name} (${activeLease.user.login})`),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(`${activeLease.repository.owner}/${activeLease.repository.name}`),
+  ).toBeInTheDocument();
+  expect(screen.getByText(getRoleLabel(activeLease.current_role))).toBeInTheDocument();
+  expect(screen.getByText(getStatusBadge(activeLease.status).label)).toHaveClass(
+    'text-status-active',
+  );
+  expect(screen.getByText(formatDaysRemaining(activeLease.days_remaining))).toBeInTheDocument();
   expect(screen.getByText('Bez zmian')).toBeInTheDocument();
 });
 
@@ -135,7 +157,10 @@ it('sends REVOKE only after the confirmation click', async () => {
   await user.click(screen.getByRole('button', { name: 'Potwierdzam wyłączenie' }));
 
   await waitFor(() => {
-    expect(getLastDecisionRequest()).toEqual({ lease_id: 1, request: { action: 'REVOKE' } });
+    expect(getLastDecisionRequest()).toEqual({
+      lease_id: activeLease.id,
+      request: { action: 'REVOKE' },
+    });
   });
 });
 
@@ -146,7 +171,10 @@ it('sends DOWNSCOPE for a lease above read access', async () => {
   await user.click(screen.getByRole('button', { name: 'Zdeeskaluj' }));
 
   await waitFor(() => {
-    expect(getLastDecisionRequest()).toEqual({ lease_id: 1, request: { action: 'DOWNSCOPE' } });
+    expect(getLastDecisionRequest()).toEqual({
+      lease_id: activeLease.id,
+      request: { action: 'DOWNSCOPE' },
+    });
   });
 });
 
@@ -172,7 +200,7 @@ it('toasts and closes the modal after a successful decision', async () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
   expect(getLastDecisionRequest()).toEqual({
-    lease_id: 1,
+    lease_id: activeLease.id,
     request: { action: 'EXTEND', extension: { preset_days: 30 } },
   });
 });

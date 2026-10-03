@@ -9,9 +9,11 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
 
-    /* Ścieżki i aliasy */
+    /* Ścieżki i aliasy — `@shared` musi być tu powtórzony, bo `tsc` nie czyta `resolve.alias`
+       z `vite.config.ts` (alias Vite obsługuje wyłącznie bundler i vitest). */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["../shared/*"]
     },
 
     /* Bundler mode */

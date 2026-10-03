@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { ApiError } from '@/api/client';
-import { AppealContextPanel } from '@/components/leases/AppealContextPanel';
 import { DecisionActions } from '@/components/leases/DecisionActions';
+import { DecisionModalAppeal } from '@/components/leases/DecisionModalAppeal';
 import {
   buildExtension,
   CUSTOM_DAYS_ERROR,
@@ -24,22 +24,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useLeaseDecision } from '@/hooks/useLeaseDecision';
-import { useResolveAppeal } from '@/hooks/useResolveAppeal';
 import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { daysRemaining, formatDaysRemaining } from '@/lib/dateTime';
 import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
-import type { AppealRead, DecisionRequest, LeaseOverview } from '@/types/api';
+import type { AppealOverview, DecisionRequest, LeaseOverview } from '@/types/api';
 
 export interface DecisionModalProps {
   lease: LeaseOverview | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /**
-   * Kontekst odwołania (UC-3). Gdy podany, modal dokłada uzasadnienie wniosku, historię
-   * odwołań i statystyki aktywności, a decyzję wysyła przez `POST /api/v1/appeals/{id}/decision`
-   * zamiast `POST /api/v1/leases/{id}/decision`. Domyślnie `null` — ścieżka dzierżawy bez zmian.
+   * Odwołanie do rozpatrzenia (UC-3). Gdy podane, modal wchodzi w tryb odwołania i renderuje
+   * `DecisionModalAppeal` — z odrzuceniem przez `POST /api/v1/appeals/{id}/reject`. Cały kontekst
+   * (osoba, repozytorium, rola, pozostałe dni) niesie `AppealOverview`, więc dzierżawa nie jest
+   * wtedy potrzebna. Domyślnie `null` — ścieżka decyzji o dzierżawie bez zmian.
    */
-  appeal?: AppealRead | null;
+  appeal?: AppealOverview | null;
 }
 
 const PAST_DATE_ERROR = 'Data musi być późniejsza niż czas symulowany';
@@ -52,13 +52,22 @@ export function DecisionModal({
   onOpenChange,
   appeal = null,
 }: DecisionModalProps): React.JSX.Element {
+  // Tryb odwołania nie potrzebuje dzierżawy; tryb dzierżawy nie rusza się bez niej.
+  const isOpen: boolean = open && (appeal !== null || lease !== null);
+
   return (
-    <Dialog open={open && lease !== null} onOpenChange={onOpenChange}>
-      {open && lease !== null ? (
-        // `key` czyści wybór i błędy przy każdej zmianie dzierżawy oraz ponownym otwarciu.
-        <DecisionForm
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      {/* `key` czyści wybór i błędy przy każdej zmianie dzierżawy/odwołania i ponownym otwarciu. */}
+      {isOpen && appeal !== null ? (
+        <DecisionModalAppeal
           appeal={appeal}
-          key={`${String(lease.id)}-${String(appeal?.id ?? 0)}`}
+          key={`appeal-${String(appeal.id)}`}
+          onOpenChange={onOpenChange}
+        />
+      ) : null}
+      {isOpen && appeal === null && lease !== null ? (
+        <LeaseDecisionForm
+          key={`lease-${String(lease.id)}`}
           lease={lease}
           onOpenChange={onOpenChange}
         />
@@ -67,23 +76,22 @@ export function DecisionModal({
   );
 }
 
-interface DecisionFormProps {
+interface LeaseDecisionFormProps {
   lease: LeaseOverview;
-  appeal: AppealRead | null;
   onOpenChange: (open: boolean) => void;
 }
 
-function DecisionForm({ lease, appeal, onOpenChange }: DecisionFormProps): React.JSX.Element {
+/** Tryb dzierżawy: decyzja idzie przez `POST /api/v1/leases/{id}/decision`. */
+function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): React.JSX.Element {
   const clock = useSimulatedClock();
   const decision = useLeaseDecision();
-  const appealDecision = useResolveAppeal();
   const [choice, setChoice] = useState<ExtensionChoice | null>(null);
   const [customDays, setCustomDays] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   const now: string | null = clock.data?.now ?? null;
   const statusBadge = getStatusBadge(lease.status);
-  const isPending: boolean = decision.isPending || appealDecision.isPending;
+  const isPending: boolean = decision.isPending;
 
   function sendDecision(request: DecisionRequest): void {
     setError(null);
@@ -101,12 +109,7 @@ function DecisionForm({ lease, appeal, onOpenChange }: DecisionFormProps): React
       },
     };
 
-    if (appeal === null) {
-      decision.mutate({ lease_id: lease.id, request }, callbacks);
-      return;
-    }
-
-    appealDecision.mutate({ appeal_id: appeal.id, request }, callbacks);
+    decision.mutate({ lease_id: lease.id, request }, callbacks);
   }
 
   function selectChoice(next: ExtensionChoice): void {
@@ -144,8 +147,6 @@ function DecisionForm({ lease, appeal, onOpenChange }: DecisionFormProps): React
         <DialogDescription>{`${lease.user.name} (${lease.user.login})`}</DialogDescription>
       </DialogHeader>
 
-      {appeal === null ? null : <AppealContextPanel appeal={appeal} />}
-
       <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 text-sm">
         <dt className="text-muted-foreground">Repozytorium</dt>
         <dd className="font-medium">{`${lease.repository.owner}/${lease.repository.name}`}</dd>
@@ -165,9 +166,7 @@ function DecisionForm({ lease, appeal, onOpenChange }: DecisionFormProps): React
         </dd>
       </dl>
 
-      {/* Dowód użycia tylko w trybie dzierżawy: tryb odwołania ma własny panel z tymi
-          samymi licznikami, więc montowanie obu dublowałoby zapytanie o statystyki. */}
-      {appeal === null ? <LeaseActivityPanel lease_id={lease.id} /> : null}
+      <LeaseActivityPanel lease_id={lease.id} />
 
       <ExtensionControls
         choice={choice}

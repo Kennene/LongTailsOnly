@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { activityStatsFixture, fetchActivityStats, type LeaseActivityStats } from '@/api/activity';
+import { fetchActivityStats, type LeaseActivityStats } from '@/api/activity';
 import { ActivityStats } from '@/components/appeals/ActivityStats';
 import { useActivityStats } from '@/hooks/useActivityStats';
 import { activityHandlers } from '@/test/msw/domains/activity';
@@ -10,6 +10,8 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 
 const ZERO_STATS: LeaseActivityStats = { push: 0, review: 0, comment: 0 };
 const LEASE_ID = 1;
+/** Prezentacja nie liczy niczego: bierze dowolne liczby, a mono-data to jej jedyny kontrakt. */
+const MONO_STATS: LeaseActivityStats = { push: 5, review: 4, comment: 7 };
 
 /** Konsument hooka: pokazuje liczniki dopiero, gdy dane dojdą z API. */
 function ConnectedActivityStats({ lease_id }: { lease_id: number }): React.JSX.Element {
@@ -31,7 +33,7 @@ describe('ActivityStats', () => {
   });
 
   it('renders the number as mono data, not as decoration', () => {
-    renderWithProviders(<ActivityStats stats={activityStatsFixture} />);
+    renderWithProviders(<ActivityStats stats={MONO_STATS} />);
 
     expect(screen.getByTestId('stat-push')).toHaveClass('font-mono');
     expect(screen.getByTestId('stat-review')).toHaveClass('font-mono');
@@ -58,13 +60,14 @@ describe('useActivityStats', () => {
   });
 
   it('reads the typed fixture without touching the network when fixtures are on', async () => {
+    // Wzorzec bierzemy z mirroru backendu (MSW), więc test nie zamraża liczb wyliczanych
+    // z `shared/fixtures/activity.json` — sprawdza, że fixture i API mówią to samo.
+    const expected: LeaseActivityStats = await fetchActivityStats(LEASE_ID);
     vi.stubEnv('VITE_USE_FIXTURES', 'true');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-    await expect(fetchActivityStats(LEASE_ID)).resolves.toEqual({
-      push: 5,
-      review: 4,
-      comment: 7,
-    });
+    await expect(fetchActivityStats(LEASE_ID)).resolves.toEqual(expected);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('fetches the stats for the lease from the API endpoint', async () => {
@@ -73,8 +76,9 @@ describe('useActivityStats', () => {
 
     renderWithProviders(<ConnectedActivityStats lease_id={LEASE_ID} />);
 
-    expect(await screen.findByTestId('stat-review')).toHaveTextContent('4');
-    expect(screen.getByTestId('stat-comment')).toHaveTextContent('7');
+    const expected: LeaseActivityStats = await fetchActivityStats(LEASE_ID);
+    expect(await screen.findByTestId('stat-review')).toHaveTextContent(String(expected.review));
+    expect(screen.getByTestId('stat-comment')).toHaveTextContent(String(expected.comment));
     expect(fetchSpy).toHaveBeenCalledWith(
       `/api/v1/leases/${LEASE_ID}/activity-stats`,
       expect.anything(),

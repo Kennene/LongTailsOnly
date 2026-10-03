@@ -11,10 +11,10 @@ import {
 } from '@/components/ui/table';
 import { formatDateTimePl } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
-import type { AuditLogRead } from '@/types/api';
+import type { AuditEntry } from '@/types/api';
 
 export interface AuditLogTableProps {
-  entries: AuditLogRead[];
+  entries: AuditEntry[];
 }
 
 /**
@@ -52,7 +52,7 @@ export function AuditLogTable({ entries }: AuditLogTableProps): React.JSX.Elemen
         </TableRow>
       </TableHeader>
       <TableBody>
-        {entries.map((entry: AuditLogRead): React.JSX.Element => {
+        {entries.map((entry: AuditEntry): React.JSX.Element => {
           const detailsPreview: string = formatDetails(entry.details);
 
           return (
@@ -61,10 +61,10 @@ export function AuditLogTable({ entries }: AuditLogTableProps): React.JSX.Elemen
                 {formatDateTimePl(entry.timestamp)}
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {/* Typ i identyfikator w jednej linii — stos dwóch `div`-ów rozdymał wiersz. */}
+                {/* Typ i tożsamość w jednej linii — stos dwóch `div`-ów rozdymał wiersz. */}
                 {entry.actor_type}{' '}
                 <span className="font-mono text-xs text-muted-foreground">
-                  {formatActorId(entry)}
+                  {formatActorIdentity(entry)}
                 </span>
               </TableCell>
               <TableCell className={cn(COLUMN_WIDTH.action, 'break-words whitespace-normal')}>
@@ -112,13 +112,20 @@ export function AuditLogTableSkeleton(): React.JSX.Element {
   );
 }
 
-/** Aktor SYSTEM nie ma człowieka — zamiast `actor_id` stoi kreska. */
-function formatActorId(entry: AuditLogRead): string {
+/**
+ * Tożsamość aktora: backend rozwiązuje `actor_login` (LEFT JOIN z `users`), więc pokazujemy login,
+ * a nie `#id`. Wpis SYSTEM nie ma człowieka — zostaje sam typ i kreska, nigdy pusta komórka.
+ */
+function formatActorIdentity(entry: AuditEntry): string {
+  if (entry.actor_login !== null) {
+    return entry.actor_login;
+  }
+
   return entry.actor_id === null ? '—' : `#${entry.actor_id}`;
 }
 
 /** `{ days: 30, reason: 'activity' }` → `days: 30 · reason: activity`. */
-function formatDetails(details: AuditLogRead['details']): string {
+function formatDetails(details: AuditEntry['details']): string {
   return Object.entries(details)
     .map(([key, value]: [string, unknown]): string => `${key}: ${formatDetailValue(value)}`)
     .join(' · ');

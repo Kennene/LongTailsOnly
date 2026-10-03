@@ -1,7 +1,8 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
-import { type DashboardCounters, fetchDashboard } from '@/api/dashboard';
+import { fetchDashboard } from '@/api/dashboard';
+import type { DashboardStats } from '@/types/api';
 
-export function useDashboard(): UseQueryResult<DashboardCounters> {
+export function useDashboard(): UseQueryResult<DashboardStats> {
   return useQuery({ queryKey: ['dashboard'], queryFn: fetchDashboard });
 }

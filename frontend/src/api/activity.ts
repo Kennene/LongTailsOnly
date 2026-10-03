@@ -1,5 +1,10 @@
+import type { LeaseOverview } from '@/types/api';
+
 import { getJson } from './client';
 import { shouldUseFixtures } from './config';
+import { countActivityStats } from './fixtures/activity';
+import { clockFixture } from './fixtures/clock';
+import { leasesFixture } from './fixtures/leases';
 
 /**
  * Statystyki użycia dzierżawy dla modala decyzji (UC-3) — odpowiedź
@@ -9,6 +14,9 @@ import { shouldUseFixtures } from './config';
  * z Pydantic (ADR 0009) i nie edytujemy go ręcznie. Gdy backend dostarczy schemat, przenosimy
  * ten interfejs do `backend/app/schemas/`, regenerujemy kontrakt i importujemy typ
  * z `@/types/api` — wtedy ta definicja znika.
+ *
+ * W trybie fixture'ów liczby pochodzą ze wspólnego `shared/fixtures/activity.json` (zliczenia
+ * `action_type`), a nie z wpisanej na sztywno trójki — patrz `fixtures/activity.ts`.
  */
 export interface LeaseActivityStats {
   push: number;
@@ -16,19 +24,14 @@ export interface LeaseActivityStats {
   comment: number;
 }
 
-/**
- * Fixture w kształcie oczekiwanej odpowiedzi 4.4 — literał z jawnym typem, więc literówka
- * w nazwie licznika jest błędem kompilacji, a nie pustym kafelkiem na demo.
- */
-export const activityStatsFixture: LeaseActivityStats = {
-  push: 5,
-  review: 4,
-  comment: 7,
-};
-
 export async function fetchActivityStats(lease_id: number): Promise<LeaseActivityStats> {
   if (shouldUseFixtures()) {
-    return activityStatsFixture;
+    const lease: LeaseOverview | undefined = leasesFixture.find(
+      (candidate: LeaseOverview): boolean => candidate.id === lease_id,
+    );
+
+    // Bez backendu zegar stoi na kotwicy demo, więc zdarzenia z fixture'u liczą się w całości.
+    return countActivityStats(lease, clockFixture.now);
   }
 
   return getJson<LeaseActivityStats>(`/api/v1/leases/${lease_id}/activity-stats`);

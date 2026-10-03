@@ -3,32 +3,28 @@ import { AppealHistory } from '@/components/appeals/AppealHistory';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useActivityStats } from '@/hooks/useActivityStats';
 import { useAppeals } from '@/hooks/useAppeals';
-import type { AppealRead } from '@/types/api';
+import type { AppealOverview } from '@/types/api';
 
 export interface AppealContextPanelProps {
-  appeal: AppealRead;
+  appeal: AppealOverview;
 }
 
 /**
- * Kontekst odwołania w modalu decyzji (UC-3, zadanie 11): uzasadnienie wniosku, historia
- * odwołań tej dzierżawy i statystyki jej użycia. Renderowany wyłącznie w trybie odwołania,
- * więc zapytania o historię i statystyki startują dopiero, gdy administrator kliknie
- * „Rozpatrz” — zwykła decyzja o dzierżawie nie płaci za te żądania.
+ * Kontekst odwołania w modalu decyzji (UC-3): uzasadnienie wniosku, historia odwołań tej
+ * dzierżawy i statystyki jej użycia. Renderowany wyłącznie w trybie odwołania, więc zapytania
+ * o historię i statystyki startują dopiero, gdy administrator kliknie „Rozpatrz” — zwykła
+ * decyzja o dzierżawie nie płaci za te żądania.
  *
- * Historia pochodzi z pełnej listy `GET /api/v1/appeals` filtrowanej po `lease_id`
- * (kontrakt 1.2 nie ma jeszcze historii per dzierżawa — spec §5, krok backendu 4.4),
- * a statystyki z `GET /api/v1/leases/{lease_id}/activity-stats`.
+ * Historia bierze filtr `lease_id` wprost z `GET /api/v1/appeals` (backend filtruje po stronie
+ * bazy), a statystyki z `GET /api/v1/leases/{lease_id}/activity-stats`.
  *
- * Osoba i repozytorium **nie** są tu powtarzane: nagłówek modala bierze je z propa `lease`
- * (`AppealRead` niesie tylko `user_id` i `repo_id`).
+ * Osoba i repozytorium **nie** są tu powtarzane: `AppealOverview` niesie je w nagłówku modala
+ * (`user`, `repository`), a panel zostaje przy samym kontekście decyzyjnym.
  */
 export function AppealContextPanel({ appeal }: AppealContextPanelProps): React.JSX.Element {
-  const appealsQuery = useAppeals();
+  const appealsQuery = useAppeals({ lease_id: appeal.lease_id });
   const statsQuery = useActivityStats(appeal.lease_id);
-  const history: AppealRead[] =
-    appealsQuery.data?.appeals.filter(
-      (candidate: AppealRead): boolean => candidate.lease_id === appeal.lease_id,
-    ) ?? [];
+  const history: AppealOverview[] = appealsQuery.data ?? [];
 
   return (
     <section className="flex flex-col gap-3 rounded-lg border border-border p-3">
