@@ -4,7 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { App } from '@/App';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
-const NAV_LABELS = ['Pulpit', 'Dostępy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt', 'Mocki'];
+const NAV_LABELS = [
+  'Pulpit',
+  'Dostępy',
+  'Odwołania',
+  'Standard zespołu',
+  'Mapa Dostępów',
+  'Audyt',
+  'Mocki',
+];
 
 it('renders navigation for all seven views and switches route', async () => {
   const user = userEvent.setup();

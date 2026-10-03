@@ -55,7 +55,7 @@ const ROUTES: Record<ServiceRouteId, ServiceRoute> = {
   leases: { id: 'leases', path: '/leases', label: 'Dostępy', icon: FileCheck2 },
   appeals: { id: 'appeals', path: '/appeals', label: 'Odwołania', icon: Gavel },
   baseline: { id: 'baseline', path: '/baseline', label: 'Standard zespołu', icon: ShieldCheck },
-  graph: { id: 'graph', path: '/graph', label: 'Graf', icon: Network },
+  graph: { id: 'graph', path: '/graph', label: 'Mapa Dostępów', icon: Network },
   audit: { id: 'audit', path: '/audit', label: 'Audyt', icon: ScrollText },
   // `/mocks` dokumentuje **wszystkie** mocki (GitHub i Jira razem), więc nie należy do żadnej
   // usługi z osobna — mają go wszystkie, na końcu nawigacji.

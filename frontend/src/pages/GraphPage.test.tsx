@@ -71,7 +71,7 @@ it('renderuje graf z GET /api/v1/graph razem z węzłami zespołów', async () =
   const graph: PermissionGraph = liveGraph();
   renderWithProviders(<GraphPage />);
 
-  expect(screen.getByRole('heading', { name: 'Graf' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Mapa Dostępów' })).toBeInTheDocument();
   await screen.findByTestId('graph-nodes');
   expectCounter('graph-nodes', graph.nodes.length);
   expectCounter('graph-edges', graph.edges.length);
