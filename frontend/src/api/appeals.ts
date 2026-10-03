@@ -1,4 +1,9 @@
-import type { AppealCreate, AppealOverview, AppealRejectRequest } from '@/types/api';
+import type {
+  AppealCreate,
+  AppealOverview,
+  AppealRejectRequest,
+  DecisionRequest,
+} from '@/types/api';
 
 import { getJson, postJson } from './client';
 import { shouldUseFixtures } from './config';
@@ -29,9 +34,31 @@ export async function postAppeal(lease_id: number, justification: string): Promi
 }
 
 /**
- * Rozstrzygnięcie odwołania (UC-3): backend zna dziś **wyłącznie** odrzucenie wniosku
- * (`POST /api/v1/appeals/{appeal_id}/reject`, ADR 0011 §5.5). Endpoint `/decision` nie istnieje,
- * a zatwierdzenie wymaga decyzji o dostępie (3.6/5.5), której jeszcze nie ma.
+ * Rozstrzygnięcie odwołania decyzją o dzierżawie (UC-3):
+ * `POST /api/v1/appeals/{appeal_id}/decision` (`app/api/v1/appeals.py::decide`).
+ *
+ * Backend przeprowadza decyzję administratora na **dzierżawie z odwołania**
+ * (`appeal_service.decide_appeal` → `decision_service.apply_lease_decision`) i zamyka wniosek:
+ * `EXTEND` daje `APPROVED`, a `DOWNSCOPE`/`REVOKE` — `REJECTED`. Uzasadnienie jest wymagane przez
+ * silnik przy `DOWNSCOPE`/`REVOKE` (422), a przy `EXTEND` jest opcjonalne. Wniosek już
+ * rozstrzygnięty to `409`, a Last Admin Protection odpowiada `403` i zostawia wniosek `PENDING`.
+ */
+export async function postAppealDecision(
+  appeal_id: number,
+  request: DecisionRequest,
+): Promise<AppealOverview> {
+  return postJson<AppealOverview, DecisionRequest>(
+    `/api/v1/appeals/${appeal_id}/decision`,
+    request,
+  );
+}
+
+/**
+ * Rozstrzygnięcie odwołania przez odrzucenie wniosku (UC-3):
+ * `POST /api/v1/appeals/{appeal_id}/reject` (ADR 0011 §5.5).
+ *
+ * Odrzucenie zamyka wniosek `REJECTED` i **nie dotyka dzierżawy** — to alternatywa dla decyzji
+ * o dzierżawie, nie jej skrót.
  */
 export async function rejectAppeal(
   appeal_id: number,

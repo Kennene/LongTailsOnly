@@ -7,88 +7,36 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGraph } from '@/hooks/useGraph';
 import { applyColumnLayout } from '@/lib/graphLayout';
-import type { GraphEdge, GraphNode } from '@/types/api';
+import type { GraphEdge, GraphNode, PermissionGraph } from '@/types/api';
 
-interface GraphSelection {
-  nodes: GraphNode[];
-  edges: GraphEdge[];
+/** Zespół w filtrze: `label` to nazwa z węzła (`DEV`), `slug` to wartość zapytania (`dev`). */
+interface TeamOption {
+  label: string;
+  slug: string;
 }
 
 /**
- * Etykieta zespołu dla sluga z węzła osoby.
+ * Zespoły do filtra: węzły `team` z ładunku (`data.label` = nazwa, `data.team` = slug).
  *
- * Kontrakt trzyma w `data.team` slug („dev”), a węzeł zespołu niesie nazwę („DEV”) — filtr musi
- * mówić jedną z tych wartości, więc bierzemy nazwę z węzła zespołu, a slug zostawiamy jako
- * ostatnią deskę ratunku dla odpowiedzi bez węzłów zespołów (tak wygląda graf w trybie live,
- * dopóki 4.6B nie dostarczy `GET /api/v1/graph` — patrz `api/graph.ts`).
+ * Bierzemy je z **pełnego** grafu, bo `GET /api/v1/graph?team=…` zawęża odpowiedź do jednego
+ * zespołu — lista opcji liczona z zawężonego grafu składałaby się do bieżącego wyboru i nie dałoby
+ * się przełączyć na inny zespół bez wracania do „Wszystkie”.
  */
-function teamNameOf(nodes: GraphNode[], slug: string): string {
-  return (
-    nodes.find((node: GraphNode): boolean => node.type === 'team' && node.data.team === slug)?.data
-      .label ?? slug
-  );
+function collectTeams(graph: PermissionGraph | undefined): TeamOption[] {
+  return (graph?.nodes ?? [])
+    .filter((node: GraphNode): boolean => node.type === 'team' && node.data.team !== null)
+    .map((node: GraphNode): TeamOption => ({ label: node.data.label, slug: node.data.team ?? '' }))
+    .sort((left: TeamOption, right: TeamOption): number =>
+      left.label.localeCompare(right.label, 'pl'),
+    );
 }
 
-/**
- * Lista zespołów do filtra: etykiety węzłów `team` plus zespoły osób (po nazwie z węzła zespołu,
- * a gdy węzłów zespołów nie ma — po slugu z `data.team`). Pusta lista nie jest błędem: filtr
- * pokazuje wtedy samo „Wszystkie”.
- */
-function collectTeams(nodes: GraphNode[]): string[] {
-  const teams = new Set<string>();
-
-  nodes.forEach((node: GraphNode): void => {
-    if (node.type === 'team') {
-      teams.add(node.data.label);
-      return;
-    }
-    if (node.data.team !== null) {
-      teams.add(teamNameOf(nodes, node.data.team));
-    }
-  });
-
-  return [...teams].sort((left: string, right: string): number => left.localeCompare(right, 'pl'));
+function slugOfLabel(teams: TeamOption[], label: string | null): string | null {
+  return teams.find((option: TeamOption): boolean => option.label === label)?.slug ?? null;
 }
 
-/**
- * Widok zawężony do jednego zespołu: węzeł zespołu, jego osoby i repozytoria, do których te osoby
- * mają czynne dostępy. Docelowo backend zrobi to samo po stronie `GET /api/v1/graph?team=…`
- * (`app/domain/insights.py::build_graph_layout`, krok 4.6B) — bez repozytoriów filtr pokazywałby
- * ludzi odciętych od tego, do czego mają dostęp.
- */
-function selectTeam(nodes: GraphNode[], edges: GraphEdge[], team: string): GraphSelection {
-  // `data.team` jest w kontrakcie `string | null`: węzeł zespołu bez sluga nie zawęża filtra.
-  const teamSlug: string | undefined =
-    nodes.find((node: GraphNode): boolean => node.type === 'team' && node.data.label === team)?.data
-      .team ?? undefined;
-
-  function inTeam(node: GraphNode): boolean {
-    return teamSlug === undefined ? node.data.team === team : node.data.team === teamSlug;
-  }
-
-  const personIds = new Set<string>(
-    nodes
-      .filter((node: GraphNode): boolean => node.type === 'user' && inTeam(node))
-      .map((node: GraphNode): string => node.id),
-  );
-  const repoIds = new Set<string>(
-    edges
-      .filter(
-        (edge: GraphEdge): boolean => edge.data.kind === 'lease' && personIds.has(edge.source),
-      )
-      .map((edge: GraphEdge): string => edge.target),
-  );
-  const visible: GraphNode[] = nodes.filter((node: GraphNode): boolean =>
-    node.type === 'team' || node.type === 'user' ? inTeam(node) : repoIds.has(node.id),
-  );
-  const visibleIds = new Set<string>(visible.map((node: GraphNode): string => node.id));
-
-  return {
-    nodes: visible,
-    edges: edges.filter(
-      (edge: GraphEdge): boolean => visibleIds.has(edge.source) && visibleIds.has(edge.target),
-    ),
-  };
+function labelOfSlug(teams: TeamOption[], slug: string | null): string | null {
+  return teams.find((option: TeamOption): boolean => option.slug === slug)?.label ?? null;
 }
 
 /** Ładowanie w docelowym układzie grafu (DESIGN.md §4), nigdy jako spinner. */
@@ -97,32 +45,33 @@ function GraphSkeleton(): React.JSX.Element {
 }
 
 /**
- * Widok `/graph`: relacje dostępu między osobami i repozytoriami.
+ * Widok `/graph`: relacje dostępu między osobami, zespołami i repozytoriami.
  *
- * Węzły i krawędzie pochodzą z `useGraph()`, który w trybie live składa je z listy dostępów
- * (`api/graph.ts`) — zespół widać wtedy wyłącznie jako `data.team` osoby, bo lista dostępów nie
- * niesie składu zespołów. Węzły zespołów wrócą razem z `GET /api/v1/graph` (krok 4.6B).
+ * Węzły i krawędzie przychodzą gotowe z `GET /api/v1/graph` (`useGraph`) — razem z węzłami
+ * zespołów i krawędziami członkostwa. Filtr zespołu jedzie do **backendu** jako `?team=<slug>`
+ * (`app/domain/insights.py::build_graph_layout`), więc widok nie zawęża już niczego sam; pełny graf
+ * trzymamy obok tylko po to, żeby lista zespołów w filtrze była kompletna.
  *
- * Układ kolumnowy liczymy raz, na pełnym zbiorze węzłów — dzięki temu zawężenie filtrów nie
- * przesuwa węzłów, a `applyColumnLayout` (idempotentny) nie nadpisuje `position` z API.
+ * Układ kolumnowy liczymy raz, na węzłach z API — `applyColumnLayout` (idempotentny) nie nadpisuje
+ * `position` z odpowiedzi, a ratuje widok, gdyby pole jednak nie przyszło.
  */
 export function GraphPage(): React.JSX.Element {
-  const { data, isError, isPending, refetch } = useGraph();
   const [team, setTeam] = useState<string | null>(null);
   const [onlyRisk, setOnlyRisk] = useState<boolean>(false);
 
-  const nodes = applyColumnLayout(data?.nodes ?? []);
-  const edges = data?.edges ?? [];
-  const selection: GraphSelection =
-    team === null ? { nodes, edges } : selectTeam(nodes, edges, team);
+  const allGraph = useGraph();
+  const { data, isError, isPending, refetch } = useGraph(team);
+  const nodes: GraphNode[] = applyColumnLayout(data?.nodes ?? []);
+  const edges: GraphEdge[] = data?.edges ?? [];
+  const teams: TeamOption[] = collectTeams(allGraph.data);
 
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Graf</h1>
         <p className="text-sm text-muted-foreground">
-          Kto ma dostęp do czego: osoby i repozytoria. Kolor węzła oraz krawędzi niesie status
-          dostępu, a filtr zespołu zawęża widok do jednej grupy.
+          Kto ma dostęp do czego: osoby, zespoły i repozytoria. Kolor węzła oraz krawędzi niesie
+          status dzierżawy, a filtr zespołu zawęża widok do jednej grupy.
         </p>
       </header>
 
@@ -154,11 +103,11 @@ export function GraphPage(): React.JSX.Element {
           <GraphFilters
             onlyRisk={onlyRisk}
             onOnlyRiskChange={setOnlyRisk}
-            onTeamChange={setTeam}
-            team={team}
-            teams={collectTeams(nodes)}
+            onTeamChange={(label: string | null): void => setTeam(slugOfLabel(teams, label))}
+            team={labelOfSlug(teams, team)}
+            teams={teams.map((option: TeamOption): string => option.label)}
           />
-          <PermissionsGraph edges={selection.edges} nodes={selection.nodes} onlyRisk={onlyRisk} />
+          <PermissionsGraph edges={edges} nodes={nodes} onlyRisk={onlyRisk} />
         </>
       )}
     </section>
