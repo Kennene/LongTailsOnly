@@ -1,12 +1,23 @@
 """Lease engine rules (docs/3-silnik-dzierzawy/DOCUMENTATION.md §3). Pure functions, no I/O."""
 
+from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from app.domain.enums import ActionType, LeaseStatus, Role
+from app.domain.enums import ActionType, LeaseStatus, Recommendation, Role
 from app.domain.lease_window import WARNING_WINDOW_DAYS, days_remaining
-from app.domain.roles import is_at_least, is_leased, is_renewing, required_permission_for
+from app.domain.roles import is_at_least, is_leased, is_renewing, required_permission_for, role_rank
 
 _WITHOUT_EXPIRY = frozenset({LeaseStatus.PERMANENT, LeaseStatus.REVOKED})
+_LAPSING = frozenset({LeaseStatus.WARNING, LeaseStatus.EXPIRED})
+
+
+@dataclass(frozen=True)
+class Activity:
+    """One action of a person in a repository (a projection of ActivityEvent)."""
+
+    action: ActionType
+    at: datetime
 
 
 def lease_status(role: Role, expires_at: datetime | None, is_active: bool, now: datetime) -> LeaseStatus:
@@ -30,3 +41,19 @@ def lease_days_remaining(status: LeaseStatus, expires_at: datetime | None, now: 
 def renews(action: ActionType, lease_role: Role) -> bool:
     """3.2: a renewing action renews its own level and the lower ones, never a higher one; admin never expires."""
     return is_leased(lease_role) and is_renewing(action) and is_at_least(required_permission_for(action), lease_role)
+
+
+def newest_activity(activity: Iterable[Activity], *, since: datetime | None, until: datetime) -> Activity | None:
+    """Newest renewing action in [since, until]; on equal time the higher level wins (deterministic)."""
+    candidates = [a for a in activity
+                  if is_renewing(a.action) and a.at <= until and (since is None or a.at >= since)]
+    return max(candidates, key=lambda a: (a.at, role_rank(required_permission_for(a.action))), default=None)
+
+
+def recommend(status: LeaseStatus, role: Role, newest: ActionType | None) -> Recommendation:
+    """3.3: only lapsing leases get advice - no activity → REVOKE, activity below the role → DOWNSCOPE."""
+    if status not in _LAPSING:
+        return Recommendation.KEEP
+    if newest is None:
+        return Recommendation.REVOKE
+    return Recommendation.KEEP if renews(newest, role) else Recommendation.DOWNSCOPE

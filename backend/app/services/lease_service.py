@@ -1,14 +1,20 @@
 """Lease engine service (docs/3-silnik-dzierzawy/DOCUMENTATION.md §3): activity, statuses and recommendations."""
 
+from collections import defaultdict
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.enums import ActionType
-from app.domain.lease_rules import renews
-from app.domain.roles import required_permission_for
+from app.domain.lease_rules import Activity, lease_days_remaining, lease_status, newest_activity, recommend, renews
+from app.domain.roles import RENEWING_ACTIONS, required_permission_for
 from app.models import ActivityEvent, Lease
+from app.schemas.lease import LeaseOverview, LeaseRead
+from app.services.errors import ServiceError
+
+ActivityByLease = dict[tuple[int, int], list[Activity]]
 
 
 async def record_activity(session: AsyncSession, *, user_id: int, repo_id: int, action: ActionType,
@@ -23,3 +29,47 @@ async def record_activity(session: AsyncSession, *, user_id: int, repo_id: int, 
         lease.expires_at = max(lease.expires_at, renewed_until)
     await session.flush()
     return event
+
+
+async def list_lease_overviews(session: AsyncSession, now: datetime) -> list[LeaseOverview]:
+    """Every lease (admin and revoked included), ordered by id, with values computed by the engine."""
+    leases = (await session.scalars(select(Lease).order_by(Lease.id))).all()
+    return await build_lease_overviews(session, leases, now)
+
+
+async def get_lease_overview(session: AsyncSession, lease_id: int, now: datetime) -> LeaseOverview:
+    lease = await session.get(Lease, lease_id)
+    if lease is None:
+        raise ServiceError(404, f"Lease {lease_id} not found")
+    (overview,) = await build_lease_overviews(session, [lease], now)
+    return overview
+
+
+async def build_lease_overviews(session: AsyncSession, leases: Sequence[Lease], now: datetime) -> list[LeaseOverview]:
+    activity = await _renewing_activity(session, {lease.user_id for lease in leases}, now)
+    return [_overview(lease, activity.get((lease.user_id, lease.repo_id), []), now) for lease in leases]
+
+
+async def _renewing_activity(session: AsyncSession, user_ids: set[int], now: datetime) -> ActivityByLease:
+    rows = (await session.execute(
+        select(ActivityEvent.user_id, ActivityEvent.repo_id, ActivityEvent.action_type, ActivityEvent.timestamp)
+        .where(ActivityEvent.user_id.in_(user_ids), ActivityEvent.action_type.in_(RENEWING_ACTIONS),
+               ActivityEvent.timestamp <= now))).all()
+    grouped: ActivityByLease = defaultdict(list)
+    for user_id, repo_id, action, at in rows:
+        grouped[(user_id, repo_id)].append(Activity(action, at))
+    return grouped
+
+
+def _overview(lease: Lease, activity: list[Activity], now: datetime) -> LeaseOverview:
+    status = lease_status(lease.current_role, lease.expires_at, lease.is_active, now)
+    window_start = now - timedelta(days=lease.repository.default_lease_duration_days)
+    newest = newest_activity(activity, since=window_start, until=now)
+    latest = newest_activity(activity, since=None, until=now)
+    return LeaseOverview(
+        **LeaseRead.model_validate(lease).model_dump(),
+        status=status,
+        days_remaining=lease_days_remaining(status, lease.expires_at, now),
+        last_activity_at=latest.at if latest else None,
+        recommendation=recommend(status, lease.current_role, newest.action if newest else None),
+    )
