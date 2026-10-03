@@ -161,9 +161,8 @@ class ServiceRead(BaseModel):
 Pojedyncze źródło prawdy dla UI: trasa, etykieta nawigacji i ikona per usługa.
 
 ```ts
-export type ServiceId = string;
 export type ServiceRouteId = 'dashboard' | 'leases' | 'appeals' | 'baseline' | 'graph' | 'audit';
-export type ServiceIconComponent = ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
+export type ServiceIconComponent = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 
 export interface ServiceRoute {
   id: ServiceRouteId;
@@ -173,18 +172,25 @@ export interface ServiceRoute {
 }
 
 export interface ServiceConfig {
-  id: ServiceId;
+  id: string;
   icon: ServiceIconComponent;
   routes: ServiceRoute[];
   defaultRouteId: ServiceRouteId;
 }
 ```
 
+**Identyfikatory usług są zwykłym `string`iem** — alias `ServiceId` nie jest potrzebny, dopóki nie ma konsumenta, który by na nim zyskiwał (YAGNI, `CODING_STANDARDS.md` §1.5). `ServiceIconComponent` pozostaje szeroki (`aria-hidden?: boolean`), bo obie implementacje — lucide i nasze znaki — i tak renderują atrybut na sztywno jako `"true"`; wymuszanie tego typem kolidowałoby z `LucideProps` bez realnej korzyści. Wszystkie ikony w rejestrze są dekoracyjne: nazwę zawsze niesie sąsiedni tekst.
+
 Eksporty: `SERVICE_REGISTRY`, `getServiceConfig(id)`, `getDefaultPath(id)`, `isRouteSupported(id, path)`, `fallbackIcon`.
 
-**Znaki firmowe:** `src/services/brandIcons.tsx` z `GitHubIcon`, `GitLabIcon` (własne `SVG` z `viewBox="0 0 24 24"`, `fill="currentColor"`, `aria-hidden="true"`, `className` przekazywane tak jak w lucide). Rejestr używa `GitHubIcon` dla `github`; dla nieznanej usługi — `fallbackIcon` (lucide `Blocks`).
+**Znaki firmowe:** `src/services/brandIcons.tsx` z `GitHubIcon`, `GitLabIcon` (własne `SVG` z `viewBox="0 0 24 24"`, `fill="currentColor"`, `aria-hidden="true"`, `className` przekazywane tak jak w lucide, oraz **`width`/`height` ustawione na `1em`**, żeby znak bez `className` nie rozlał się do domyślnych 300×150 elementu zastępowanego). Rejestr używa `GitHubIcon` dla `github`. **`GitLabIcon` celowo nie jest przypisany do `demo-tracker`** — to znak zarezerwowany dla przyszłego adaptera GitLaba (§11), a `demo-tracker` jest z definicji „integracją demonstracyjną" typu issue tracker, więc noszenie marki GitLaba wprowadzałoby w błąd. Świadomie nieużywany eksport nie jest martwym kodem; dla nieznanej usługi służy `fallbackIcon` (lucide `Blocks`).
 
-**Dwa rejestry:** `github` (pełna lista sześciu tras, `defaultRouteId: 'dashboard'`) i `demo-tracker` (`dashboard` + `audit`, `defaultRouteId: 'dashboard'`). Trasy współdzielone (`dashboard`, `audit`) są zdefiniowane **raz** i reużywane przez oba wpisy — bez duplikowania etykiet i ikon.
+**Dwa rejestry:** `github` (pełna lista sześciu tras, `defaultRouteId: 'dashboard'`) i `demo-tracker` (`dashboard` + `audit`, `defaultRouteId: 'dashboard'`, ikona `fallbackIcon`). Trasy współdzielone (`dashboard`, `audit`) są zdefiniowane **raz** i reużywane przez oba wpisy — bez duplikowania etykiet i ikon.
+
+**Dwa warunki, które muszą zachodzić łącznie.** Obydwa wynikły z przeglądu zadania 4 — pierwszy był realnym defektem projektu (pusty ekran), drugi regresją adresów, które dziś działają — i obydwa są przypięte testami:
+
+1. **Dopasowanie trasy musi odpowiadać semantyce React Routera, nie porównaniu znak-w-znak.** `isRouteSupported` normalizuje ścieżkę przed porównaniem: usuwa końcowy `/` (poza samym `/`) i ignoruje wielkość liter. React Router 7 dopasowuje `/leases/` oraz `/Leases` do trasy `/leases` (`caseSensitive` domyślnie `false`), więc naiwne porównanie ścisłe kazałoby strażnikowi przekierować adresy, które **dziś renderują widok** — cicha zmiana routingu, nie kosmetyka.
+2. **Strażnik nie może odrzucać własnego celu przekierowania.** Dla usługi nieznanej rejestrowi frontendu `getDefaultPath` zwraca `/`, więc `isRouteSupported(id, '/')` musi być `true`. Inaczej `<Navigate>` prowadzi na ścieżkę, którą ten sam predykat odrzuca, `<Outlet/>` nigdy się nie renderuje i powłoka zostaje pusta — dokładnie ten scenariusz, dla którego istnieją `fallbackIcon` i `getServiceConfig → undefined`. Niezmiennik przypięty testem: `isRouteSupported(id, getDefaultPath(id)) === true` dla dowolnego `id`, w tym `'does-not-exist'`, `'toString'` i `'constructor'`.
 
 ### 5.2 Kontekst i stan — `src/services/ServicesContext.tsx`
 

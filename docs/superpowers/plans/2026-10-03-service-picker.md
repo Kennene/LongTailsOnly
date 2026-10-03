@@ -350,7 +350,12 @@ git commit -m "feat(backend): expose GET /api/v1/services and regenerate the con
 
 **Interfaces:**
 - Consumes: the generated `ServiceRead`/`ServiceKind` types (Task 3).
-- Produces: `ServiceRouteId` union (`'dashboard' | 'leases' | 'appeals' | 'baseline' | 'graph' | 'audit'`); `ServiceIconComponent`; `ServiceRoute` (`id`, `path`, `label`, `icon`); `ServiceConfig` (`id`, `icon`, `routes`, `defaultRouteId`); `SERVICE_REGISTRY: Record<string, ServiceConfig>`; `getServiceConfig(id: string): ServiceConfig | undefined`; `getDefaultPath(id: string): string`; `isRouteSupported(id: string, path: string): boolean`; `fallbackIcon: ServiceIconComponent`; `GitHubIcon`, `GitLabIcon`.
+- Produces: `ServiceRouteId` union (`'dashboard' | 'leases' | 'appeals' | 'baseline' | 'graph' | 'audit'`); `ServiceIconComponent` (`{ className?: string; 'aria-hidden'?: boolean }` — kept broad: both lucide and the brand marks render the attribute hardcoded as "true", and narrowing it would fight `LucideProps` for no gain); `ServiceRoute` (`id`, `path`, `label`, `icon`); `ServiceConfig` (`id: string`, `icon`, `routes`, `defaultRouteId` — plain `string`, no `ServiceId` alias, since nothing consumes one); `SERVICE_REGISTRY: Record<string, ServiceConfig>`; `getServiceConfig(id: string): ServiceConfig | undefined`; `getDefaultPath(id: string): string`; `isRouteSupported(id: string, path: string): boolean`; `fallbackIcon: ServiceIconComponent`; `GitHubIcon`, `GitLabIcon`.
+
+**Two invariants this task must satisfy, both pinned by tests** (they came out of the Task 4 review, where the first was a real blank-screen defect and the second a regression of URLs that work today):
+
+1. **`isRouteSupported` must normalise the path the way React Router does** — strip a trailing `/` (except for the root `/`) and compare case-insensitively. React Router 7 matches `/leases/` and `/Leases` to the `/leases` route (`caseSensitive` defaults to `false`), so a naive character-exact comparison would make the Task 6 guard redirect addresses that **currently render a view**. Add tests for both normalisations.
+2. **The guard must not reject its own redirect target.** For an id the frontend registry does not know, `getDefaultPath` returns `/`, so `isRouteSupported(id, '/')` must be `true`; otherwise Task 6's `<Navigate to={getDefaultPath(id)}>` lands on a path the same predicate rejects, `<Outlet/>` never renders, and the shell goes blank — precisely the case `fallbackIcon` exists for. Pin the invariant with a test over `'does-not-exist'`, `'toString'` and `'constructor'`: `isRouteSupported(id, getDefaultPath(id)) === true`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -399,9 +404,11 @@ Expected: FAIL — cannot resolve `@/services/serviceRegistry`.
 
 - [ ] **Step 3: Implement the registry and brand icons**
 
-`brandIcons.tsx` exports `GitHubIcon` and `GitLabIcon`: `fill="currentColor"`, `viewBox="0 0 24 24"`, `aria-hidden="true"`, forwarding `className`, typed as `ServiceIconComponent`. Use the official GitHub mark path and a simplified GitLab mark; both are monochrome and inherit `currentColor` so they obey the token rules.
+`brandIcons.tsx` exports `GitHubIcon` and `GitLabIcon`: `fill="currentColor"`, `viewBox="0 0 24 24"`, `aria-hidden="true"`, forwarding `className`, typed as `ServiceIconComponent`, and **with `width="1em"` / `height="1em"`** so a mark rendered without a `className` does not inflate to the 300×150 default of a replaced element (lucide emits `width="24" height="24"`; without explicit dimensions the two are interchangeable by type but not by default rendering). Use the official GitHub mark path and a simplified monochrome GitLab mark — both inherit `currentColor` so they obey the token rules.
 
-`serviceRegistry.ts` defines the six shared routes **once** (each with its Polish label from `Sidebar.tsx:7-12` and its lucide icon) and reuses them across services rather than duplicating labels. `github` gets all six (`defaultRouteId: 'dashboard'`, `icon: GitHubIcon`); `demo-tracker` gets `dashboard` and `audit` only (`defaultRouteId: 'dashboard'`). `fallbackIcon` is the lucide `Blocks` icon. `isRouteSupported` returns `false` for an unknown service id.
+`serviceRegistry.ts` defines the six shared routes **once** (each with its Polish label from `Sidebar.tsx:7-12` and its lucide icon) and reuses them across services rather than duplicating labels. `github` gets all six (`defaultRouteId: 'dashboard'`, `icon: GitHubIcon`); `demo-tracker` gets `dashboard` and `audit` only (`defaultRouteId: 'dashboard'`, `icon: fallbackIcon`). **Do not assign `GitLabIcon` to `demo-tracker`**: the spec defines that service as "Demo Tracker (integracja demonstracyjna)", kind `ISSUE_TRACKER`, while GitLab appears only as a future, explicitly out-of-scope adapter — the picker shows the active service's icon, so a GitLab fox beside "Demo Tracker" reads as a GitLab connection that does not exist. Leaving an export unused is not dead code; `GitLabIcon` is reserved for that future adapter. `fallbackIcon` is the lucide `Blocks` icon.
+
+Implement both invariants from the Interfaces block: `isRouteSupported` normalises the path (strip a trailing `/` except for the root, compare case-insensitively) and returns `true` for `getDefaultPath(id)` even when the id is unknown. `isRouteSupported` still returns `false` for an unknown service id on any *other* path.
 
 - [ ] **Step 4: Run test to verify it passes**
 
