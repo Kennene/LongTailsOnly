@@ -12,7 +12,7 @@ const GITHUB_LABELS = [
   'Dostępy',
   'Odwołania',
   'Standard zespołu',
-  'Graf',
+  'Mapa Dostępów',
   'Audyt',
   'Mocki',
 ];
