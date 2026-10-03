@@ -279,7 +279,7 @@ describe('LeaseTable', () => {
     renderWithProviders(<LeaseTable leases={leasesFixture.toReversed()} />);
 
     expect(shownLogins()).toEqual(loginsInOrder);
-    expect(loginsInOrder[0]).toContain(MOST_URGENT.user.login);
-    expect(loginsInOrder[loginsInOrder.length - 1]).toContain(LAST_PERMANENT.user.login);
+    expect(loginsInOrder[0]).toContain(MOST_URGENT.user.name);
+    expect(loginsInOrder[loginsInOrder.length - 1]).toContain(LAST_PERMANENT.user.name);
   });
 });

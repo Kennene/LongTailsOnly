@@ -90,8 +90,8 @@ describe('LeasesPage team filter', () => {
     );
 
     expect(tableRows()).toHaveLength(devUsers + 1);
-    expect(shownLogins()).toContain(DEV_LEASE.user.login);
-    expect(shownLogins()).not.toContain(QA_LEASE.user.login);
+    expect(shownLogins()).toContain(DEV_LEASE.user.name);
+    expect(shownLogins()).not.toContain(QA_LEASE.user.name);
   });
 
   it('groups the leases of users without a team behind their own chip', async () => {
@@ -100,8 +100,8 @@ describe('LeasesPage team filter', () => {
 
     await user.click(chip(NO_TEAM_CHIP));
 
-    expect(shownLogins()).toContain(NO_TEAM_LEASE.user.login);
-    expect(shownLogins()).not.toContain(DEV_LEASE.user.login);
+    expect(shownLogins()).toContain(NO_TEAM_LEASE.user.name);
+    expect(shownLogins()).not.toContain(DEV_LEASE.user.name);
   });
 
   it('brings every person back when the filter returns to "Wszystkie"', async () => {
