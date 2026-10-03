@@ -565,6 +565,37 @@
       "title": "LeaseStatus",
       "type": "string"
     },
+    "OnboardingProposal": {
+      "description": "Team baseline split for one person: what approval would grant and what they already have (ADR 0010 \u00a74).",
+      "properties": {
+        "already_granted": {
+          "items": {
+            "$ref": "#/$defs/BaselineEntry"
+          },
+          "type": "array"
+        },
+        "team": {
+          "$ref": "#/$defs/TeamRead"
+        },
+        "to_grant": {
+          "items": {
+            "$ref": "#/$defs/BaselineEntry"
+          },
+          "type": "array"
+        },
+        "user": {
+          "$ref": "#/$defs/UserRead"
+        }
+      },
+      "required": [
+        "user",
+        "team",
+        "to_grant",
+        "already_granted"
+      ],
+      "title": "OnboardingProposal",
+      "type": "object"
+    },
     "Recommendation": {
       "enum": [
         "KEEP",

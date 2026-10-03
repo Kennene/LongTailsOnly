@@ -225,6 +225,18 @@ export interface LeaseRead {
   user: UserRead;
 }
 /**
+ * Team baseline split for one person: what approval would grant and what they already have (ADR 0010 §4).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "OnboardingProposal".
+ */
+export interface OnboardingProposal {
+  already_granted: BaselineEntry[];
+  team: TeamRead;
+  to_grant: BaselineEntry[];
+  user: UserRead;
+}
+/**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "TimeTravelRequest".
  */
