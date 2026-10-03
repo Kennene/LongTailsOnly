@@ -31,7 +31,7 @@ export async function postAppeal(lease_id: number, justification: string): Promi
 /**
  * Rozstrzygnięcie odwołania (UC-3): backend zna dziś **wyłącznie** odrzucenie wniosku
  * (`POST /api/v1/appeals/{appeal_id}/reject`, ADR 0011 §5.5). Endpoint `/decision` nie istnieje,
- * a zatwierdzenie wymaga decyzji o dzierżawie (3.6/5.5), której jeszcze nie ma.
+ * a zatwierdzenie wymaga decyzji o dostępie (3.6/5.5), której jeszcze nie ma.
  */
 export async function rejectAppeal(
   appeal_id: number,

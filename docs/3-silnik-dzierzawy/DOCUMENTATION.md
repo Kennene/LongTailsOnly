@@ -1,4 +1,4 @@
-# Silnik dzierżawy — Osoba 3 (Guziol)
+# Silnik dostępów — Osoba 3 (Guziol)
 
 > **Stan na: 2026-10-03.** Kroki 3.1–3.6. Gałęzie: `guziol/silnik-dzierzawy` (3.1–3.3, 3.5, 3.6) i `guziol/ochrona-ostatniego-admina`
 > (3.4, wycięta z `main`, zmergowana lokalnie przed 3.5). Plan: [`2026-10-03-p3-silnik-dzierzawy.md`](../superpowers/plans/2026-10-03-p3-silnik-dzierzawy.md).
@@ -7,7 +7,7 @@
 
 ## 1. Zakres i odbiorcy
 
-Silnik liczy dla każdej dzierżawy status, liczbę dni i rekomendację, odnawia dzierżawy aktywnością, wykonuje decyzje
+Silnik liczy dla każdego dostępu status, liczbę dni i rekomendację, odnawia dostępy aktywnością, wykonuje decyzje
 administratora (przedłuż / zdeeskaluj / odbierz), pilnuje ostatniego admina i działa w trzech trybach egzekwowania.
 
 | Kto | Czego potrzebuje |
@@ -31,16 +31,16 @@ administratora (przedłuż / zdeeskaluj / odbierz), pilnuje ostatniego admina i 
 | D8 | Szkic: uzasadnienie zawsze; kontrakt: opcjonalne | **Wymagane dla `DOWNSCOPE`/`REVOKE`** (422 z serwisu), opcjonalne dla `EXTEND` | Fixtures i UC-3 wysyłają `EXTEND` bez uzasadnienia; tryb auto wpisuje powód sam |
 | D9 | Szkic: `disabled` poza MVP; lista: `disabled / warning / auto` | Trzy tryby (§5) | Lista kroków |
 | D10 | Szkic: `revoked_at`; model: `is_active` | `is_active` | ADR 0007 |
-| D11 | Tryb auto a odwołanie `PENDING` | Auto **nie pomija** takich dzierżaw | Żaden dostęp nie jest wieczny; `EXTEND` na odwołaniu przywraca dostęp |
-| D12 | Mnożnik: szkic liczy `expires_at − granted_at`; GLOSSARY: TTL = okres dzierżawy | Mnożnik od TTL repozytorium: `+ round(lease_days × M)` dni | W seedzie `granted_at` jest 90 dni wstecz, więc szkic dawałby 2× ≈ 240 dni |
-| D13 | Decyzja na dzierżawie z odwołaniem `PENDING` | `/leases/{id}/decision` → 409; decyzja idzie przez `/appeals/{id}/decision` | Odwołanie nie zostaje bez rozstrzygnięcia (ADR 0014 §5.5) |
+| D11 | Tryb auto a odwołanie `PENDING` | Auto **nie pomija** takich dostępów | Żaden dostęp nie jest wieczny; `EXTEND` na odwołaniu przywraca dostęp |
+| D12 | Mnożnik: szkic liczy `expires_at − granted_at`; GLOSSARY: TTL = okres dostępu | Mnożnik od TTL repozytorium: `+ round(lease_days × M)` dni | W seedzie `granted_at` jest 90 dni wstecz, więc szkic dawałby 2× ≈ 240 dni |
+| D13 | Decyzja na dostępie z odwołaniem `PENDING` | `/leases/{id}/decision` → 409; decyzja idzie przez `/appeals/{id}/decision` | Odwołanie nie zostaje bez rozstrzygnięcia (ADR 0014 §5.5) |
 | D14 | `until_date` jest datą, nie czasem | Dostęp do końca dnia D (UTC): `expires_at = (D + 1 dzień) 00:00Z` | Jednoznaczne dla admina i testów |
 
 D12–D14 to decyzje sekcji 3.6 przyjęte według rekomendacji, do zgłoszenia uwag przed scaleniem 3.6.
 
 ## 3. Reguły (3.1–3.3) — `app/domain/lease_rules.py`
 
-### 3.1 Status dzierżawy
+### 3.1 Status dostępu
 
 Pierwsza pasująca reguła wygrywa (`now` z `ClockPort`):
 
@@ -57,14 +57,14 @@ Dzięki temu `WARNING` ma zawsze 1–7 dni, a `EXPIRED` ≤ 0.
 
 Liczą się tylko akcje z `RENEWING_ACTIONS` (ADR 0010). Akcja odnawia swój poziom i niższe, nie wyższe. Admin nie wygasa, więc nie jest odnawiany.
 
-| Akcja ↓ / dzierżawa → | `read` | `write` |
+| Akcja ↓ / dostęp → | `read` | `write` |
 | --- | --- | --- |
 | `PushEvent` (write) | ✅ | ✅ |
 | `PullRequestReviewEvent`, `IssueCommentEvent` (read) | ✅ | ❌ |
 | merge, label, zmiana ustawień (tylko mock) | ❌ | ❌ |
 
 `record_activity(session, *, user_id, repo_id, action, occurred_at)` zapisuje `ActivityEvent` (tylko dopisywanie) z
-`required_permission_for(action)`. Jeśli akcja odnawia aktywną dzierżawę nie-admin tej osoby w tym repo, ustawia
+`required_permission_for(action)`. Jeśli akcja odnawia aktywny dostęp nie-admin tej osoby w tym repo, ustawia
 `expires_at = max(expires_at, occurred_at + lease_days)`, więc nigdy nie skraca przedłużenia admina. Seed (`app/db/seed.py`)
 liczy `expires_at` tą samą regułą; zgodność pilnuje test.
 
@@ -73,7 +73,7 @@ liczy `expires_at` tą samą regułą; zgodność pilnuje test.
 - `REVOKED`, `PERMANENT`, `ACTIVE` → `KEEP`.
 - `WARNING`, `EXPIRED`: najnowsza akcja odnawiająca tej osoby w tym repo w oknie `[now − lease_days, now]`:
   - brak → `REVOKE`;
-  - odnawia rolę dzierżawy (macierz §3.2) → `KEEP`;
+  - odnawia rolę dostępu (macierz §3.2) → `KEEP`;
   - nie odnawia (review lub komentarz przy `write`) → `DOWNSCOPE` (do `read`).
   - Przy równym czasie wygrywa wyższy poziom.
 - `last_activity_at` = czas najnowszej akcji odnawiającej (bez okna, nie później niż `now`), `null` gdy brak.
@@ -81,7 +81,7 @@ liczy `expires_at` tą samą regułą; zgodność pilnuje test.
 
 Kontrola na seedzie (reset, godzina popołudniowa):
 
-| Dzierżawa | t0 | +15 dni | +30 dni |
+| Dostęp | t0 | +15 dni | +30 dni |
 | --- | --- | --- | --- |
 | `kamil@core-api` | `ACTIVE`, 29, `KEEP` | `ACTIVE`, `KEEP` | `EXPIRED`, `REVOKE` |
 | `kamil@payment-service` (UC-2) | `WARNING`, 5, `DOWNSCOPE` | `EXPIRED`, `DOWNSCOPE` | `EXPIRED`, `REVOKE` |
@@ -94,7 +94,7 @@ Kontrola na seedzie (reset, godzina popołudniowa):
 
 Reguła (jak w mocku Osoby 2, ADR 0004):
 
-- **repozytorium:** nie da się usunąć ani zdegradować ostatniej aktywnej dzierżawy `admin` w repo;
+- **repozytorium:** nie da się usunąć ani zdegradować ostatniego aktywnego dostępu `admin` w repo;
 - **organizacja:** jedynego właściciela organizacji (`User.is_admin`) nie da się usunąć z żadnego repo ani zdegradować jego `admin`.
 
 | Element | Rola |
@@ -118,9 +118,9 @@ Reset demo przywraca `warning`. Zmiana trybu trafia do audytu jako `ENFORCEMENT_
 | `warning` | liczone | liczone | brak, decyduje admin |
 | `auto` | liczone | liczone | po każdym `POST /api/v1/simulation/time-travel` i od razu po przełączeniu na `auto` |
 
-Przebieg `auto` (`run_auto_enforcement`): każda aktywna dzierżawa nie-admin ze statusem `EXPIRED` i rekomendacją `DOWNSCOPE`
+Przebieg `auto` (`run_auto_enforcement`): każdy aktywny dostęp nie-admin ze statusem `EXPIRED` i rekomendacją `DOWNSCOPE`
 albo `REVOKE` dostaje tę akcję. Aktor `SYSTEM` (`actor_id = null`), uzasadnienie wpisane automatycznie. `LastAdminError`
-→ wpis `LAST_ADMIN_BLOCKED` i przejście do następnej dzierżawy. Drugi przebieg nic nie zmienia. `GET` nigdy niczego nie wykonuje.
+→ wpis `LAST_ADMIN_BLOCKED` i przejście do następnego dostępu. Drugi przebieg nic nie zmienia. `GET` nigdy niczego nie wykonuje.
 
 API: `GET /api/v1/enforcement/mode` → `{"mode": "warning"}`, `PUT /api/v1/enforcement/mode` z `{"mode": "auto"}`.
 
@@ -128,28 +128,28 @@ API: `GET /api/v1/enforcement/mode` → `{"mode": "warning"}`, `PUT /api/v1/enfo
 
 | Metoda i ścieżka | Body | Odpowiedź |
 | --- | --- | --- |
-| `GET /api/v1/leases` | — | `LeaseOverview[]` (wszystkie dzierżawy, także admin i odebrane), po `id` |
+| `GET /api/v1/leases` | — | `LeaseOverview[]` (wszystkie dostępy, także admin i odebrane), po `id` |
 | `GET /api/v1/leases/{id}` | — | `LeaseOverview`; 404 |
 | `POST /api/v1/leases/{id}/decision` | `DecisionRequest` | `LeaseOverview` po decyzji |
-| `GET /api/v1/leases/{id}/activity-stats` | — | `LeaseActivityStats`: liczniki push / review / komentarzy w oknie dzierżawy |
+| `GET /api/v1/leases/{id}/activity-stats` | — | `LeaseActivityStats`: liczniki push / review / komentarzy w oknie dostępu |
 
-Błędy `POST /decision`: 404 brak dzierżawy; 409 dzierżawa ma odwołanie `PENDING` (D13) albo `REVOKE` na odebranej;
+Błędy `POST /decision`: 404 brak dostępu; 409 dostęp ma odwołanie `PENDING` (D13) albo `REVOKE` na odebranej;
 422 `EXTEND`/`DOWNSCOPE` na adminie, `DOWNSCOPE` nie z aktywnego `write`, brak uzasadnienia przy `DOWNSCOPE`/`REVOKE` (D8),
-`until_date` nie później niż obecny koniec dzierżawy; 403 ostatni admin (wpis `LAST_ADMIN_BLOCKED` zostaje w audycie).
+`until_date` nie później niż obecny koniec dostępu; 403 ostatni admin (wpis `LAST_ADMIN_BLOCKED` zostaje w audycie).
 
 `EXTEND` (`apply_lease_decision`):
 
-- baza = `max(now, expires_at)` dla aktywnej dzierżawy, `now` dla odebranej;
+- baza = `max(now, expires_at)` dla aktywnego dostępu, `now` dla odebranego;
 - `preset_days` / `custom_days` = N → `baza + N dni`;
 - `multiplier` = M → `baza + round(lease_days × M)` dni (D12);
 - `until_date` = D → `(D + 1 dzień) 00:00Z` (D14);
-- odebrana dzierżawa wraca przez `VCSProvider.set_permission` (dostaje `granted_at = now`).
+- odebrany dostęp wraca przez `VCSProvider.set_permission` (dostaje `granted_at = now`).
 
 `DOWNSCOPE`: tylko z aktywnego `write`, przez port: `read`, `granted_at = now`, `expires_at = now + lease_days`.
 `REVOKE`: przez `VCSProvider.remove_collaborator`.
 
 Audyt: `LEASE_EXTENDED` / `LEASE_DOWNSCOPED` / `LEASE_REVOKED`, aktor `ADMIN` (`actor_id`) albo `SYSTEM` (`null`), cel
-`owner/repo:login`, `details` z rolą i końcem dzierżawy przed i po.
+`owner/repo:login`, `details` z rolą i końcem dostępu przed i po.
 
 ## 7. Moduły
 
@@ -181,7 +181,7 @@ nie dotyczą silnika i są zgłoszone jako osobne zadanie.
 
 | Krok | Co | Stan |
 | --- | --- | --- |
-| 3.1 | Status dzierżawy względem zegara | ✅ `lease_rules.lease_status`, `LeaseStatus` + `PERMANENT`/`REVOKED` |
+| 3.1 | Status dostępu względem zegara | ✅ `lease_rules.lease_status`, `LeaseStatus` + `PERMANENT`/`REVOKED` |
 | 3.2 | Macierz odnawiania | ✅ `lease_rules.renews`, `lease_service.record_activity`; seed zgodny z macierzą (test) |
 | 3.3 | Wykrywanie deeskalacji write → read | ✅ `lease_rules.recommend`, `lease_service.list_lease_overviews` / `get_lease_overview` |
 | 3.4 | Ochrona ostatniego admina | ✅ `last_admin_guard.ensure_not_last_admin`, `VCSProvider.remove_collaborator` (gałąź `guziol/ochrona-ostatniego-admina`) |
@@ -196,7 +196,7 @@ nie dotyczą silnika i są zgłoszone jako osobne zadanie.
 - `LeaseStatus` ma teraz `PERMANENT` i `REVOKED`; Twoje zerowanie statusu dla admina i nieaktywnych w `_snapshot` dalej działa.
 - `apply_lease_decision` przy blokadzie ostatniego admina zapisuje (flush) wpis `LAST_ADMIN_BLOCKED` i rzuca `LastAdminError` (403).
   Żeby wpis został w bazie, router musi zrobić `commit` przed ponownym rzuceniem błędu (tak robi `POST /api/v1/leases/{id}/decision`).
-- `DOWNSCOPE`/`REVOKE` bez uzasadnienia → 422 (D8); `/leases/{id}/decision` odsyła dzierżawy z odwołaniem `PENDING` na `/appeals/{id}/decision` (409).
+- `DOWNSCOPE`/`REVOKE` bez uzasadnienia → 422 (D8); `/leases/{id}/decision` odsyła dostępy z odwołaniem `PENDING` na `/appeals/{id}/decision` (409).
 - O1 i O2 z ADR 0014 są rozstrzygnięte (D2, D3).
 
 **Osoba 2 (Dawid).** `_guard_last_admin` w `GitHubCollaboratorService` woła teraz wspólne `ensure_not_last_admin`

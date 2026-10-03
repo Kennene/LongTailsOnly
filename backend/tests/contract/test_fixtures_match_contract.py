@@ -126,8 +126,8 @@ def test_fixture_references_resolve_inside_fixture_set() -> None:
     lease_ids = {lease["id"] for lease in leases}
 
     for lease in leases:
-        assert lease["user"]["id"] in user_ids, f"dzierżawa {lease['id']} wskazuje nieznanego usera"
-        assert lease["repository"]["id"] in repo_ids, f"dzierżawa {lease['id']} wskazuje nieznane repo"
+        assert lease["user"]["id"] in user_ids, f"dostęp {lease['id']} wskazuje nieznanego usera"
+        assert lease["repository"]["id"] in repo_ids, f"dostęp {lease['id']} wskazuje nieznane repo"
 
     for appeal in fixture_body("appeals"):
         assert appeal["user_id"] in user_ids, f"odwołanie {appeal['id']}: nieznany user_id"
@@ -153,7 +153,7 @@ def test_lease_fixtures_cover_all_statuses_roles_and_recommendations() -> None:
 def test_lease_fixtures_include_a_null_days_remaining_case() -> None:
     leases = fixture_records("LeaseOverview")
     permanent = [lease for lease in leases if lease["days_remaining"] is None]
-    assert permanent, "brak dzierżawy z days_remaining == None (stały admin z expires_at = NULL)"
+    assert permanent, "brak dostępu z days_remaining == None (stały admin z expires_at = NULL)"
     assert all(lease["expires_at"] is None for lease in permanent), (
         "days_remaining == None występuje przy niepustym expires_at"
     )

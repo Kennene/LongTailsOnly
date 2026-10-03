@@ -30,7 +30,7 @@ const HANDLE_CLASSES = 'pointer-events-none !top-1/2 !left-1/2 opacity-0';
 
 /**
  * Węzeł pajęczyny: okrąg z etykietą w środku (łamaną po myślnikach, maks. trzy linie, potem wielokropek; pełna nazwa
- * w `title`). Rozmiar i wypełnienie mówią o typie, obrys i kropka — o najgorszym statusie dzierżaw.
+ * w `title`). Rozmiar i wypełnienie mówią o typie, obrys i kropka — o najgorszym statusie dostępów.
  *
  * Treść węzła to natywny `<button>`: Enter i spacja zaznaczają węzeł bez własnej obsługi klawiszy,
  * a `aria-pressed` mówi czytnikowi, który węzeł jest zaznaczony.

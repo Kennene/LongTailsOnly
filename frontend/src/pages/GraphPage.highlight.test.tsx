@@ -2,6 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { buildLeaseGraph } from '@/api/graph';
+import { getStatusBadge } from '@/lib/statusBadges';
 import { GraphPage } from '@/pages/GraphPage';
 import { getLeases } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -16,7 +17,7 @@ beforeAll(() => {
   };
 });
 
-/** Graf, który widzi widok w trybie live — z listy dzierżaw MSW, bez węzłów zespołów. */
+/** Graf, który widzi widok w trybie live — z listy dostępów MSW, bez węzłów zespołów. */
 function liveGraph(): PermissionGraph {
   return buildLeaseGraph(getLeases());
 }
@@ -37,7 +38,7 @@ function nodeIdOf(label: string): string {
   return match.id;
 }
 
-/** Węzeł zaznaczony + drugi koniec każdej jego dzierżawy. */
+/** Węzeł zaznaczony + drugi koniec każdego jego dostępu. */
 function expectedHighlight(label: string): number {
   return 1 + leasesTouching(nodeIdOf(label)).length;
 }
@@ -120,9 +121,9 @@ it('restores the selection from the URL and lists the access in the details pane
     within(panel).getByText(new RegExp(`^${leases.length} repo, w tym ${risky} `)),
   ).toBeInTheDocument();
   expect(within(panel).getAllByRole('listitem')).toHaveLength(leases.length);
-  // Najwyższe ryzyko na górze: pierwszy wiersz to dzierżawa wygasła.
+  // Najwyższe ryzyko na górze: pierwszy wiersz to dostęp wygasły.
   expect(
-    within(within(panel).getAllByRole('listitem')[0]).getByText('Wygasła'),
+    within(within(panel).getAllByRole('listitem')[0]).getByText(getStatusBadge('EXPIRED').label),
   ).toBeInTheDocument();
 });
 

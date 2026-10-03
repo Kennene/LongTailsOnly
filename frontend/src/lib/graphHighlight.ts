@@ -8,8 +8,8 @@ export interface GraphHighlight {
 
 /**
  * Wiersz panelu szczegółów: drugi koniec relacji (repo osoby, osoba z dostępem do repo albo
- * członek zespołu) z rolą, statusem i rekomendacją dzierżawy. Członek zespołu nie ma jednej
- * dzierżawy, więc dostaje najgorszy status ze swoich dzierżaw, a rola i rekomendacja są `null`.
+ * członek zespołu) z rolą, statusem i rekomendacją dostępu. Członek zespołu nie ma jednego
+ * dostępu, więc dostaje najgorszy status ze swoich dostępów, a rola i rekomendacja są `null`.
  */
 export interface AccessRow {
   id: string;
@@ -87,9 +87,9 @@ function otherEnd(edge: GraphEdge, nodeId: string): string {
 
 /**
  * Drogi dostępu zaznaczonego węzła:
- * - osoba → jej dzierżawy, repozytoria docelowe i członkostwo w zespole (jeśli graf je ma),
+ * - osoba → jej dostępy, repozytoria docelowe i członkostwo w zespole (jeśli graf je ma),
  * - repozytorium → wszystkie osoby z dostępem i ich krawędzie do tego repo,
- * - zespół → członkowie, ich dzierżawy i repozytoria.
+ * - zespół → członkowie, ich dostępy i repozytoria.
  *
  * `null`, gdy nic nie jest zaznaczone albo zaznaczony węzeł nie należy do widocznego grafu
  * (np. odfiltrowany) — widok nie wygasza wtedy niczego.
@@ -163,7 +163,7 @@ function rowOf(nodes: GraphNode[], edge: GraphEdge, nodeId: string): AccessRow {
   };
 }
 
-/** Członek zespołu: najgorszy status z jego dzierżaw, bez roli i rekomendacji. */
+/** Członek zespołu: najgorszy status z jego dostępów, bez roli i rekomendacji. */
 function memberRowOf(
   nodes: GraphNode[],
   edges: GraphEdge[],

@@ -31,7 +31,7 @@ export const GRAPH_NODE_RADIUS: Record<GraphNode['type'], number> = {
 const TYPE_ORDER: readonly GraphNode['type'][] = ['team', 'user', 'repo'];
 
 /**
- * Długość krawędzi między środkami okręgów: członkostwo trzyma osobę przy zespole, a dzierżawa jest
+ * Długość krawędzi między środkami okręgów: członkostwo trzyma osobę przy zespole, a dostęp jest
  * dłuższa, bo na odcinku między brzegami okręgów musi się zmieścić etykieta roli.
  */
 const LINK_DISTANCE: Record<GraphEdge['data']['kind'], number> = {
@@ -52,7 +52,7 @@ const CHARGE: Record<GraphNode['type'], number> = {
 };
 const CHARGE_PER_LINK = -200;
 
-/** Słabe przyciąganie do środka: osoby bez dzierżaw i repo bez dostępów nie odpływają z kadru. */
+/** Słabe przyciąganie do środka: osoby bez dostępów i repo bez dostępów nie odpływają z kadru. */
 const PULL = 0.02;
 
 /** Odstęp między brzegami okręgów — etykiety siedzą w środku, więc wystarcza wąski margines. */
@@ -70,7 +70,7 @@ type LayoutLink = SimulationLinkDatum<LayoutNode> & { kind: GraphEdge['data']['k
 /**
  * Cache po tożsamości tablic z odpowiedzi API: przerenderowanie (hover, zaznaczenie, filtr) nie
  * uruchamia symulacji ponownie. Dwa poziomy, bo TanStack Query przy refetchu zachowuje referencję
- * niezmienionych `nodes`, a `edges` mogą się zmienić (np. odebrana dzierżawa).
+ * niezmienionych `nodes`, a `edges` mogą się zmienić (np. odebrany dostęp).
  */
 const CACHE = new WeakMap<GraphNode[], WeakMap<GraphEdge[], LayoutPositions>>();
 

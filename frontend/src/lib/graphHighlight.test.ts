@@ -83,7 +83,7 @@ const EDGES: GraphEdge[] = [
   lease('ewa', 'payment-service', 'admin', 'PERMANENT'),
 ];
 
-/** Graf z trybu live: te same osoby i dzierżawy, ale bez zespołu i bez `membership`. */
+/** Graf z trybu live: te same osoby i dostępy, ale bez zespołu i bez `membership`. */
 const LIVE_NODES: GraphNode[] = NODES.filter(
   (graphNode: GraphNode): boolean => graphNode.type !== 'team',
 );

@@ -28,13 +28,13 @@ import type { AppealOverview, LeaseOverview } from '@/types/api';
 const APPEALS_LIST_HEADING_ID = 'appeals-submitted-heading';
 const SUBMIT_APPEAL_FALLBACK = 'Nie udało się złożyć odwołania.';
 const EMPTY_CANDIDATES =
-  'Brak dzierżaw do odwołania — odwołanie przysługuje odebranym dzierżawom oraz tym, które wygasły albo wygasają w ciągu 7 dni.';
+  'Brak dostępów do odwołania — odwołanie przysługuje odebranym dostępom oraz tym, które wygasły albo wygasają w ciągu 7 dni.';
 
 interface LeaseCandidatesTableProps {
   leases: LeaseOverview[];
 }
 
-/** Dzierżawy, które silnik przyjmie do odwołania: odebrane oraz `WARNING`/`EXPIRED` (`is_appealable`). */
+/** Dostępy, które silnik przyjmie do odwołania: odebrane oraz `WARNING`/`EXPIRED` (`is_appealable`). */
 function LeaseCandidatesTable({ leases }: LeaseCandidatesTableProps): React.JSX.Element {
   return (
     <Table>
@@ -77,15 +77,15 @@ interface AppealListItemProps {
 
 /**
  * `AppealOverview` niesie osobę, repozytorium i pozostałe dni, więc lista **nie** łączy się
- * z `useLeases()` — działa też, gdy dzierżawy spoza okna ostrzegawczego nie ma na liście.
- * Jedynym naprawdę zerowym polem jest `days_remaining` (dla nieaktywnej dzierżawy) i to ono
+ * z `useLeases()` — działa też, gdy dostępu spoza okna ostrzegawczego nie ma na liście.
+ * Jedynym naprawdę zerowym polem jest `days_remaining` (dla nieaktywnego dostępu) i to ono
  * ma zapasową kreskę w `formatDaysRemaining`.
  */
 function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.Element {
   const badge = getAppealStatusBadge(appeal.status);
   const days: string = appeal.lease_is_active
     ? formatDaysRemaining(appeal.days_remaining)
-    : 'Dzierżawa nieaktywna';
+    : 'Dostęp nieaktywny';
 
   return (
     <li className="flex flex-col gap-2 border-b border-border py-3 last:border-b-0">
@@ -99,7 +99,7 @@ function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.E
         <span className="text-xs text-muted-foreground">{`Wniosek: ${getRoleLabel(
           appeal.requested_role,
         )}`}</span>
-        <span className="text-xs text-muted-foreground">{`W dzierżawie: ${getRoleLabel(
+        <span className="text-xs text-muted-foreground">{`W dostępie: ${getRoleLabel(
           appeal.lease_role,
         )}`}</span>
         <span className="text-xs text-muted-foreground">{days}</span>
@@ -131,7 +131,7 @@ export function AppealsPage(): React.JSX.Element {
 
   const leases: LeaseOverview[] = leasesQuery.data ?? [];
   // Ta sama reguła, którą stosuje `appeal_service.submit_appeal` (`appeal_rules.is_appealable`) —
-  // inaczej lista oferowałaby dzierżawy, których silnik i tak nie przyjmie (409).
+  // inaczej lista oferowałaby dostępy, których silnik i tak nie przyjmie (409).
   const candidates: LeaseOverview[] = leases.filter(isAppealable);
   const appeals: AppealOverview[] = appealsQuery.data ?? [];
   const submitFailure: ApiErrorDescription | null =
@@ -162,16 +162,16 @@ export function AppealsPage(): React.JSX.Element {
 
       <Card>
         <CardHeader className="border-b">
-          <CardTitle>Dzierżawy wymagające uwagi</CardTitle>
+          <CardTitle>Dostępy wymagające uwagi</CardTitle>
           <CardDescription>
-            Odwołanie przysługuje dzierżawom odebranym oraz tym, które wygasły albo wygasają w ciągu
-            7 dni.
+            Odwołanie przysługuje dostępom odebranym oraz tym, które wygasły albo wygasają w ciągu 7
+            dni.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {leasesQuery.isPending ? (
             <div className="flex flex-col gap-2" role="status">
-              <span className="sr-only">Wczytywanie dzierżaw wymagających uwagi…</span>
+              <span className="sr-only">Wczytywanie dostępów wymagających uwagi…</span>
               <Skeleton aria-hidden className="h-10 w-full" />
               <Skeleton aria-hidden className="h-9 w-full" />
             </div>
@@ -179,11 +179,11 @@ export function AppealsPage(): React.JSX.Element {
 
           {leasesQuery.isError ? (
             <Alert variant="destructive">
-              <AlertTitle>Nie udało się pobrać dzierżaw</AlertTitle>
+              <AlertTitle>Nie udało się pobrać dostępów</AlertTitle>
               <AlertDescription>
                 {leasesQuery.error === null
                   ? 'Nieznany błąd'
-                  : describeApiError(leasesQuery.error, 'Nie udało się pobrać dzierżaw.')}
+                  : describeApiError(leasesQuery.error, 'Nie udało się pobrać dostępów.')}
               </AlertDescription>
               <AlertAction>
                 <Button onClick={() => void leasesQuery.refetch()} size="sm" variant="outline">
@@ -211,7 +211,7 @@ export function AppealsPage(): React.JSX.Element {
         <CardContent className="flex flex-col gap-4">
           {leasesQuery.isPending ? (
             <div className="flex flex-col gap-2" role="status">
-              <span className="sr-only">Wczytywanie listy dzierżaw do odwołania…</span>
+              <span className="sr-only">Wczytywanie listy dostępów do odwołania…</span>
               <Skeleton aria-hidden className="h-10 w-full" />
               <Skeleton aria-hidden className="h-9 w-full" />
             </div>
@@ -219,18 +219,18 @@ export function AppealsPage(): React.JSX.Element {
 
           {leasesQuery.isError ? (
             <p className="text-sm text-muted-foreground">
-              Formularz pojawi się, gdy lista dzierżaw zostanie pobrana.
+              Formularz pojawi się, gdy lista dostępów zostanie pobrana.
             </p>
           ) : null}
 
           {leasesQuery.isSuccess && candidates.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nie ma czego przedłużać — żadna dzierżawa nie podlega odwołaniu.
+              Nie ma czego przedłużać — żaden dostęp nie podlega odwołaniu.
             </p>
           ) : null}
 
           {leasesQuery.isSuccess && candidates.length > 0 ? (
-            // `key` resetuje wybór dzierżawy, gdy kandydaci się zmienią (np. po przedłużeniu
+            // `key` resetuje wybór dostępu, gdy kandydaci się zmienią (np. po przedłużeniu
             // albo resecie scenariusza) — inaczej formularz wysłałby nieaktualne `lease_id`.
             <AppealForm
               isSubmitting={submitAppeal.isPending}
@@ -290,7 +290,7 @@ export function AppealsPage(): React.JSX.Element {
 
           {appealsQuery.isSuccess && appeals.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Brak złożonych odwołań — wybierz dzierżawę powyżej i uzasadnij wniosek.
+              Brak złożonych odwołań — wybierz dostęp powyżej i uzasadnij wniosek.
             </p>
           ) : null}
 
@@ -305,7 +305,7 @@ export function AppealsPage(): React.JSX.Element {
       </Card>
 
       {/* Tryb odwołania czyta cały kontekst z `AppealOverview`, więc `lease` zostaje `null`:
-          rozpatrzenie nie zależy od tego, czy dzierżawa trafiła na listę `useLeases()`. */}
+          rozpatrzenie nie zależy od tego, czy dostęp trafił na listę `useLeases()`. */}
       <DecisionModal
         appeal={selectedAppeal}
         lease={null}

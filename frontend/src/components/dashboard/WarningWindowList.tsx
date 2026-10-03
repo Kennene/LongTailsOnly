@@ -11,12 +11,12 @@ import { formatDaysRemaining } from '@/lib/dateTime';
 import type { LeaseOverview } from '@/types/api';
 
 const EMPTY_WARNING_WINDOW =
-  'Brak dzierżaw w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.';
+  'Brak dostępów w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.';
 
 const SKELETON_ROWS: readonly number[] = [0, 1];
 
 /**
- * Sekcja pulpitu pod kartami KPI: dzierżawy w oknie ostrzegawczym, czyli te, które wymagają
+ * Sekcja pulpitu pod kartami KPI: dostępy w oknie ostrzegawczym, czyli te, które wymagają
  * decyzji, zanim uprawnienia wygasną. Gęsta lista wierszy (`h-9`) zamiast drugiej tabeli —
  * DESIGN.md §4 zakazuje stawiania kart w kartach i rozdymania pulpitu.
  *
@@ -36,7 +36,7 @@ export function WarningWindowList(): React.JSX.Element {
       <CardHeader className="border-b">
         <CardTitle>W oknie ostrzegawczym</CardTitle>
         <CardDescription>
-          Dzierżawy wygasające w oknie ostrzegawczym — wymagają decyzji administratora.
+          Dostępy wygasające w oknie ostrzegawczym — wymagają decyzji administratora.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -44,7 +44,7 @@ export function WarningWindowList(): React.JSX.Element {
 
         {leasesQuery.isError ? (
           <Alert variant="destructive" className="mx-4">
-            <AlertTitle>Nie udało się pobrać dzierżaw</AlertTitle>
+            <AlertTitle>Nie udało się pobrać dostępów</AlertTitle>
             <AlertDescription>
               Liczniki powyżej nadal obowiązują. Spróbuj ponownie odczytać listę.
             </AlertDescription>
@@ -90,7 +90,7 @@ export function WarningWindowList(): React.JSX.Element {
 function WarningWindowSkeleton(): React.JSX.Element {
   return (
     <div role="status" data-testid="warning-window-skeleton" className="flex flex-col gap-2 p-4">
-      <span className="sr-only">Wczytywanie dzierżaw w oknie ostrzegawczym…</span>
+      <span className="sr-only">Wczytywanie dostępów w oknie ostrzegawczym…</span>
       {SKELETON_ROWS.map((row: number): React.JSX.Element => (
         <Skeleton key={row} aria-hidden className="h-9 w-full" />
       ))}
@@ -98,7 +98,7 @@ function WarningWindowSkeleton(): React.JSX.Element {
   );
 }
 
-/** Najpilniejsze najpierw — dzierżawa z najmniejszym `days_remaining` wymaga decyzji pierwsza. */
+/** Najpilniejsze najpierw — dostęp z najmniejszym `days_remaining` wymaga decyzji pierwszy. */
 function compareDaysRemaining(a: LeaseOverview, b: LeaseOverview): number {
   return (a.days_remaining ?? 0) - (b.days_remaining ?? 0);
 }

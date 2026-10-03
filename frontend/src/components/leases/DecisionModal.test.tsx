@@ -13,11 +13,11 @@ import { getLastDecisionRequest } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import type { Extension, LeaseOverview, Role } from '@/types/api';
 
-/** Dzierżawa o zadanym kształcie ze wspólnych fixture'ów — testy nie liczą na kolejność pliku. */
+/** Dostęp o zadanym kształcie ze wspólnych fixture'ów — testy nie liczą na kolejność pliku. */
 function findLease(predicate: (lease: LeaseOverview) => boolean): LeaseOverview {
   const lease: LeaseOverview | undefined = leasesFixture.find(predicate);
   if (lease === undefined) {
-    throw new Error('Fixture dzierżaw nie zawiera dzierżawy o oczekiwanym kształcie');
+    throw new Error('Fixture dostępów nie zawiera dostępu o oczekiwanym kształcie');
   }
 
   return lease;
@@ -35,7 +35,7 @@ const adminLease = leaseWithRole('admin'); // tomasz-admin@core-api (ostatni adm
 const JUSTIFICATION = 'Dostęp nie jest już potrzebny do prac nad v2.1.';
 const JUSTIFICATION_REQUIRED = 'Uzasadnienie jest wymagane';
 const JUSTIFICATION_ERROR_ID = 'decision-justification-error';
-const ADMIN_EXTENSION_BLOCKED = 'Dzierżawa administratora nie wygasa — nie można jej przedłużyć.';
+const ADMIN_EXTENSION_BLOCKED = 'Dostęp administratora nie wygasa — nie można go przedłużyć.';
 const DECISION_URL = '/api/v1/leases/:leaseId/decision';
 
 const EXTENSION_CASES: [string, Extension][] = [
@@ -59,10 +59,10 @@ async function renderModal(
   });
 }
 
-/** Dzierżawy bez sekcji przedłużania (admin) nie mają przycisku „Data”, więc czekamy na nagłówek. */
+/** Dostępy bez sekcji przedłużania (admin) nie mają przycisku „Data”, więc czekamy na nagłówek. */
 async function renderModalWithoutExtension(lease: LeaseOverview): Promise<void> {
   renderWithProviders(<DecisionModal lease={lease} open onOpenChange={() => {}} />);
-  expect(await screen.findByText('Decyzja o dzierżawie')).toBeInTheDocument();
+  expect(await screen.findByText('Decyzja o dostępie')).toBeInTheDocument();
 }
 
 /** Uzasadnienie jest wymagane przez silnik przy `DOWNSCOPE`/`REVOKE` — pola pilnuje `DecisionActions`. */
@@ -306,7 +306,7 @@ it('translates the 409 of an already revoked lease', async () => {
   await confirmRevoke(user);
 
   expect(
-    await screen.findByText('Ta dzierżawa jest już odebrana — nie ma czego zmieniać.'),
+    await screen.findByText('Ten dostęp jest już odebrany — nie ma czego zmieniać.'),
   ).toBeInTheDocument();
   expect(screen.getByText(serverDetail)).toBeInTheDocument();
 });
@@ -381,5 +381,5 @@ it('renders nothing when there is no lease', () => {
   renderWithProviders(<DecisionModal lease={null} open onOpenChange={() => {}} />);
 
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  expect(screen.queryByText('Decyzja o dzierżawie')).not.toBeInTheDocument();
+  expect(screen.queryByText('Decyzja o dostępie')).not.toBeInTheDocument();
 });

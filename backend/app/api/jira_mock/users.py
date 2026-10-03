@@ -6,7 +6,7 @@ from app.api.jira_mock.deps import ReadsDep
 from app.api.jira_mock.http import JiraError, PageParams, page
 from app.schemas.jira_payloads import JiraGroup, JiraUser, api
 
-router = APIRouter()
+router = APIRouter(tags=["Jira · Użytkownicy i grupy"])
 Page = Annotated[PageParams, Depends()]
 
 

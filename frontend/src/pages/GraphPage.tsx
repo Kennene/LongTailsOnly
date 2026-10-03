@@ -55,7 +55,7 @@ function collectTeams(nodes: GraphNode[]): string[] {
 
 /**
  * Widok zawężony do jednego zespołu: węzeł zespołu, jego osoby i repozytoria, do których te osoby
- * mają czynne dzierżawy. Docelowo backend zrobi to samo po stronie `GET /api/v1/graph?team=…`
+ * mają czynne dostępy. Docelowo backend zrobi to samo po stronie `GET /api/v1/graph?team=…`
  * (`app/domain/insights.py::build_graph_layout`, krok 4.6B) — bez repozytoriów filtr pokazywałby
  * ludzi odciętych od tego, do czego mają dostęp.
  */
@@ -102,8 +102,8 @@ function GraphSkeleton(): React.JSX.Element {
 /**
  * Widok `/graph`: relacje dostępu między osobami i repozytoriami jako pajęczyna.
  *
- * Węzły i krawędzie pochodzą z `useGraph()`, który w trybie live składa je z listy dzierżaw
- * (`api/graph.ts`) — zespół widać wtedy wyłącznie jako `data.team` osoby, bo lista dzierżaw nie
+ * Węzły i krawędzie pochodzą z `useGraph()`, który w trybie live składa je z listy dostępów
+ * (`api/graph.ts`) — zespół widać wtedy wyłącznie jako `data.team` osoby, bo lista dostępów nie
  * niesie składu zespołów. Węzły zespołów wrócą razem z `GET /api/v1/graph` (krok 4.6B).
  *
  * Układ pajęczyny (`computeForceLayout`) liczymy raz, na pełnym zbiorze węzłów — zawężenie filtrów
@@ -136,7 +136,7 @@ export function GraphPage(): React.JSX.Element {
         <h1 className="text-2xl font-semibold tracking-tight">Graf</h1>
         <p className="text-sm text-muted-foreground">
           Kto ma dostęp do czego: osoby, zespoły i repozytoria. Kliknij węzeł albo wybierz osobę,
-          żeby podświetlić jej drogi dostępu; obrys węzła i kolor krawędzi niosą status dzierżawy.
+          żeby podświetlić jej drogi dostępu; obrys węzła i kolor krawędzi niosą status dostępu.
         </p>
       </header>
 

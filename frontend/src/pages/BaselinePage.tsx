@@ -10,7 +10,7 @@ import type { BaselineEntry, OnboardingProposal } from '@/types/api';
 
 /**
  * Slugi zespołów pochodzą z `shared/fixtures/teams.json` (i seedu backendu), a login z kroku demo
- * `nowy-dev` — scenariusz D z ADR 0008: osoba bez żadnej dzierżawy, więc standard DEV jest jedynym
+ * `nowy-dev` — scenariusz D z ADR 0008: osoba bez żadnego dostępu, więc standard DEV jest jedynym
  * źródłem propozycji dostępu.
  */
 const DEV_TEAM_SLUG = 'dev';

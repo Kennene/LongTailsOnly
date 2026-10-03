@@ -46,7 +46,7 @@ const DUPLICATE_JUSTIFICATION =
 
 /**
  * Błędy silnika po polsku, po statusie **i** treści `detail`: `decision_service` zwraca trzy różne
- * `422` (uzasadnienie, rola, termin) i dwa różne `409` (odwołanie `PENDING`, dzierżawa odebrana),
+ * `422` (uzasadnienie, rola, termin) i dwa różne `409` (odwołanie `PENDING`, dostęp odebrany),
  * a `appeal_service` dwa różne `409` — sam status nie wystarcza, żeby je rozróżnić. Reguły czytamy
  * po angielskim komunikacie backendu (`A justification is required…`), a kolejność w tabeli
  * rozstrzyga remisy; reguła z `detailIncludes: null` jest zapasem dla całego statusu.
@@ -61,12 +61,12 @@ const ENGINE_ERROR_RULES: Record<EngineOperation, EngineErrorRule[]> = {
     {
       status: 409,
       detailIncludes: 'lease has a pending appeal',
-      message: 'Ta dzierżawa ma nierozpatrzone odwołanie — najpierw je rozpatrz.',
+      message: 'Ten dostęp ma nierozpatrzone odwołanie — najpierw je rozpatrz.',
     },
     {
       status: 409,
       detailIncludes: 'lease is already revoked',
-      message: 'Ta dzierżawa jest już odebrana — nie ma czego zmieniać.',
+      message: 'Ten dostęp jest już odebrany — nie ma czego zmieniać.',
     },
     {
       status: 422,
@@ -76,7 +76,7 @@ const ENGINE_ERROR_RULES: Record<EngineOperation, EngineErrorRule[]> = {
     {
       status: 422,
       detailIncludes: 'only a read or write lease can be extended',
-      message: 'Tylko dzierżawę read/write można przedłużyć.',
+      message: 'Tylko dostęp read/write można przedłużyć.',
     },
     {
       status: 422,
@@ -86,7 +86,7 @@ const ENGINE_ERROR_RULES: Record<EngineOperation, EngineErrorRule[]> = {
     {
       status: 422,
       detailIncludes: 'only an active write lease can be downscoped',
-      message: 'Tylko aktywną dzierżawę write można zdeeskalować.',
+      message: 'Tylko aktywny dostęp write można zdeeskalować.',
     },
   ],
   APPEAL_SUBMIT: [
@@ -94,12 +94,12 @@ const ENGINE_ERROR_RULES: Record<EngineOperation, EngineErrorRule[]> = {
       status: 409,
       detailIncludes: 'appeals are accepted only for revoked leases',
       message:
-        'Odwołanie można złożyć tylko dla odebranej dzierżawy albo takiej, która wygasa w ciągu 7 dni.',
+        'Odwołanie można złożyć tylko dla odebranego dostępu albo takiego, który wygasa w ciągu 7 dni.',
     },
     {
       status: 409,
       detailIncludes: 'pending appeal',
-      message: 'Ta dzierżawa ma już nierozpatrzone odwołanie.',
+      message: 'Ten dostęp ma już nierozpatrzone odwołanie.',
     },
     {
       status: 422,

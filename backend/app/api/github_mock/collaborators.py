@@ -13,7 +13,7 @@ from app.services.github_collaborator_service import GitHubCollaboratorService
 from app.services.github_mock_service import GitHubMockService
 from app.utils.dates import iso_z
 
-router = APIRouter()
+router = APIRouter(tags=["GitHub · Dostęp do repozytoriów"])
 
 
 def _base(request: Request) -> str:

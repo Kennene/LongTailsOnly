@@ -20,7 +20,7 @@ Dodatkowo scenariusze muszą być deterministyczne. Seed (ADR 0008) liczy daty w
    - Nieznany typ kroku powoduje `ValueError` z jego nazwą, nie ciche pominięcie.
 
 3. **Scenariusze opisują seed, a nie własne dane.**
-   - `given` niesie `anchor`, `seed` i `relies_on` (loginy oraz nazwy repozytoriów). Scenariusz **nie deklaruje własnych dzierżaw ani zdarzeń** — deterministyczny seed z ADR 0008 już je produkuje, a druga kopia rozjechałaby się z nim przy pierwszej zmianie persony.
+   - `given` niesie `anchor`, `seed` i `relies_on` (loginy oraz nazwy repozytoriów). Scenariusz **nie deklaruje własnych dostępów ani zdarzeń** — deterministyczny seed z ADR 0008 już je produkuje, a druga kopia rozjechałaby się z nim przy pierwszej zmianie persony.
    - Wartości zależne od kolejności seedowania (np. `lease_id`) są rozwiązywane przez `{"$from": "<alias>", "where": {...}, "field": "id"}` zamiast wpisywane na sztywno.
 
 4. **Oczekiwania odnoszą się do kontraktu** z ADR 0009:

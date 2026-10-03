@@ -13,7 +13,7 @@ const LEGEND_TYPES: readonly { type: GraphNode['type']; label: string; size: str
   { type: 'repo', label: 'Repozytorium', size: 'size-2.5' },
 ];
 
-/** Legenda pajęczyny: typ węzła (rozmiar + wypełnienie) i status dzierżawy (obrys, krawędź). */
+/** Legenda pajęczyny: typ węzła (rozmiar + wypełnienie) i status dostępu (obrys, krawędź). */
 export function GraphLegend(): React.JSX.Element {
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
@@ -28,7 +28,7 @@ export function GraphLegend(): React.JSX.Element {
           </li>
         ))}
       </ul>
-      <ul aria-label="Statusy dzierżaw" className="flex flex-wrap items-center gap-4">
+      <ul aria-label="Statusy dostępów" className="flex flex-wrap items-center gap-4">
         {LEGEND_STATUSES.map((status: LeaseStatus): React.JSX.Element => {
           const badge = getStatusBadge(status);
 

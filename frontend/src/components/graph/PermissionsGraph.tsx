@@ -83,7 +83,7 @@ function collectRiskNodeIds(edges: GraphEdge[]): Set<string> {
   return ids;
 }
 
-/** Najgorszy status węzła, wyliczony z jego krawędzi dzierżaw (bez krawędzi = brak statusu). */
+/** Najgorszy status węzła, wyliczony z jego krawędzi dostępów (bez krawędzi = brak statusu). */
 function collectStatusByNode(edges: GraphEdge[]): Map<string, LeaseStatus | null> {
   const statuses = new Map<string, LeaseStatus | null>();
 
@@ -96,7 +96,7 @@ function collectStatusByNode(edges: GraphEdge[]): Map<string, LeaseStatus | null
   return statuses;
 }
 
-/** Liczba relacji do `aria-label`: członkowie zespołu, a dla osoby i repo — dzierżawy. */
+/** Liczba relacji do `aria-label`: członkowie zespołu, a dla osoby i repo — dostępy. */
 function relationCount(node: GraphNode, edges: GraphEdge[]): number {
   const kind: GraphEdge['data']['kind'] = node.type === 'team' ? 'membership' : 'lease';
 

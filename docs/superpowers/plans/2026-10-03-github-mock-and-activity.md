@@ -17,8 +17,8 @@
 - TDD: Red → Green → Refactor; każde zadanie zaczyna się od testu, który widzimy jako FAIL.
 - Zakaz `datetime.now()` w logice domenowej; czas z `time_provider.get_current_time()` (ADR 0003 pisze `now()`, CODING_STANDARDS i Zadanie 2 planu głównego `get_current_time()` — obowiązuje **`get_current_time()`**).
 - Ścieżki mocka: prefiks `/api/v3`; kody `200`, `201`, `204`, `403`, `404`, `422`; błędy w formacie `{"message": "...", "documentation_url": "..."}`; nagłówki `X-GitHub-Media-Type`, `Link`, `X-RateLimit-*` (ADR 0004).
-- Dzierżawione poziomy MVP: `write` (API `push`) i `read` (API `pull`); `admin` stały, nigdy w baseline, chroniony Last Admin Protection (ADR 0002, 0004).
-- Do odnawiania dzierżaw liczą się wyłącznie `PushEvent`, `PullRequestReviewEvent`, `IssueCommentEvent` (ADR 0002); pozostałe typy to ścieżka post-MVP.
+- Objęte wygasaniem poziomy MVP: `write` (API `push`) i `read` (API `pull`); `admin` stały, nigdy w baseline, chroniony Last Admin Protection (ADR 0002, 0004).
+- Do odnawiania dostępów liczą się wyłącznie `PushEvent`, `PullRequestReviewEvent`, `IssueCommentEvent` (ADR 0002); pozostałe typy to ścieżka post-MVP.
 - Domyślny TTL 30 dni, okno ostrzegawcze 7 dni, okno baseline 30 dni, próg baseline 50%.
 - Skoki czasu: dowolna liczba dni (presety UI +15/+30/+60; pitch z dokumentów +7/+25/+35 też musi działać) i reset.
 
@@ -204,17 +204,17 @@ Baseline (DEV = 12 osób z `dev-new`; liczby odporne na to, czy newcomer wlicza 
 2. Nazwa organizacji i loginy demo wspólne z seedem (Zadanie 4).
 3. `lease_service` importuje `LEASE_RENEWING_EVENT_TYPES` zamiast liczyć każde zdarzenie o wystarczającym poziomie (Zadanie 8).
 4. Właściciel `api/v1/simulation.py` (Task 5 tego planu vs Zadanie 11).
-5. Sprzeczności w dokumentach niewpływające na ten plan, ale warte naprawy: `admin` dzierżawiony w planie głównym vs stały w ADR 0002; `now()` vs `get_current_time()`; scenariusz A `write→read` vs `admin→push`; `event_type/required_level` (PLAN.md) vs `action_type/required_permission`.
+5. Sprzeczności w dokumentach niewpływające na ten plan, ale warte naprawy: `admin` objęty wygasaniem w planie głównym vs stały w ADR 0002; `now()` vs `get_current_time()`; scenariusz A `write→read` vs `admin→push`; `event_type/required_level` (PLAN.md) vs `action_type/required_permission`.
 
 ## Odchylenia wprowadzone podczas implementacji
 
 Wykonano wszystkie 7 zadań (112 testów). Zmiany względem tekstu planu:
 
 1. **Task 2:** `GET .../collaborators/{u}/permission` dla istniejącego użytkownika bez dostępu zwraca `200` z `permission: "none"` (jak GitHub), a nie `404`; `404` tylko dla nieznanego loginu (test `test_get_permission_for_non_collaborator_is_none`).
-2. **Task 3:** `PUT` tym samym poziomem to no-op (nie przedłuża dzierżawy); dodano testy `test_put_same_role_is_noop`, `test_put_admin_has_no_expiry`, `test_put_default_permission_is_push`, `test_put_triage_and_maintain_collapse_to_read_and_write`.
+2. **Task 3:** `PUT` tym samym poziomem to no-op (nie przedłuża dostępu); dodano testy `test_put_same_role_is_noop`, `test_put_admin_has_no_expiry`, `test_put_default_permission_is_push`, `test_put_triage_and_maintain_collapse_to_read_and_write`.
 3. **Task 1/5:** fixtures przeniesione do `tests/api/conftest.py` (współdzielone z testami symulacji); dodano `api/github_mock/deps.py` (zależności FastAPI) i `utils/dates.py` (`iso_z`, jedno źródło formatowania dat).
 4. **Task 6:** QA ma 6 osób (`qa-marta` + `qa-01..05`); dodano `db/demo_data.py` (`ensure_population`, `load_demo_data`, wyprowadzanie leasów z historii) oraz podpięcie seeda do startu aplikacji. `load_demo_data` jest no-op, gdy w bazie są już zdarzenia (restart nie przesuwa historii). `ActivityEventSpec` ma `age_days: int` i `hour_offset: int`.
-5. **Task 7:** silnik dzierżaw nie istniał, więc test kontraktowy używa lokalnego oracle zapisanego z reguł ADR 0002 (do podmiany na `lease_service`).
+5. **Task 7:** silnik dostępów nie istniał, więc test kontraktowy używa lokalnego oracle zapisanego z reguł ADR 0002 (do podmiany na `lease_service`).
 6. Fundament z planu głównego (Zadania 1–3: `pyproject.toml`, `TimeProvider` z `reset()`, modele `User/Repository/Lease/ActivityEvent`, sesja async, `create_app`) został dodany w minimalnym zakresie, bo repo go jeszcze nie miało. Modele `Appeal` i `AuditLog` nie powstały.
 
 ## Odchylenia po scaleniu z `main` (ADR 0010)

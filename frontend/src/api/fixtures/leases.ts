@@ -4,9 +4,9 @@ import expiredLeasesJson from '@shared/fixtures/leases-expired.json';
 import type { LeaseOverview, LeaseStatus } from '@/types/api';
 
 /**
- * Dzierżawy demo — **wspólne** dane z `shared/fixtures/`, a nie literał wymyślony na frontendzie.
+ * Dostępy demo — **wspólne** dane z `shared/fixtures/`, a nie literał wymyślony na frontendzie.
  *
- * Dwa pliki, bo tak dzieli je seed: `leases.json` to 8 dzierżaw z terminem albo stałych, a
+ * Dwa pliki, bo tak dzieli je seed: `leases.json` to 8 dostępów z terminem albo stałych, a
  * `leases-expired.json` to 7 wygasłych. Razem dają reprezentatywne **15 z 53** rekordów bazy
  * (`shared/fixtures/manifest.json`), pokrywające każdy status, każdą rolę i każdą rekomendację.
  *
@@ -17,7 +17,7 @@ import type { LeaseOverview, LeaseStatus } from '@/types/api';
  */
 
 /**
- * Silnik dzierżaw (3.1) **liczy** status regułą `app/domain/lease_rules.py::lease_status`,
+ * Silnik dostępów (3.1) **liczy** status regułą `app/domain/lease_rules.py::lease_status`,
  * a wspólne fixture'y powstały przed nim i trzymają dla adminów `ACTIVE`. Stosujemy więc regułę
  * silnika także tutaj, żeby tryb offline pokazywał to samo, co `GET /api/v1/leases`:
  * `is_active: false` → `REVOKED`, admin albo brak terminu → `PERMANENT` (i bez `days_remaining`,
@@ -48,7 +48,7 @@ export const currentLeasesFixture: LeaseOverview[] = (leasesJson as LeaseOvervie
   withEngineStatus,
 );
 
-/** Wygasłe dzierżawy z `leases-expired.json` — podzbiór używany przez widoki „po terminie”. */
+/** Wygasłe dostępy z `leases-expired.json` — podzbiór używany przez widoki „po terminie”. */
 export const expiredLeasesFixture: LeaseOverview[] = (expiredLeasesJson as LeaseOverview[]).map(
   withEngineStatus,
 );

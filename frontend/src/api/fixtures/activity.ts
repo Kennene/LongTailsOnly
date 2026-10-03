@@ -19,7 +19,7 @@ const RENEWING_ACTION_FIELD: Record<string, ActivityCountField | undefined> = {
 
 /**
  * Okno statystyk to `repository.default_lease_duration_days` (`lease_service.lease_activity_stats`),
- * a nie stała frontendu. Zapas stosujemy tylko wtedy, gdy dzierżawy nie ma w fixture'ach — w seedzie
+ * a nie stała frontendu. Zapas stosujemy tylko wtedy, gdy dostępu nie ma w fixture'ach — w seedzie
  * każde repozytorium ma 30 dni (`shared/fixtures/repositories.json`).
  */
 const FALLBACK_WINDOW_DAYS = 30;
@@ -27,16 +27,16 @@ const FALLBACK_WINDOW_DAYS = 30;
 /**
  * Zdarzenia aktywności ze wspólnego fixture'u (`shared/fixtures/activity.json`, 8 z 46 zdarzeń seeda).
  *
- * Backend liczy z nich statystyki per dzierżawa, ale nie ma ich w `shared/`, więc odtwarzamy tę
+ * Backend liczy z nich statystyki per dostęp, ale nie ma ich w `shared/`, więc odtwarzamy tę
  * samą regułę tutaj — i **nigdy nie wpisujemy liczb**: `push_count`, `review_count` i
  * `comment_count` to zliczenia `action_type` dla pary `(user_id, repo_id)`, którą wyznacza
- * dzierżawa. Dzięki temu liczby w modalu decyzji (m.in. UC-2: brak pushów w `payment-service`)
- * wynikają z tych samych danych co seed, a nie z jednej trójki pokazywanej przy każdej dzierżawie.
+ * dostęp. Dzięki temu liczby w modalu decyzji (m.in. UC-2: brak pushów w `payment-service`)
+ * wynikają z tych samych danych co seed, a nie z jednej trójki pokazywanej przy każdym dostępie.
  */
 export const activityEventsFixture: ActivityEventRead[] = activityJson as ActivityEventRead[];
 
 /**
- * Statystyki użycia dzierżawy w kształcie kontraktu `LeaseActivityStats` (krok 3.6), liczone
+ * Statystyki użycia dostępu w kształcie kontraktu `LeaseActivityStats` (krok 3.6), liczone
  * z `shared/fixtures/activity.json`.
  *
  * Reguła jest przepisana z backendu: bierzemy zdarzenia pary `(user_id, repo_id)` z akcji
@@ -94,7 +94,7 @@ function isRenewingFor(event: ActivityEventRead, lease: LeaseOverview, notAfter:
 /**
  * Najnowszy znacznik czasu pary jako ISO albo `null`, gdy para nie ma żadnego zdarzenia.
  * Zwracamy **oryginalny** string z fixture'u, żeby panel pokazywał ten sam znacznik co tabela
- * dzierżaw (`LeaseOverview.last_activity_at`).
+ * dostępów (`LeaseOverview.last_activity_at`).
  */
 function newestActivityAt(events: ActivityEventRead[]): string | null {
   return events

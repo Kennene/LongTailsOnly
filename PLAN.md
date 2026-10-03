@@ -3,12 +3,12 @@
 Projekt jest realizowany w architekturze **Single Page Application (SPA)** oraz wzorcu **Portów i Adapterów (Hexagonal / Plugin Architecture)**:
 - **Frontend**: React 19 + React Compiler + Vite + Tailwind CSS + shadcn/ui + @xyflow/react
 - **Backend**: Python 3.14 + FastAPI + SQLAlchemy 2.0 (async SQLite) + Pydantic v2
-- **Porty i Adaptery**: Czysta separacja logiki dzierżaw od dostawcy VCS (`VCSProvider` port -> `GitHubMockAdapter`), co pozwala w przyszłości podpiąć GitLab, Bitbucket czy chmurowe IAM.
+- **Porty i Adaptery**: Czysta separacja logiki dostępów od dostawcy VCS (`VCSProvider` port -> `GitHubMockAdapter`), co pozwala w przyszłości podpiąć GitLab, Bitbucket czy chmurowe IAM.
 - **Mock**: REST API GitHuba v3 z symulacją zdarzeń (`/events`) i sterowaniem czasem (`SimulatedClockAdapter`).
 
 ---
 
-### Faza 1: Fundament Backendowy i Silnik Dzierżawy (Core & DB)
+### Faza 1: Fundament Backendowy i Silnik dostępów (Core & DB)
 
 1. **Inicjalizacja struktury backendu (Ports & Adapters)**:
    - Utworzenie środowiska Python, instalacja: `fastapi`, `uvicorn`, `sqlalchemy`, `aiosqlite`, `pydantic`.
@@ -46,8 +46,8 @@ Projekt jest realizowany w architekturze **Single Page Application (SPA)** oraz 
      - `GET /api/v3/repos/{owner}/{repo}/events` (strumień zdarzeń)
    - Strażnik *Last Admin Protection*: blokada operacji usuwającej ostatniego admina repo/organizacji (błąd 403 Forbidden).
 2. **Lease Engine & Time Travel Service (`app/services/lease_service.py`)**:
-   - Ewaluacja stanu dzierżawy w oparciu o strumień `ActivityEvent`:
-     - `PushEvent` w oknie TTL $\rightarrow$ dzierżawa `write` aktywna.
+   - Ewaluacja stanu dostępu w oparciu o strumień `ActivityEvent`:
+     - `PushEvent` w oknie TTL $\rightarrow$ dostęp `write` aktywny.
      - Brak `PushEvent`, ale obecny `PullRequestReviewEvent`/`IssueCommentEvent` $\rightarrow$ propozycja deeskalacji `write` do `read`.
      - Brak zdarzeń $\rightarrow$ wygaśnięcie (odebranie dostępu).
    - Wyliczanie statusów: `ACTIVE` (>7 dni), `WARNING` (<= 7 dni), `EXPIRED` (<= 0 dni).
@@ -73,8 +73,8 @@ Projekt jest realizowany w architekturze **Single Page Application (SPA)** oraz 
    - Layout SPA: ciemny styl IT/Defence, TopBar z Time Travel Controllerem, Sidebar z nawigacją.
 2. **Widok 1: Dashboard i Pasek Czasu (Simulation Bar)**:
    - Centralny licznik symulowanego czasu z przyciskami skoku (+7 dni, +25 dni, +35 dni, reset).
-   - Karty KPI: Aktywne dzierżawy, Ostrzeżenia, Wygaśnięte, Rekomendacje deeskalacji (`write` -> `read`).
-3. **Widok 2: Inwentarz Dzierżaw (Access Leases Table)**:
+   - Karty KPI: Aktywne dostępy, Ostrzeżenia, Wygaśnięte, Rekomendacje deeskalacji (`write` -> `read`).
+3. **Widok 2: Inwentarz Dostępów (Access Leases Table)**:
    - Tabela: Użytkownik, Zespół, Repozytorium, Przyznany poziom, Ostatni push/review, Pozostało dni, Status badge.
    - Szybkie akcje: Przedłuż, Zdeeskaluj do `read`, Odbierz.
 4. **Widok 3: Centrum Ostrzeżeń i Odwołań (Appeals & Warnings)**:
@@ -85,7 +85,7 @@ Projekt jest realizowany w architekturze **Single Page Application (SPA)** oraz 
    - Prezentacja wyliczonego standardu dla DEV i QA na podstawie telemetrii zdarzeń.
    - Onboarding nowego developera: podgląd sugerowanych repozytoriów i zatwierdzenie 1 kliknięciem.
 6. **Widok 5: Interaktywny Graf Uprawnień (React Flow)**:
-   - Wizualizacja relacji: Użytkownicy -> Zespoły -> Repozytoria z kolorystyką statusów dzierżawy.
+   - Wizualizacja relacji: Użytkownicy -> Zespoły -> Repozytoria z kolorystyką statusów dostępu.
 7. **Widok 6: Dziennik Audytowy (Audit Log)**:
    - Oś czasu zdarzeń z filtrem akcji człowieka vs reguł automatycznych.
 
@@ -94,7 +94,7 @@ Projekt jest realizowany w architekturze **Single Page Application (SPA)** oraz 
 ### Faza 4: Integracja, Polerowanie Demo i Prezentacja
 
 1. **Weryfikacja scenariuszy prezentacyjnych (Pitch Flow)**:
-   - Krok 1: Pokazanie stanu wyjściowego (czysty dashboard, zielone dzierżawy).
+   - Krok 1: Pokazanie stanu wyjściowego (czysty dashboard, zielone dostępy).
    - Krok 2: Użycie Time Travel (+25 dni) -> pojawienie się żółtych ostrzeżeń i wniosku o przedłużenie.
    - Krok 3: Demonstracja odwołania i akcji admina (przedłużenie o `2x` lub deeskalacja z `write` do `read`).
    - Krok 4: Użycie Time Travel (+35 dni) -> wygaśnięcie nieużywanych dostępów.

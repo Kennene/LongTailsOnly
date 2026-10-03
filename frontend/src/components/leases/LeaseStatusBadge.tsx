@@ -7,7 +7,7 @@ export interface LeaseStatusBadgeProps {
 }
 
 /**
- * Status dzierżawy jako pigułka. Etykieta, klasy i ikona pochodzą wyłącznie z `lib/statusBadges.ts`
+ * Status dostępu jako pigułka. Etykieta, klasy i ikona pochodzą wyłącznie z `lib/statusBadges.ts`
  * (jedno mapowanie status → kształt i kolor w projekcie). Ikona jest `aria-hidden`, bo etykieta
  * po polsku stoi obok — czytnik ekranu nie ma po co czytać nazwy glifu.
  */

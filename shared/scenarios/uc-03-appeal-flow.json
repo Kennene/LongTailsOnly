@@ -6,7 +6,7 @@
     "anchor": "2026-10-03T00:00:00Z",
     "seed": "default",
     "relies_on": ["marta", "qa-automation"],
-    "note": "Dzierżawa marta@qa-automation wypada w oknie ostrzegawczym (scenariusz B z ADR 0008). lease_id rozwiązywane przez $from, bo identyfikatory zależą od kolejności seedowania. Przedłużenie idzie na dzierżawę bez PENDING appeal — /leases/{id}/decision zwraca 409, gdy odwołanie czeka na decyzję. Asercje idą po statusie, nie po days_remaining, bo pozostała liczba dni zależy od godziny seedowania."
+    "note": "Dostęp marta@qa-automation wypada w oknie ostrzegawczym (scenariusz B z ADR 0008). lease_id rozwiązywane przez $from, bo identyfikatory zależą od kolejności seedowania. Przedłużenie idzie na dostęp bez PENDING appeal — /leases/{id}/decision zwraca 409, gdy odwołanie czeka na decyzję. Asercje idą po statusie, nie po days_remaining, bo pozostała liczba dni zależy od godziny seedowania."
   },
   "when": [
     { "type": "reset" },

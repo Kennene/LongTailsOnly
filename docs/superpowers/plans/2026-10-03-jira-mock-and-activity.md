@@ -1,7 +1,7 @@
 # Plan: Mock Jiry i aktywność (`api/jira_mock`)
 
 > Status: **wdrożony** (decyzje D1–D6 wg rekomendacji). Odchylenia: sekcja na końcu.
-> Dotyczy: drugiego dostawcy obok GitHuba. Cel strategiczny: dowieść, że rdzeń (dzierżawy, silnik, panel) jest niezależny od dostawcy (ADR 0001, PLAN.md "Porty i Adaptery").
+> Dotyczy: drugiego dostawcy obok GitHuba. Cel strategiczny: dowieść, że rdzeń (dostępy, silnik, panel) jest niezależny od dostawcy (ADR 0001, PLAN.md "Porty i Adaptery").
 > Wzorzec: `docs/github-mock.md` i `docs/superpowers/plans/2026-10-03-github-mock-and-activity.md`.
 
 ## 1. Po co Jira
@@ -19,7 +19,7 @@ Drugi mock daje trzy rzeczy:
 | D1 | Jak reprezentować projekt Jiry w bazie | **Dodać kolumnę `provider` do `repositories`** (`github` domyślnie, `jira`), projekt Jiry to wiersz z `name=KEY`, `owner=<site>`. Zmiana addytywna, jedna migracja | Osobna tabela `jira_projects` + polimorficzne `Lease` (czysto, ale rusza leasy, silnik i kontrakt) albo pełny rename `Repository→Resource` (inwazyjne dla zadań 1.x) | Wysoki: modele należą do ADR 0007 (kocik), potrzebna zgoda przed migracją |
 | D2 | Mapowanie ról | Viewer=`read`, Member (Developer)=`write`, Administrator=`admin` (ADR 0006 bez zmian) | Pełne schematy uprawnień Jiry | Niski |
 | D3 | Źródło "dowodu użycia" | Zdarzenia pochodne z `ActivityEvent` (jak w GitHubie), wystawione przez **prawdziwe endpointy Jiry**: wyszukiwanie JQL, changelog, komentarze, audit records | Własny endpoint `/events` (nierealistyczny, Jira go nie ma) | Średni: adapter prawdziwej Jiry musiałby być inny niż mock |
-| D4 | Które akcje odnawiają dzierżawę | Utworzenie zgłoszenia i zmiana statusu/pól = poziom `write`; komentarz = poziom `read`; zmiany administracyjne nie odnawiają (ADR 0010) | Każda aktywność odnawia | Niski, ale wpływa na scenariusze |
+| D4 | Które akcje odnawiają dostęp | Utworzenie zgłoszenia i zmiana statusu/pól = poziom `write`; komentarz = poziom `read`; zmiany administracyjne nie odnawiają (ADR 0010) | Każda aktywność odnawia | Niski, ale wpływa na scenariusze |
 | D5 | Nazwa portu | `AccessProvider` (zamiast `VCSProvider` z PLAN.md), bo Jira nie jest systemem kontroli wersji | Zostawić `VCSProvider` | Niski, ale mylące w kodzie i dokumentach |
 | D6 | JQL | Wąski podzbiór (sekcja 5.4), reszta → `400` w formacie Jiry | Pełny parser JQL | Wysoki koszt czasu, zero wartości dla demo |
 

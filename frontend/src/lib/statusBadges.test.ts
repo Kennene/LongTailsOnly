@@ -24,11 +24,11 @@ const RAW_PALETTE_COLOUR =
 describe('getStatusBadge', () => {
   it('maps every lease status to its Polish label', () => {
     expect(STATUSES.map((status: LeaseStatus): string => getStatusBadge(status).label)).toEqual([
-      'Aktywna',
+      'Aktywny',
       'Wygasa wkrótce',
-      'Wygasła',
-      'Stała (admin)',
-      'Odebrana',
+      'Wygasł',
+      'Stały (admin)',
+      'Odebrany',
     ]);
   });
 

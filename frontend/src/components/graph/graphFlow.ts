@@ -25,7 +25,7 @@ export type Emphasis = 'none' | 'active' | 'faded' | 'hovered' | 'background';
 
 /**
  * Dane węzła dla React Flow. Kontrakt (`GraphNodeData`) nie ma statusu — wisi on wyłącznie na
- * krawędziach dzierżaw, więc widok wylicza najgorszy status z krawędzi i dokłada go tutaj.
+ * krawędziach dostępów, więc widok wylicza najgorszy status z krawędzi i dokłada go tutaj.
  */
 export type CircleNodeData = {
   label: string;
