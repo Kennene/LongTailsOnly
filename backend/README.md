@@ -55,3 +55,21 @@ uv run pytest tests/db/test_migrations.py                 # sprawdza, czy migrac
 ```
 
 Przydatne: `uv run alembic upgrade head` (zastosuj), `uv run alembic current` (aktualna wersja), `uv run alembic downgrade -1` (cofnij jedną).
+
+## API v1 (stan 2026-10-03)
+
+Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; nowy router = jedna linia `include_router`). Błędy: kod HTTP + `{"detail": "..."}` (`ServiceError` w `app/services/errors.py`). Szczegóły kontraktu: ADR 0010, opis kroków Osoby 4: [`docs/osoba-4.md`](../docs/osoba-4.md).
+
+| Endpoint | Co zwraca |
+| --- | --- |
+| `GET /api/v1/simulation/clock` | który dzień demo: `{"simulated_now", "offset_days"}` |
+| `GET /api/v1/teams/{slug}/baseline` | standard zespołu (`dev`, `qa`) |
+| `GET /api/v1/onboarding/{login}` · `POST …/apply` | propozycja dostępu dla nowej osoby i zatwierdzenie jednym kliknięciem |
+| `POST /api/v1/appeals` · `POST /api/v1/appeals/{id}/reject` | złożenie odwołania (wymagane nowe uzasadnienie) i odrzucenie |
+| `GET /api/v1/appeals?login=&lease_id=&status=` | historia odwołań z gotowymi liczbami |
+| `GET /api/v1/audit?actor_type=&action=&actor_login=&target=&since=&until=&limit=` | dziennik audytu (tylko do dopisywania) |
+| `POST /api/v1/demo/reset` | reset bazy i zegara do stanu demo |
+
+Audyt zapisuje się **wyłącznie** przez `write_audit_event` (`app/services/audit_service.py`); migracja `0002` blokuje w bazie `UPDATE`/`DELETE` na `audit_logs`. Wspólne fabryki testowe: `tests/factories.py`.
+
+Bez `uv` (np. brak instalacji): `python3.14 -m venv .venv && .venv/bin/pip install -e ".[dev]"`, testy `.venv/bin/python -m pytest`, kontrakt `PYTHONPATH=. .venv/bin/python scripts/export_contract.py`.

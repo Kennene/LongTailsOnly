@@ -1,6 +1,6 @@
 # ADR 0010: Kontrakty Osoby 4 — standard zespołu, onboarding, odwołania, audyt i dane widoków
 
-**Status:** Proponowany (do akceptacji zespołu) · **Autor:** Durczok (Osoba 4) · **Data:** 2026-10-03
+**Status:** Proponowany (do akceptacji zespołu) · **Autor:** Durczkos (Osoba 4) · **Data:** 2026-10-03
 **Doprecyzowuje:** ADR 0005, ADR 0007 (pkt 5, 9), ADR 0009 · **Opiera się na:** kodzie w `main` po PR #5 (kroki 1.1–1.6)
 
 ## Kontekst
@@ -78,6 +78,7 @@ Po scaleniu mocka Osoba 2 podmienia tylko `get_vcs_provider` w `app/api/v1/deps.
 | `POST /api/v1/appeals/{id}/decision` | `DecisionRequest` | `AppealOverview` — **po 3.6** (deleguje do decyzji Osoby 3) | 4.3C |
 | `GET /api/v1/appeals` | `?login=&lease_id=&status=` | `AppealOverview[]`, najnowsze pierwsze; 404 nieznany login | 4.4 |
 | `GET /api/v1/audit` | `?actor_type=&action=&actor_login=&target=&since=&until=&limit=` | `AuditEntry[]`, najnowsze pierwsze; 422 gdy `since > until` | 4.5 |
+| `GET /api/v1/simulation/clock` | — | `SimulationClock {simulated_now, offset_days}`: który dzień demo pokazuje panel | dodatek |
 | `GET /api/v1/dashboard/stats` | — | `DashboardStats` — **po 3.6** | 4.6 |
 | `GET /api/v1/graph` | `?team=<slug>` | `PermissionGraph` — **po 3.6** | 4.6 |
 
@@ -87,6 +88,7 @@ Nowe DTO (rejestrowane w `CONTRACT_*_MODELS`, typy TS generowane według ADR 000
 - `AppealRejectRequest {justification}` — te same ograniczenia co w `AppealCreate`
 - `AppealOverview` = `AppealRead` + `{user: UserRead, repository: RepositoryRead, lease_role, lease_expires_at, lease_is_active, days_remaining, recent_activity_count, previous_appeals}`
 - `AuditEntry` = `AuditLogRead` + `{actor_login: str | null}`
+- `SimulationClock {simulated_now, offset_days}`, np. `{"simulated_now": "2026-10-18T15:24:00Z", "offset_days": 15}`. Router `app/api/v1/simulation.py` jest wspólny: Osoba 2 dopisuje do niego `POST /simulation/time-travel` (2.5)
 - `DashboardStats {generated_at, active, warning, expired, permanent, revoked, downscope_recommendations, revoke_recommendations, pending_appeals, onboarding_candidates}`
 - `PermissionGraph {nodes: GraphNode[], edges: GraphEdge[]}`, `GraphNode {id, type: "team"|"user"|"repo", position: {x, y}, data: {label, team, is_admin}}`, `GraphEdge {id, source, target, label, animated, data: {kind: "membership"|"lease", role, status, recommendation}}` — format wprost do `<ReactFlow nodes edges />`
 
