@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,8 @@ export function ExpandAllButton({
   onToggleAll,
 }: ExpandAllButtonProps): React.JSX.Element {
   return (
-    <Button variant="ghost" size="sm" onClick={onToggleAll}>
+    <Button variant="outline" size="sm" onClick={onToggleAll}>
+      {allExpanded ? <ChevronsDownUp aria-hidden /> : <ChevronsUpDown aria-hidden />}
       {allExpanded ? 'Zwiń wszystkie' : 'Rozwiń wszystkie'}
     </Button>
   );

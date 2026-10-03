@@ -7,7 +7,14 @@ import { formatRepositoryCount, groupLeasesByUser } from '@/components/leases/le
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import { useLeases } from '@/hooks/useLeases';
@@ -44,6 +51,14 @@ export function WarningWindowList(): React.JSX.Element {
         <CardDescription>
           Dostępy wygasające w oknie ostrzegawczym — wymagają decyzji administratora.
         </CardDescription>
+        {leasesQuery.isSuccess && groups.length > 0 ? (
+          <CardAction>
+            <ExpandAllButton
+              allExpanded={expanded.areAllExpanded(userIds)}
+              onToggleAll={() => expanded.toggleAll(userIds)}
+            />
+          </CardAction>
+        ) : null}
       </CardHeader>
       <CardContent className="p-0">
         {leasesQuery.isPending ? <WarningWindowSkeleton /> : null}
@@ -67,24 +82,16 @@ export function WarningWindowList(): React.JSX.Element {
         ) : null}
 
         {leasesQuery.isSuccess && groups.length > 0 ? (
-          <>
-            <div className="flex justify-end px-2 pt-1">
-              <ExpandAllButton
-                allExpanded={expanded.areAllExpanded(userIds)}
-                onToggleAll={() => expanded.toggleAll(userIds)}
+          <ul className="divide-y divide-border">
+            {groups.map((group: LeaseGroup): React.JSX.Element => (
+              <WarningGroup
+                key={group.user.id}
+                group={group}
+                expanded={expanded.isExpanded(group.user.id)}
+                onToggle={() => expanded.toggle(group.user.id)}
               />
-            </div>
-            <ul className="divide-y divide-border">
-              {groups.map((group: LeaseGroup): React.JSX.Element => (
-                <WarningGroup
-                  key={group.user.id}
-                  group={group}
-                  expanded={expanded.isExpanded(group.user.id)}
-                  onToggle={() => expanded.toggle(group.user.id)}
-                />
-              ))}
-            </ul>
-          </>
+            ))}
+          </ul>
         ) : null}
       </CardContent>
     </Card>
