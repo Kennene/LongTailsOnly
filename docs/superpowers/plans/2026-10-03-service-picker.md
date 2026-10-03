@@ -193,7 +193,10 @@ In `backend/app/adapters/demo_service.py`: a module that calls `register(...)` f
 
 In `backend/app/adapters/database_vcs.py`: call `register(...)` for `github` at module import, beside the class.
 
-Both descriptors are the same values Task 1 puts in `_BUILTIN`; the `register()` calls here are what make the plugin seam real (`grep` invariant in Step 5). Keep the two in sync — `register()` raises on a duplicate id, so any divergence is a loud import-time failure rather than a silent difference.
+Both descriptors are the same values Task 1 puts in `_BUILTIN`; the `register()` calls here are what make the plugin seam real (`grep` invariant in Step 5). **Task 1's `register()` raises `ValueError` at import on a conflicting descriptor, so these values must match `_BUILTIN` exactly** — a wrong tuple is a loud import-time failure, not a silent difference. Read `backend/app/ports/service_registry.py` and copy its `_BUILTIN` descriptors rather than retyping them from this brief; the canonical values are:
+
+- `github` — `id="github"`, `name="GitHub"`, `kind=ServiceKind.VCS`, `capabilities=("dashboard", "leases", "appeals", "baseline", "graph", "audit")`, `is_available=True`
+- `demo-tracker` — `id="demo-tracker"`, `name="Demo Tracker (integracja demonstracyjna)"`, `kind=ServiceKind.ISSUE_TRACKER`, `capabilities=("dashboard", "audit")`, `is_available=False`
 
 In `backend/app/api/v1/deps.py`: import `demo_service` for its registration side effect, give `get_vcs_provider` the `service_id: str = "github"` parameter, and raise `ServiceError(404, f"Unknown service {service_id}")` when the id is not in `all_services()`. Keep the default so existing callers are unaffected.
 
