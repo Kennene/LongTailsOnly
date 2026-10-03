@@ -55,7 +55,7 @@ Dzięki temu rozjazd nazw pól jest błędem kompilacji, a nie pustą kolumną n
 
 Pełne uzasadnienie i konsekwencje: **ADR 0010**.
 
-1. **Nawigacja:** `react-router-dom` v7 (tryb deklaratywny). Trasy: `/`, `/leases`, `/appeals`, `/baseline`, `/graph`, `/audit`; `*` przekierowuje na `/`. `AppShell` pełni rolę layout route.
+1. **Nawigacja:** `react-router-dom` v7 w trybie **deklaratywnym** — `App.tsx` definiuje `<Routes>`, a `BrowserRouter` zakłada `main.tsx` (testy podstawiają `MemoryRouter`), więc trasy mają jedno źródło i nie ma zagnieżdżania routerów. Trasy: `/`, `/leases`, `/appeals`, `/baseline`, `/graph`, `/audit`; `*` przekierowuje na `/`. `AppShell` pełni rolę layout route. Etykiety nawigacji: `Pulpit`, `Dzierżawy`, `Odwołania`, `Standard zespołu`, `Graf`, `Audyt`.
 2. **Stan serwerowy:** TanStack Query v5 — cache, stany ładowania/błędu i jednopunktowa inwalidacja po podróży w czasie. Bez globalnego store'a (Redux/Zustand).
 3. **Typy generowane, nie pisane ręcznie:** `src/types/api.ts` pochodzi z kontraktu 1.2 (ADR 0009). Fixture'y używają typów z tego pliku (np. `LeaseOverview`), a flaga `VITE_USE_FIXTURES` przełącza **odczyty** na fixture'y (mutacje zawsze idą do API).
 4. **Czas i status pochodzą z backendu.** „Teraz” czytamy z `GET /api/v1/simulation/clock` (`ClockRead.now`), a `status`, `days_remaining` i `recommendation` przychodzą policzone w `LeaseOverview`. Frontend **nie duplikuje** granic 7/0 dni i nie używa zegara systemowego; `lib/dateTime.ts` odpowiada za formatowanie i pomocnicze porównania (walidacja daty w modalu).
@@ -154,6 +154,10 @@ export function daysRemaining(expires_at: string, now: string): number; // walid
 ```
 
 Funkcja `leaseStatus()` **nie istnieje** po stronie frontendu — świadome odejście od przykładu w `CODING_STANDARDS.md`, bo kontrakt 1.2 przeniósł tę regułę do backendu (mniej miejsc na rozjazd). `daysRemaining` służy wyłącznie do walidacji „data musi być późniejsza niż czas symulowany”; wartość pokazywana w tabeli pochodzi z API.
+
+**Dwie pułapki odnotowane w implementacji:**
+- `Intl.DateTimeFormat('pl-PL', { dateStyle, timeStyle })` skleja datę i godzinę **spacją**, nie przecinkiem; `formatDateTimePl` składa więc wynik z `formatToParts` i wstawia `, ` — dzięki temu format jest zgodny z projektem i deterministyczny w Node i w przeglądarkach.
+- `daysRemaining` może zwrócić `-0` dla ułamka dnia przed wygaśnięciem; `formatDaysRemaining(-0)` daje `Wygasa dziś`. Testy granic przypinamy do dokładnych wartości (`now === expires_at` → 0), a nie do przedziału `(-1, 0)`.
 
 - **`lib/statusBadges.ts`** mapuje: statusy → `Aktywna` / `Wygasa wkrótce` / `Wygasła`, role → `Administrator` / `Zapis (write)` / `Odczyt (read)`, rekomendacje → `Bez zmian` / `Zdeeskaluj` / `Odbierz`, statusy odwołań → `Oczekujące` / `Zatwierdzone` / `Odrzucone`. Poza tym plikiem nie wolno powtarzać tych mapowań.
 - **Pasek czasu:** presety `+15 / +30 / +60` dni, pole własnej liczby dni (walidacja `1…365` zgodnie z `TimeTravelRequest`), `Reset` wywołujący `POST /api/v1/demo/reset` (przywraca seed i zeruje zegar — wymaga potwierdzenia, bo kasuje stan; przy `ENABLE_DEMO_RESET=false` zwraca `404`).

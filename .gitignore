@@ -1,0 +1,23 @@
+# Zależności i artefakty budowania
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Cache npm używany w środowisku agenta (sandbox nie ma dostępu do ~/.npm)
+.npm-cache/
+
+# Środowiska lokalne
+.env
+.env.local
+.env.*.local
+
+# Edytory i system
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logi
+*.log
+npm-debug.log*

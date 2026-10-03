@@ -47,7 +47,7 @@ Pięć klas danych/sytuacji, które spec implikuje, a które najczęściej psuj�
 | `frontend/src/api/config.ts` | `shouldUseFixtures()` — czyta `VITE_USE_FIXTURES` |
 | `frontend/src/api/client.ts` | `getJson`/`postJson` + `ApiError` |
 | `frontend/src/api/{leases,simulation,dashboard,baseline,appeals,graph,audit}.ts` | jedno miejsce styku z transportem; tu żyje flaga fixture'ów |
-| `frontend/src/api/fixtures/*.json` + `index.ts` | dane 6.1 z typowanym re-exportem |
+| `frontend/src/api/fixtures/*.ts` + `index.ts` | dane 6.1 jako literały TS z jawnym typem (rozjazd = błąd kompilacji) + re-eksport |
 | `frontend/src/lib/dateTime.ts` | cała matematyka czasu |
 | `frontend/src/lib/statusBadges.ts` | etykiety i kolory statusów oraz ról |
 | `frontend/src/lib/graphLayout.ts` | deterministyczny układ kolumnowy grafu (fallback bez `position`) |
@@ -255,7 +255,7 @@ git commit -m "feat(frontend): add single sources of truth for date formatting a
 ### Zadanie 3 (PR 5.3): Fixture'y, tabela dzierżaw i strona Dzierżawy
 
 **Pliki:**
-- Utwórz: `frontend/src/api/config.ts`, `frontend/src/api/fixtures/{leases.json,index.ts}`
+- Utwórz: `frontend/src/api/config.ts`, `frontend/src/api/fixtures/{leases.ts,index.ts}`
 - Utwórz: `frontend/src/api/leases.ts`, `frontend/src/hooks/useLeases.ts`
 - Utwórz: `frontend/src/components/leases/LeaseTable.tsx`, `frontend/src/components/leases/LeaseStatusBadge.tsx`
 - Zmień: `frontend/src/pages/LeasesPage.tsx`
@@ -267,7 +267,7 @@ git commit -m "feat(frontend): add single sources of truth for date formatting a
 
 - [ ] **Krok 1: Utwórz fixture'y zgodne z kontraktem.**
 
-`backend/app/core/time_provider.py` kotwiczy seed na `2026-10-03T00:00:00Z`, więc fixture'y używają tej samej daty bazowej. `leases.json` — cztery `LeaseOverview` o stabilnych identyfikatorach, na których opierają się kolejne zadania i test integracyjny: `id: 1` kamil/DEV/`write`/`expires_at: 2026-11-02…`/`status: "ACTIVE"`/`days_remaining: 30`/`recommendation: "KEEP"`, `id: 2` marta/QA/`read`/`2026-10-08…`/`"WARNING"`/`5`/`"KEEP"`, `id: 3` piotr/DEV/`write`/`2026-09-30…`/`"EXPIRED"`/`-3`/`"REVOKE"`, `id: 4` tomasz-admin/DEV/`admin`/`expires_at: null`/`days_remaining: null`/`status: "ACTIVE"`/`recommendation: "DOWNSCOPE"`. `last_activity_at` wypełnione dla trzech, `null` dla jednej. `index.ts` re-eksportuje je z typem: `export const leasesFixture: LeaseOverview[] = leasesJson;`.
+`backend/app/core/time_provider.py` kotwiczy seed na `2026-10-03T00:00:00Z`, więc fixture'y używają tej samej daty bazowej. **Fixture'y trzymamy jako literały TS z jawnym typem (`leases.ts`), nie jako `.json`** — dzięki temu brak pola, literówka i literał spoza unii (`Role`, `LeaseStatus`, `Recommendation`) są błędem kompilacji, a nie pustą kolumną na demo. Gdy 6.1 dostarczy surowe JSON-y, opakowujemy je w tym samym pliku. `leasesFixture: LeaseOverview[]` — cztery dzierżawy o stabilnych identyfikatorach, na których opierają się kolejne zadania i test integracyjny: `id: 1` kamil/DEV/`write`/`expires_at: 2026-11-02…`/`ACTIVE`/`days_remaining: 30`/`KEEP`, `id: 2` marta/QA/`read`/`2026-10-08…`/`WARNING`/`5`/`DOWNSCOPE`, `id: 3` piotr/DEV/`write`/`2026-09-30…`/`EXPIRED`/`-3`/`REVOKE`, `id: 4` tomasz-admin (bez zespołu)/`admin`/`expires_at: null`/`days_remaining: null`/`ACTIVE`/`DOWNSCOPE`. `last_activity_at` wypełnione dla trzech, `null` dla jednej.
 
 - [ ] **Krok 2: Napisz failing test `renders_lease_rows_sorted_by_urgency`.**
 

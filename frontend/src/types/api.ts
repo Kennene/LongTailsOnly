@@ -4,37 +4,37 @@
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "ActionType".
  */
-export type ActionType = "PushEvent" | "PullRequestReviewEvent" | "IssueCommentEvent";
+export type ActionType = 'PushEvent' | 'PullRequestReviewEvent' | 'IssueCommentEvent';
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "Role".
  */
-export type Role = "read" | "write" | "admin";
+export type Role = 'read' | 'write' | 'admin';
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "ActorType".
  */
-export type ActorType = "ADMIN" | "USER" | "SYSTEM";
+export type ActorType = 'ADMIN' | 'USER' | 'SYSTEM';
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "AppealStatus".
  */
-export type AppealStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type AppealStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "DecisionAction".
  */
-export type DecisionAction = "EXTEND" | "DOWNSCOPE" | "REVOKE";
+export type DecisionAction = 'EXTEND' | 'DOWNSCOPE' | 'REVOKE';
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "Recommendation".
  */
-export type Recommendation = "KEEP" | "DOWNSCOPE" | "REVOKE";
+export type Recommendation = 'KEEP' | 'DOWNSCOPE' | 'REVOKE';
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "LeaseStatus".
  */
-export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED";
+export type LeaseStatus = 'ACTIVE' | 'WARNING' | 'EXPIRED';
 
 export interface LongTailsOnlyAPIContract {
   [k: string]: unknown;
