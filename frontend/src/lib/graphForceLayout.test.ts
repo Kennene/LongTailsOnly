@@ -3,6 +3,7 @@ import type { XYPosition } from '@xyflow/react';
 import { graphFixture } from '@/api/fixtures/graph';
 import {
   computeForceLayout,
+  fitLayoutToAspect,
   GRAPH_NODE_RADIUS,
   type LayoutPositions,
 } from '@/lib/graphForceLayout';
@@ -100,4 +101,68 @@ it('sizes teams above people and people above repositories', () => {
 
 it('returns an empty layout for an empty graph', () => {
   expect(computeForceLayout([], [])).toEqual({});
+});
+
+/** Proporcje (szerokość / wysokość) prostokąta obejmującego wszystkie okręgi układu. */
+function aspectOf(graph: PermissionGraph, positions: LayoutPositions): number {
+  const lefts: number[] = graph.nodes.map((node: GraphNode): number => positions[node.id].x);
+  const tops: number[] = graph.nodes.map((node: GraphNode): number => positions[node.id].y);
+  const rights: number[] = graph.nodes.map(
+    (node: GraphNode): number => positions[node.id].x + 2 * GRAPH_NODE_RADIUS[node.type],
+  );
+  const bottoms: number[] = graph.nodes.map(
+    (node: GraphNode): number => positions[node.id].y + 2 * GRAPH_NODE_RADIUS[node.type],
+  );
+
+  return (Math.max(...rights) - Math.min(...lefts)) / (Math.max(...bottoms) - Math.min(...tops));
+}
+
+/** Odległości między środkami wszystkich par węzłów, w stałej kolejności par. */
+function pairDistances(graph: PermissionGraph, positions: LayoutPositions): number[] {
+  return graph.nodes.flatMap((left: GraphNode, index: number): number[] =>
+    graph.nodes.slice(index + 1).map((right: GraphNode): number => {
+      const a: XYPosition = centreOf(positions, left);
+      const b: XYPosition = centreOf(positions, right);
+
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }),
+  );
+}
+
+describe('fitLayoutToAspect', () => {
+  const base: LayoutPositions = layoutOf(graphFixture);
+  const baseAspect: number = aspectOf(graphFixture, base);
+
+  it.each([
+    ['a wide pane', baseAspect * 1.8],
+    ['a tall pane', baseAspect / 1.6],
+  ])('stretches the layout to the proportions of %s', (_name: string, target: number) => {
+    const fitted: LayoutPositions = fitLayoutToAspect(graphFixture.nodes, base, target);
+
+    expect(aspectOf(graphFixture, fitted)).toBeCloseTo(target, 1);
+  });
+
+  it('only pushes nodes apart, so circles still do not overlap', () => {
+    const fitted: LayoutPositions = fitLayoutToAspect(graphFixture.nodes, base, baseAspect * 2);
+    const before: number[] = pairDistances(graphFixture, base);
+
+    expect(overlappingPairs(graphFixture, fitted)).toEqual([]);
+    pairDistances(graphFixture, fitted).forEach((distance: number, index: number): void => {
+      expect(distance).toBeGreaterThanOrEqual(before[index] - 1e-6);
+    });
+  });
+
+  it('caps the stretch so a very wide pane does not flatten the web into a line', () => {
+    const fitted: LayoutPositions = fitLayoutToAspect(graphFixture.nodes, base, baseAspect * 10);
+
+    expect(aspectOf(graphFixture, fitted)).toBeLessThan(baseAspect * 3);
+  });
+
+  it('keeps the layout untouched without a measured pane', () => {
+    expect(fitLayoutToAspect(graphFixture.nodes, base, null)).toBe(base);
+  });
+
+  it('returns an empty layout for an empty graph', () => {
+    expect(fitLayoutToAspect([], {}, 2)).toEqual({});
+  });
 });

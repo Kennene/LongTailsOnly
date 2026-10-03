@@ -197,3 +197,88 @@ export function computeForceLayout(nodes: GraphNode[], edges: GraphEdge[]): Layo
 
   return positions;
 }
+
+/**
+ * Największe rozciągnięcie jednej osi: bardzo szeroki panel nie spłaszcza pajęczyny w linię,
+ * w której krawędzie biegną prawie poziomo i zlewają się ze sobą.
+ */
+const MAX_STRETCH = 2.5;
+
+/** Kroki bisekcji współczynnika — przy 2⁻³⁰ szerokości przedziału błąd proporcji jest pomijalny. */
+const FIT_STEPS = 30;
+
+type Circle = { id: string; radius: number; x: number; y: number };
+
+function circlesOf(nodes: GraphNode[], positions: LayoutPositions): Circle[] {
+  return nodes
+    .filter((node: GraphNode): boolean => positions[node.id] !== undefined)
+    .map((node: GraphNode): Circle => {
+      const radius: number = GRAPH_NODE_RADIUS[node.type];
+
+      return {
+        id: node.id,
+        radius,
+        x: positions[node.id].x + radius,
+        y: positions[node.id].y + radius,
+      };
+    });
+}
+
+/** Rozpiętość okręgów wzdłuż osi, gdy współrzędne środków tej osi mnożymy przez `factor`. */
+function extentOf(circles: Circle[], axis: 'x' | 'y', factor: number): number {
+  const starts: number[] = circles.map(
+    (circle: Circle): number => factor * circle[axis] - circle.radius,
+  );
+  const ends: number[] = circles.map(
+    (circle: Circle): number => factor * circle[axis] + circle.radius,
+  );
+
+  return Math.max(...ends) - Math.min(...starts);
+}
+
+/**
+ * Rozciąga układ wzdłuż **jednej** osi tak, żeby prostokąt obejmujący okręgi miał proporcje
+ * panelu (`aspect` = szerokość / wysokość). Pajęczyna z d3 wychodzi mniej więcej kwadratowa,
+ * a panel jest szeroki — bez tego `fitView` dopasowuje graf do wysokości i zostawia puste boki.
+ *
+ * Mnożymy wyłącznie przez współczynnik ≥ 1, więc węzły tylko się od siebie oddalają: brak
+ * nakładania z symulacji zostaje zachowany. Współczynnik szukamy bisekcją, bo rozpiętość zależy
+ * też od promieni skrajnych okręgów. `aspect = null` (panel jeszcze niezmierzony) nic nie zmienia.
+ */
+export function fitLayoutToAspect(
+  nodes: GraphNode[],
+  positions: LayoutPositions,
+  aspect: number | null,
+): LayoutPositions {
+  const circles: Circle[] = circlesOf(nodes, positions);
+
+  if (aspect === null || circles.length === 0) {
+    return aspect === null ? positions : {};
+  }
+
+  const current: number = extentOf(circles, 'x', 1) / extentOf(circles, 'y', 1);
+  const axis: 'x' | 'y' = aspect > current ? 'x' : 'y';
+  const target: number =
+    axis === 'x' ? aspect * extentOf(circles, 'y', 1) : extentOf(circles, 'x', 1) / aspect;
+  let low = 1;
+  let high: number = MAX_STRETCH;
+
+  for (let step = 0; step < FIT_STEPS; step += 1) {
+    const middle: number = (low + high) / 2;
+
+    if (extentOf(circles, axis, middle) < target) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+
+  return Object.fromEntries(
+    circles.map((circle: Circle): [string, XYPosition] => {
+      const x: number = axis === 'x' ? low * circle.x : circle.x;
+      const y: number = axis === 'y' ? low * circle.y : circle.y;
+
+      return [circle.id, { x: x - circle.radius, y: y - circle.radius }];
+    }),
+  );
+}

@@ -87,6 +87,7 @@ export function GraphPage(): React.JSX.Element {
         <p className="text-sm text-muted-foreground">
           Kto ma dostęp do czego: osoby, zespoły i repozytoria. Kliknij węzeł albo wybierz osobę,
           żeby podświetlić jej drogi dostępu; obrys węzła i kolor krawędzi niosą status dostępu.
+          Escape albo kliknięcie w tło czyści zaznaczenie.
         </p>
       </header>
 
