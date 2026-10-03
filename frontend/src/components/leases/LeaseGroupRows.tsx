@@ -72,7 +72,7 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
   return (
     <TableRow className="cursor-pointer" onClick={onToggle}>
       <TableCell className={COLUMN_WIDTH.user}>
-        {/* Jedna linia: strzałka, nazwa, login i awatar (pasmo 36–40 px, DESIGN.md §3). Klik w cały
+        {/* Jedna linia: strzałka, nazwa i awatar (pasmo 36–40 px, DESIGN.md §3). Klik w cały
             wiersz też rozwija, ale stan niesie przycisk z `aria-expanded`, nie kolor ani kursor. */}
         <div className="flex items-center gap-1.5">
           <ExpandToggle
@@ -81,10 +81,7 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
             subject="dostępy"
             owner={group.user.name}
           />
-          <span className="shrink-0 font-medium">{group.user.name}</span>
-          <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
-            {group.user.login}
-          </span>
+          <span className="min-w-0 truncate font-medium">{group.user.name}</span>
           <UserAvatar initials={initialsFrom(group.user)} login={group.user.login} />
         </div>
       </TableCell>
@@ -94,18 +91,33 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
       <TableCell className={cn(COLUMN_WIDTH.repository, 'text-muted-foreground')}>
         {formatRepositoryCount(group.leases.length)}
       </TableCell>
-      <TableCell className={SECONDARY_COLUMN} />
+      <TableCell className={SECONDARY_COLUMN}>
+        {expanded ? <ColumnLabel>Poziom</ColumnLabel> : null}
+      </TableCell>
       <TableCell className="font-mono">
         {lastActivity === null ? '—' : formatDateTimeShortPl(lastActivity)}
       </TableCell>
       <TableCell>{formatDaysRemaining(group.mostUrgent.days_remaining)}</TableCell>
-      {/* Status należy do dostępu, nie do osoby — pokazują go dopiero wiersze repozytoriów. */}
-      <TableCell />
+      {/* Status należy do dostępu, nie do osoby — pokazują go dopiero wiersze repozytoriów,
+          a wiersz osoby po rozwinięciu podpisuje tylko kolumnę nad nimi. */}
+      <TableCell>{expanded ? <ColumnLabel>Status</ColumnLabel> : null}</TableCell>
       <TableCell className="text-muted-foreground">
         {pending === 0 ? '—' : `${pending} do decyzji`}
       </TableCell>
       {withActions ? <TableCell className={ACTION_COLUMN} /> : null}
     </TableRow>
+  );
+}
+
+/**
+ * Podpis kolumny w wierszu osoby — widoczny zamiennik nagłówka „Poziom”/„Status”, który
+ * w `<thead>` jest tylko dla czytników ekranu. `aria-hidden`, żeby czytnik nie czytał go drugi raz.
+ */
+function ColumnLabel({ children }: { children: string }): React.JSX.Element {
+  return (
+    <span aria-hidden="true" className="text-xs font-medium text-muted-foreground">
+      {children}
+    </span>
   );
 }
 

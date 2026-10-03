@@ -45,10 +45,16 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
             <HeadCell>Użytkownik</HeadCell>
             <HeadCell className={SECONDARY_COLUMN}>Zespół</HeadCell>
             <HeadCell>Repozytorium</HeadCell>
-            <HeadCell className={SECONDARY_COLUMN}>Poziom</HeadCell>
+            {/* „Poziom” i „Status” opisują dostęp, nie osobę: na ekranie stają w wierszu osoby
+                dopiero po jej rozwinięciu, a nagłówek trzyma je tylko dla czytników ekranu. */}
+            <HeadCell className={SECONDARY_COLUMN}>
+              <span className="sr-only">Poziom</span>
+            </HeadCell>
             <HeadCell>Ostatnia aktywność</HeadCell>
             <HeadCell>Pozostało</HeadCell>
-            <HeadCell>Status</HeadCell>
+            <HeadCell>
+              <span className="sr-only">Status</span>
+            </HeadCell>
             <HeadCell>Rekomendacja</HeadCell>
             {onDecide === undefined ? null : <HeadCell className={ACTION_COLUMN}>Akcje</HeadCell>}
           </TableRow>
