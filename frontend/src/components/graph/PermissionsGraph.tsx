@@ -13,7 +13,8 @@ import {
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
-import type { LayoutPositions } from '@/lib/graphForceLayout';
+import { useElementAspect } from '@/hooks/useElementAspect';
+import { fitLayoutToAspect, type LayoutPositions } from '@/lib/graphForceLayout';
 import {
   type GraphHighlight,
   highlightOf,
@@ -49,10 +50,19 @@ export interface PermissionsGraphProps {
 }
 
 /**
- * Wysokość panelu: pajęczyna demo (31 węzłów) jest mniej więcej kwadratowa, więc wysoki panel daje
- * `fitView` większe powiększenie niż szeroki i niski — etykiety w okręgach zostają czytelne.
+ * Panel grafu sięga do dołu ekranu: 24rem to pasek górny, nagłówek widoku, filtry, liczniki
+ * i odstępy `main` — na niskim ekranie panel nie schodzi poniżej 30rem (strona się przewinie).
+ * Szerokość jest cała, bo szczegóły zaznaczenia wiszą nad płótnem, a nie w osobnej kolumnie.
  */
-const PANE_CLASSES = 'h-[40rem] overflow-hidden rounded-xl border border-border bg-card';
+const PANE_CLASSES =
+  'h-[max(30rem,calc(100dvh-24rem))] overflow-hidden rounded-xl border border-border bg-card';
+
+/**
+ * Szczegóły zaznaczenia: od `xl` nakładka przy prawej krawędzi płótna, węższe ekrany — pod grafem,
+ * żeby karta nie zasłoniła całej pajęczyny.
+ */
+const DETAILS_CLASSES =
+  'xl:absolute xl:top-3 xl:right-3 xl:z-10 xl:max-h-[calc(100%-1.5rem)] xl:w-80 xl:overflow-y-auto xl:rounded-xl';
 
 const NODE_TYPES: NodeTypes = { circle: GraphCircleNode };
 const EDGE_TYPES: EdgeTypes = { floating: FloatingEdge };
@@ -129,6 +139,7 @@ export function PermissionsGraph({
   const { resolvedTheme } = useTheme();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<NodeOverrides>({});
+  const { ref: paneRef, aspect } = useElementAspect();
 
   // Escape czyści zaznaczenie niezależnie od tego, gdzie jest fokus (węzeł, lista, tło).
   useEffect((): (() => void) => {
@@ -155,6 +166,8 @@ export function PermissionsGraph({
       visibleNodeIds.has(edge.target),
   );
 
+  // Pajęczyna rozciągnięta do proporcji panelu — `fitView` wypełnia wtedy całą jego szerokość.
+  const fitted: LayoutPositions = fitLayoutToAspect(visibleNodes, positions, aspect);
   const selection: GraphHighlight | null = highlightOf(visibleNodes, visibleEdges, selectedId);
   const hover: GraphHighlight | null =
     selection === null && hoveredId !== null && visibleNodeIds.has(hoveredId)
@@ -171,7 +184,7 @@ export function PermissionsGraph({
     return {
       id: node.id,
       type: 'circle',
-      position: overrides[node.id]?.position ?? positions[node.id] ?? { x: 0, y: 0 },
+      position: overrides[node.id]?.position ?? fitted[node.id] ?? { x: 0, y: 0 },
       measured: overrides[node.id]?.measured,
       // Podświetlone węzły nad wygaszonymi, żeby wygaszony okrąg nie przykrywał drogi dostępu.
       zIndex: emphasis === 'active' || emphasis === 'hovered' ? 1 : 0,
@@ -234,13 +247,13 @@ export function PermissionsGraph({
         <GraphLegend />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        {visibleNodes.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-            Brak danych do wyświetlenia
-          </p>
-        ) : (
-          <div className={PANE_CLASSES}>
+      {visibleNodes.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          Brak danych do wyświetlenia
+        </p>
+      ) : (
+        <div className="relative flex flex-col gap-4">
+          <div className={PANE_CLASSES} ref={paneRef}>
             <ReactFlow
               ariaLabelConfig={ARIA_LABEL_CONFIG}
               colorMode={colorModeOf(resolvedTheme)}
@@ -249,10 +262,11 @@ export function PermissionsGraph({
               edgeTypes={EDGE_TYPES}
               elementsSelectable={false}
               fitView
-              fitViewOptions={{ padding: 0.08 }}
-              // Nowy zestaw widocznych węzłów (filtr) montuje widok od nowa, żeby `fitView` objął
-              // dokładnie to, co zostało — zaznaczenie i hover nie zmieniają klucza.
-              key={[...visibleNodeIds].join('|')}
+              fitViewOptions={{ padding: 0.06 }}
+              // Nowy zestaw widocznych węzłów (filtr) albo nowe proporcje panelu montują widok od
+              // nowa, żeby `fitView` objął dokładnie to, co widać — zaznaczenie i hover nie
+              // zmieniają klucza.
+              key={`${[...visibleNodeIds].join('|')}@${aspect ?? '-'}`}
               minZoom={0.2}
               nodes={flowNodes}
               nodesConnectable={false}
@@ -274,14 +288,19 @@ export function PermissionsGraph({
               <Controls showInteractive={false} />
             </ReactFlow>
           </div>
-        )}
-        <GraphDetailsPanel
-          edges={visibleEdges}
-          nodes={visibleNodes}
-          onSelect={onSelect}
-          selectedId={selection === null ? null : selectedId}
-        />
-      </div>
+          {selection === null ? null : (
+            <div className={DETAILS_CLASSES}>
+              <GraphDetailsPanel
+                edges={visibleEdges}
+                nodes={visibleNodes}
+                onClose={(): void => onSelect(null)}
+                onSelect={onSelect}
+                selectedId={selectedId}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

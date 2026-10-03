@@ -1,7 +1,17 @@
+import { X } from 'lucide-react';
+
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import { RecommendationBadge } from '@/components/leases/RecommendationBadge';
 import { RoleBadge } from '@/components/leases/RoleBadge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { type AccessRow, accessRowsOf, isElevatedRisk } from '@/lib/graphHighlight';
 import type { GraphEdge, GraphNode } from '@/types/api';
 
@@ -10,6 +20,8 @@ export interface GraphDetailsPanelProps {
   edges: GraphEdge[];
   selectedId: string | null;
   onSelect: (nodeId: string) => void;
+  /** Zamyka panel, czyszcząc zaznaczenie (to samo co Escape albo klik w tło grafu). */
+  onClose: () => void;
 }
 
 const TYPE_LABEL: Record<GraphNode['type'], string> = {
@@ -75,39 +87,42 @@ function AccessRowItem({
 }
 
 /**
- * Panel boczny grafu: drogi dostępu zaznaczonego węzła, od najwyższego ryzyka. Osoba widzi swoje
+ * Panel szczegółów grafu: drogi dostępu zaznaczonego węzła, od najwyższego ryzyka. Osoba widzi swoje
  * repozytoria, repozytorium — osoby z dostępem, zespół — członków z najgorszym statusem.
  * Etykiety i kolory pochodzą z gotowych odznak (`statusBadges.ts`), a kliknięcie w wiersz
- * przenosi zaznaczenie na drugi koniec relacji.
+ * przenosi zaznaczenie na drugi koniec relacji. Bez zaznaczenia panel się nie renderuje — graf
+ * dostaje wtedy całą szerokość.
  */
 export function GraphDetailsPanel({
   nodes,
   edges,
   selectedId,
   onSelect,
-}: GraphDetailsPanelProps): React.JSX.Element {
+  onClose,
+}: GraphDetailsPanelProps): React.JSX.Element | null {
   const selected: GraphNode | undefined = nodes.find(
     (node: GraphNode): boolean => node.id === selectedId,
   );
 
   if (selected === undefined) {
-    return (
-      <Card size="sm">
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Kliknij osobę, repozytorium lub zespół, żeby zobaczyć drogi dostępu. Escape albo
-            kliknięcie w tło czyści zaznaczenie.
-          </p>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   const rows: AccessRow[] = accessRowsOf(nodes, edges, selected.id);
 
   return (
-    <Card aria-label={`Szczegóły: ${selected.data.label}`} role="region" size="sm">
+    <Card
+      aria-label={`Szczegóły: ${selected.data.label}`}
+      className="shadow-lg"
+      role="region"
+      size="sm"
+    >
       <CardHeader>
+        <CardAction>
+          <Button aria-label="Zamknij szczegóły" onClick={onClose} size="icon-sm" variant="ghost">
+            <X aria-hidden />
+          </Button>
+        </CardAction>
         <CardDescription className="text-xs">{TYPE_LABEL[selected.type]}</CardDescription>
         <CardTitle className="font-mono">{selected.data.label}</CardTitle>
         <CardDescription>{summaryOf(selected.type, rows)}</CardDescription>
@@ -116,7 +131,7 @@ export function GraphDetailsPanel({
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">Brak czynnych dostępów.</p>
         ) : (
-          <ul className="max-h-[26rem] overflow-y-auto pr-1">
+          <ul className="max-h-[min(26rem,50dvh)] overflow-y-auto pr-1">
             {rows.map((row: AccessRow): React.JSX.Element => (
               <AccessRowItem key={row.id} onSelect={onSelect} row={row} />
             ))}
