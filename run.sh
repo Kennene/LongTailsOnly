@@ -6,11 +6,13 @@
 #   --fixtures   panel czyta statyczne fixture'y (frontend/src/api/fixtures) zamiast backendu
 #
 # Panel: http://localhost:5173   API: http://localhost:8000/docs   Ctrl+C zatrzymuje oba procesy.
+# HOST=0.0.0.0 wystawia oba serwery na zewnątrz (np. w kontenerze Dockera).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_PORT=8000
 FRONTEND_PORT=5173
+HOST="${HOST:-127.0.0.1}"
 API="http://localhost:$BACKEND_PORT"
 USE_FIXTURES=false
 RESET=false
@@ -57,16 +59,20 @@ if [[ ! -f "$LOCK_STAMP" || "$(cat "$LOCK_STAMP")" != "$LOCK_CHECKSUM" ]]; then
 fi
 
 BACKEND_PID=""
+FRONTEND_PID=""
 cleanup() {
-  if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
-    kill "$BACKEND_PID" 2>/dev/null || true
-    wait "$BACKEND_PID" 2>/dev/null || true
-  fi
+  trap - EXIT INT TERM
+  for pid in $FRONTEND_PID $BACKEND_PID; do
+    kill "$pid" 2>/dev/null || true
+  done
+  wait 2>/dev/null || true
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 step "Backend: start na $API"
-(cd "$ROOT/backend" && exec uv run uvicorn app.main:app --port "$BACKEND_PORT") &
+(cd "$ROOT/backend" && exec uv run uvicorn app.main:app --host "$HOST" --port "$BACKEND_PORT") &
 BACKEND_PID=$!
 
 # Pierwszy start robi migracje i seed demo, więc czekamy na /health.
@@ -87,5 +93,10 @@ echo "    Swagger:        $API/docs"
 echo "    Mock GitHuba:   $API/api/v3/orgs/longtails/repos"
 echo "    Scenariusze:    shared/scenarios/ (UC-1..UC-5)"
 # Zmienna środowiskowa ma pierwszeństwo przed frontend/.env, więc nie trzeba go edytować.
-cd "$ROOT/frontend"
-VITE_USE_FIXTURES="$USE_FIXTURES" npx vite --port "$FRONTEND_PORT" --strictPort
+(cd "$ROOT/frontend" && VITE_USE_FIXTURES="$USE_FIXTURES" \
+  exec node_modules/.bin/vite --host "$HOST" --port "$FRONTEND_PORT" --strictPort) &
+FRONTEND_PID=$!
+
+# Oba serwery działają w tle, żeby Ctrl+C i `docker stop` od razu zamykały oba;
+# gdy jeden z nich padnie, kończymy całość.
+wait -n "$BACKEND_PID" "$FRONTEND_PID" || true

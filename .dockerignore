@@ -1,0 +1,23 @@
+# Zależności i artefakty powstają w obrazie przez ./build.sh.
+.git
+.tools
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+frontend/dist
+**/*.tsbuildinfo
+
+# Lokalny stan: baza demo i nadpisania środowiska (frontend/.env włącza fixture'y).
+**/*.db
+**/*.sqlite3
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Narzędzia agentów i edytorów.
+.claude
+.superpowers
+.playwright-mcp
+.idea
+.vscode
