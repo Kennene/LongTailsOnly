@@ -5,3 +5,10 @@ class ServiceError(Exception):
         super().__init__(detail)
         self.status_code = status_code
         self.detail = detail
+
+
+class LastAdminError(ServiceError):
+    """Last Admin Protection (ADR 0004, docs/3-silnik-dzierzawy §4): HTTP 403 with the GitHub mock's message."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(403, detail)

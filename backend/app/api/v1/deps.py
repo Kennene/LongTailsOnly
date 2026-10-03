@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.database_vcs import DatabaseVCSAdapter
 from app.core.config import Settings, get_settings
+from app.core.enforcement_mode import EnforcementState, get_enforcement_state
 from app.core.time_provider import TimeProvider, get_time_provider
 from app.db.session import get_session
 from app.models import User
@@ -17,6 +18,7 @@ from app.services.errors import ServiceError
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 ClockDep = Annotated[TimeProvider, Depends(get_time_provider)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+EnforcementDep = Annotated[EnforcementState, Depends(get_enforcement_state)]
 
 
 async def get_admin_id(session: SessionDep, settings: SettingsDep) -> int:

@@ -534,6 +534,40 @@
       "title": "DemoResetResult",
       "type": "object"
     },
+    "EnforcementMode": {
+      "description": "How the lease engine acts on lapsing leases (docs/3-silnik-dzierzawy \u00a75).",
+      "enum": [
+        "disabled",
+        "warning",
+        "auto"
+      ],
+      "title": "EnforcementMode",
+      "type": "string"
+    },
+    "EnforcementModeRead": {
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/EnforcementMode"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "EnforcementModeRead",
+      "type": "object"
+    },
+    "EnforcementModeUpdate": {
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/EnforcementMode"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "EnforcementModeUpdate",
+      "type": "object"
+    },
     "Extension": {
       "description": "Exactly one way of extending a lease (ADR 0005).",
       "properties": {
@@ -758,6 +792,57 @@
       "title": "GraphPosition",
       "type": "object"
     },
+    "LeaseActivityStats": {
+      "description": "Evidence of use for the decision modal: renewing actions in the lease window (docs/3-silnik-dzierzawy \u00a76).",
+      "properties": {
+        "comment_count": {
+          "type": "integer"
+        },
+        "last_activity_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lease_id": {
+          "type": "integer"
+        },
+        "push_count": {
+          "type": "integer"
+        },
+        "review_count": {
+          "type": "integer"
+        },
+        "window_days": {
+          "type": "integer"
+        },
+        "window_end": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "window_start": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "lease_id",
+        "window_days",
+        "window_start",
+        "window_end",
+        "push_count",
+        "review_count",
+        "comment_count",
+        "last_activity_at"
+      ],
+      "title": "LeaseActivityStats",
+      "type": "object"
+    },
     "LeaseOverview": {
       "description": "Lease plus values computed by the lease service (Task 8 of the team plan).",
       "properties": {
@@ -884,7 +969,9 @@
       "enum": [
         "ACTIVE",
         "WARNING",
-        "EXPIRED"
+        "EXPIRED",
+        "PERMANENT",
+        "REVOKED"
       ],
       "title": "LeaseStatus",
       "type": "string"
