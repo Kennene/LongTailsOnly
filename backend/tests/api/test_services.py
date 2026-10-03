@@ -40,6 +40,19 @@ async def test_github_entry_carries_vcs_kind_and_six_capabilities(client: AsyncC
     ]
 
 
+async def test_capabilities_are_normalised_to_sorted_order(client: AsyncClient) -> None:
+    """Declaration order carries no meaning, so the payload does not carry it either (Ruling 38).
+
+    Nothing consumes the order — the frontend treats the value as a set and the backend tests
+    normalise it — while a reordered registry tuple used to change the payload silently.
+    """
+    body = (await client.get("/api/v1/services")).json()
+    github = next(item for item in body if item["id"] == "github")
+    assert github["capabilities"] == [
+        "appeals", "audit", "baseline", "dashboard", "graph", "leases",
+    ]
+
+
 async def test_demo_tracker_entry_is_marked_unavailable(client: AsyncClient) -> None:
     body = (await client.get("/api/v1/services")).json()
     demo = next(item for item in body if item["id"] == "demo-tracker")

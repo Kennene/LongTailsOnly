@@ -34,7 +34,7 @@ const GITHUB_AND_UNREGISTERED: ServiceRead[] = [
     id: 'github',
     name: 'GitHub',
     kind: 'vcs',
-    capabilities: ['dashboard', 'leases', 'appeals', 'baseline', 'graph', 'audit'],
+    capabilities: ['appeals', 'audit', 'baseline', 'dashboard', 'graph', 'leases'],
     is_available: true,
   },
   {

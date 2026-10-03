@@ -16,16 +16,11 @@ import type { ServiceRead } from '@/types/api';
  * Warstwa danych katalogu usług — kontrakt realnego backendu (`GET /api/v1/services`): odpowiedzią
  * jest **goła tablica** `ServiceRead` (bez koperty `{ services }`).
  *
- * Czego ten plik **nie** pilnuje: kolejności. Backend zwraca `capabilities` w kolejności deklaracji
- * rejestru (nie posortowane), a fixture ma identyfikatory, które przypadkiem układają się
- * alfabetycznie — więc sortowanie w warstwie danych przeszłoby tutaj niezauważone. Tej kolejności
- * **nie pinuje żaden test backendu**: `capabilities` to `list[str]`, a testy normalizują ją
- * (`sorted()` w `tests/api/test_services.py`, `set()` w `tests/adapters/test_adapter_registration.py`).
- * Umowę „kolejność deklaracji, nie sortowanie” trzyma więc proza — `frontend/README.md` mówi wprost
- * „traktuj tę wartość jako zbiór”, i tak robi to test zgodności rejestrów niżej.
- *
- * Testujemy tutaj kształt odpowiedzi i ścieżkę błędu, bo kopertę `{ services }` łatwo „naprawić” po
- * stronie konsumenta, a wtedy frontend rozjeżdża się z backendem po cichu.
+ * Kolejności `capabilities` ten plik nie pinuje i nie musi: backend normalizuje ją do porządku
+ * posortowanego (`ServiceRead.from_descriptor`), więc nie niesie ona znaczenia, a konsument —
+ * rejestr frontendu — porównuje zbiory. Testujemy tutaj kształt odpowiedzi i ścieżkę błędu, bo
+ * kopertę `{ services }` łatwo „naprawić” po stronie konsumenta, a wtedy frontend rozjeżdża się
+ * z backendem po cichu.
  */
 
 afterEach(() => {

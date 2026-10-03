@@ -91,13 +91,11 @@ GET /api/v1/services → 200
   {"id": "demo-tracker", "name": "Demo Tracker (integracja demonstracyjna)", "kind": "issue_tracker",
    "capabilities": ["dashboard", "audit"], "is_available": false},
   {"id": "github", "name": "GitHub", "kind": "vcs", "is_available": true,
-   "capabilities": ["dashboard", "leases", "appeals", "baseline", "graph", "audit"]}
+   "capabilities": ["appeals", "audit", "baseline", "dashboard", "graph", "leases"]}
 ]
 ```
 
-Odpowiedź to **goła tablica** `ServiceRead` (bez koperty), posortowana po `id`. `capabilities` to identyfikatory tras, **posortowane** razem z wpisem — `ServiceRead.from_descriptor` normalizuje kolejność, więc przestawienie krotki w rejestrze nie zmienia payloadu po cichu. `is_available: false` znaczy „zarejestrowana, ale nieużywalna” (kontrolka dopisuje wtedy `(niedostępna)`), a nie „usługa wyłączona”.
-
-## Uruchomienie
+Odpowiedź to **goła tablica** `ServiceRead` (bez koperty), posortowana po `id`, a `capabilities` są **posortowane** — backend normalizuje kolejność (`ServiceRead.from_descriptor`), więc deklaracja w rejestrze nie zmienia payloadu po cichu i kolejność nie niesie żadnego znaczenia. `is_available: false` znaczy „zarejestrowana, ale nieużywalna” (kontrolka dopisuje wtedy `(niedostępna)`), a nie „usługa wyłączona”.
 
 ## Funkcje panelu
 
