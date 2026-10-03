@@ -89,9 +89,25 @@ Liczby w tabelach są tabularne globalnie (`table { font-variant-numeric: tabula
 
 **Karty KPI** — cztery liczniki dashboardu używają rodzin stanów, nie `--chart-*`: Aktywne (`active`), Ostrzeżenia (`warning`), Wygaśnięte (`expired`), Rekomendacje deeskalacji (`downscope`). Zaimplementowane jako `KpiCard` z `tone: LeaseStatus | 'DOWNSCOPE'`: dla statusów klasy pochodzą z `getStatusBadge(tone).className`, a ton doradczy `DOWNSCOPE` to jedyne miejsce poza `lib/statusBadges.ts`, które nazywa klasy `status-downscope-*` (w `getToneClassName`), bo mapa opisuje statusy dzierżaw, a nie rekomendacje. Docelowo ta tonacja przenosi się do `statusBadges.ts` jako helper rekomendacji, żeby żaden komponent nie nazywał klas stanu. Tło `bg-status-*-subtle`, obramowanie `border-status-*-border`, liczba `font-mono text-2xl`, etykieta `text-xs text-current`. `--chart-1…5` to rampa kategoryczna dla grafu i wykresów, nie dla stanów.
 
-**Tabela** — nagłówki `text-muted-foreground font-medium`, sortowanie `EXPIRED → WARNING → ACTIVE`, wiersze oddzielone `border-b`, hover `bg-muted/50`. Kolumny: Użytkownik i Repozytorium w `font-mono`; Status i Rekomendacja jako badge; akcja wiersza to jeden przycisk `outline` „Decyzja”, nie trzy ikony. Status nigdy nie jest sortowany po kolorze — kolejność wynika z `days_remaining`.
+**Ikona w badge'u.** Status, rekomendacja i poziom niosą ikonę z `lucide-react` **obok** polskiej etykiety (nigdy zamiast niej). Ikona jest częścią mapy, nie komponentu: `BadgeStyle` z `lib/statusBadges.ts` trzyma `icon: LucideIcon` **i** `slug` (nazwę, którą lucide wypisuje w `class` jak `lucide-clock`), więc `LeaseStatusBadge`, `RecommendationBadge` i `RoleBadge` tylko składają. Slug jest w mapie, bo `icon.name` bywa zminifikowane, a `displayName` zależy od builda pakietu — kontrakt z DOM-em musi być stabilny.
+
+Dobór ikon jest znaczący, nie dekoracyjny: `CircleCheck` (aktywna), `Clock` (termin ucieka), `CircleX` (wygasła), `Shield`/`ShieldOff` (para break-glass). Rekomendacje biorą czasowniki: `CheckCircle2` (bez zmian), `ArrowDownCircle` (zdeeskaluj), `Ban` (odbierz — jedyna akcja nieodwracalna). Status mówi, czym dzierżawa _jest_; rekomendacja, co _zrobić_ — dlatego `Clock` i `ArrowDownCircle` są różne, choć obie dotyczą czasu. Poziom: `Eye` czyta, `Pencil` pisze, `Shield` chroni `admin`.
+
+**Awatar** — `UserAvatar` to krąg `size-6` z **generowaną ilustracją** z `lib/avatarUrl.ts` (DiceBear, seed = login) i inicjałami z `lib/userInitials.ts` jako podkładem. Krąg jest malowany wyłącznie `bg-muted` + `border-border` + `text-muted-foreground` — **taki sam dla wszystkich**, bo w tej konsoli kolor niesie stan dzierżawy, a nie osobę; osobę rozróżnia sam obraz.
+
+**Dlaczego nie `github.com/<login>.png`.** Loginy demo są fikcyjne, ale `kamil`, `marta` i `ania` **kolidują z prawdziwymi kontami GitHuba** (`kamil-dev` → uid 42606532, `marta` → 29160773). Taki adres wstawiłby do konsoli twarze obcych, realnych osób pod wymyślonymi personami bezpieczeństwa — to nie jest kwestia estetyki. Generowana ilustracja nie przedstawia nikogo i jest deterministyczna dla loginu, więc demo wygląda tak samo po resecie.
+
+**Styl wybrany pomiarem.** W docelowych 24 px czyta się tylko `personas`; `notionists` (domyślny DiceBeara) ma `viewBox` 1744 i figura zajmuje w nim ułamek, więc w kole zostawała ciemna plama, a `micah`, `open-peeps` i `adventurer` gubią szczegół. Porównanie ośmiu stylów obok siebie w 24 px rozstrzygnęło wybór — nie upodobanie.
+
+**Trzy warstwy odporności**, bo to zewnętrzne zapytanie sieciowe na każdy wiersz: inicjały leżą **pod** obrazem (komórka nigdy nie jest pusta), `onError` gasi obraz i zostawia inicjały (brak sieci psuje obraz, nie tabelę), a `onLoad` usuwa inicjały, żeby nie przeświecały przez ilustrację. Awatar stoi **na końcu** komórki tożsamości (nazwa, login, awatar), bo nazwa jest sygnałem, a obraz tylko go potwierdza. Rozmiar jest wymierzony: komórka `p-2` + `leading-5` to bazowe 36 px, `size-7` rozdymał wiersz do 45 px, czyli poza pasmo §3 — `size-6` daje 40 px.
+
+**Chip zespołu** — `TeamChip` to jeden kształt w dwóch rolach: w kolumnie `Zespół` **stwierdza** przynależność (sam `Badge`, nie kontrolka), a nad tabelą **filtruje** (`Badge asChild` + `<button aria-pressed>`). Rozróżnia je zachowanie, nie wygląd. Stan zaznaczenia jedzie w `aria-pressed` i wzmacnia go rodzina `status-active`, więc wybrany filtr nie jest niesiony samym kolorem (§6). Lista chipów powstaje z **danych**, nie z zamkniętej listy — nowy zespół w backendzie pojawia się sam, a `null` dostaje chip „Bez zespołu”. Dlatego filtr nigdy nie opróżnia tabeli: każdy chip pochodzi z wierszy, które filtruje, i nie ma tu osobnego stanu pustego „brak dzierżaw w tym zespole”.
+
+**Tabela** — nagłówki `text-muted-foreground font-medium`, sortowanie `EXPIRED → WARNING → ACTIVE`, wiersze oddzielone `border-b`, hover `bg-muted/50`. Kolumny: Użytkownik i Repozytorium w `font-mono`; Status, Rekomendacja i Poziom jako badge z ikoną; Zespół jako chip; akcja wiersza to jeden przycisk `outline` „Decyzja”, nie trzy ikony. Status nigdy nie jest sortowany po kolorze — kolejność wynika z `days_remaining`. Grupowanie po zespole jest **filtrem nad tabelą**, a nie drugą osią sortowania: tabela zostaje płaska i posortowana po pilności.
 
 **Modal decyzji** — jedyne miejsce, w którym modal jest uzasadniony (chroniony fokus, sekwencja nieodwracalna). Zawiera kontekst dzierżawy, statystyki użycia i trzy ścieżki: Przedłuż (`default`), Zdeeskaluj (`outline`), Odbierz (`destructive`, z potwierdzeniem). Akcje destrukcyjne nie są domyślnie sfokusowane. Błąd `403` (Last Admin Protection) pokazujemy w miejscu akcji, stałym tekstem: „Nie można odebrać uprawnień ostatniemu administratorowi.”
+
+**Tarcie procesowe w modalu (reguły silnika).** `Zdeeskaluj` i `Odbierz` niosą **wymagane** uzasadnienie (przycięte; puste → `aria-invalid`, `role="alert"` i żadnego żądania), bo silnik dzierżaw odrzuca je bez niego kodem `422` (`decision_service._required`) — audyt ma nieść powód, nie tylko fakt (ADR 0005). `Przedłuż` uzasadnienia nie wymaga. Dzierżawa administratora (`current_role: admin`) **nie pokazuje kontrolek przedłużania**, tylko zdanie „Dzierżawa administratora nie wygasa — nie można jej przedłużyć.”, bo `extend_lease` odrzuca `Role.ADMIN` właśnie takim kodem; strażnik opiera się na **roli**, nie na statusie, więc dzierżawa bez terminu i bez roli `admin` nadal da się przedłużyć. Odebrana dzierżawa read/write zachowuje kontrolki, bo przedłużenie **przywraca** ją przez port dostawcy (`is_active = True`, podstawa = teraz).
 
 **Stany** — każdy widok obsługuje trzy stany w tej samej formie, zaimplementowane i potwierdzone w kodzie:
 
@@ -126,12 +142,16 @@ Liczby w tabelach są tabularne globalnie (`table { font-variant-numeric: tabula
 
 ## 8. Źródła prawdy
 
-| Co                                      | Gdzie                                                             |
-| --------------------------------------- | ----------------------------------------------------------------- |
-| Kolory i promienie                      | `src/index.css` (`@theme inline` + `:root` / `.dark`)             |
-| Status → etykieta i klasy (jedyna mapa) | `src/lib/statusBadges.ts` (także odwołania i role)                |
-| Daty i czas symulowany                  | `src/lib/dateTime.ts` (formatowanie, `Europe/Warsaw`, porównania) |
-| Kształt badge'a (bez koloru stanu)      | `src/components/ui/badge.tsx` (`variant="outline"`)               |
-| Ten dokument                            | opisuje system; zmiana języka projektowego zaczyna się tutaj      |
+| Co                                             | Gdzie                                                             |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| Kolory i promienie                             | `src/index.css` (`@theme inline` + `:root` / `.dark`)             |
+| Status → etykieta, klasy i ikona (jedyna mapa) | `src/lib/statusBadges.ts` (także odwołania, role i ich `slug`)    |
+| Daty i czas symulowany                         | `src/lib/dateTime.ts` (formatowanie, `Europe/Warsaw`, porównania) |
+| Inicjały awatara                               | `src/lib/userInitials.ts` (nazwa, potem login)                    |
+| Adres obrazu awatara                           | `src/lib/avatarUrl.ts` (DiceBear `personas`, seed = login)        |
+| Kształt badge'a (bez koloru stanu)             | `src/components/ui/badge.tsx` (`variant="outline"`)               |
+| Ten dokument                                   | opisuje system; zmiana języka projektowego zaczyna się tutaj      |
 
-Uwaga wdrożeniowa: Tailwind **milczy** o nieistniejących utility — literówka w nazwie tokenu nie wywali builda, tylko nie nada koloru. Po dodaniu nowej klasy statusu sprawdź ją w `dist/assets/*.css`.
+Uwaga o zależnościach zewnętrznych: awatary to **jedyny** zasób pobierany spoza aplikacji (`api.dicebear.com`, SVG ~3–5 KB na osobę, cache przeglądarki po `seed`); reszta konsoli nie wychodzi poza własne API. Gdy backend dostanie `avatar_url` w kontrakcie, `lib/avatarUrl.ts` jest jedynym miejscem do podmiany.
+
+Uwaga wdrożeniowa: Tailwind **milczy** o nieistniejących utility — literówka w nazwie tokenu nie wywali builda, tylko nie nada koloru. Po dodaniu nowej klasy statusu sprawdź ją w `dist/assets/*.css`. Ta sama pułapka dotyczy ikon: nazwa eksportu z `lucide-react`, która nie istnieje, jest `undefined`, a `<Icon />` wtedy **wywala render**, więc `slug` w `statusBadges.ts` jest jednocześnie asercją, że eksport istnieje.
