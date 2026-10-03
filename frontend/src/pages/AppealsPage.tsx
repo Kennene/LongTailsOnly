@@ -19,6 +19,7 @@ import {
 import { useAppeals } from '@/hooks/useAppeals';
 import { useLeases } from '@/hooks/useLeases';
 import { useSubmitAppeal } from '@/hooks/useSubmitAppeal';
+import { describeApiError } from '@/lib/apiErrors';
 import { formatDateTimePl, formatDaysRemaining } from '@/lib/dateTime';
 import { getAppealStatusBadge, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import type { AppealRead, LeaseOverview } from '@/types/api';
@@ -167,12 +168,22 @@ export function AppealsPage(): React.JSX.Element {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {leasesQuery.isPending ? <Skeleton className="h-24 w-full" /> : null}
+          {leasesQuery.isPending ? (
+            <div className="flex flex-col gap-2" role="status">
+              <span className="sr-only">Wczytywanie dzierżaw wymagających uwagi…</span>
+              <Skeleton aria-hidden className="h-10 w-full" />
+              <Skeleton aria-hidden className="h-9 w-full" />
+            </div>
+          ) : null}
 
           {leasesQuery.isError ? (
             <Alert variant="destructive">
               <AlertTitle>Nie udało się pobrać dzierżaw</AlertTitle>
-              <AlertDescription>{leasesQuery.error?.message ?? 'Nieznany błąd'}</AlertDescription>
+              <AlertDescription>
+                {leasesQuery.error === null
+                  ? 'Nieznany błąd'
+                  : describeApiError(leasesQuery.error, 'Nie udało się pobrać dzierżaw.')}
+              </AlertDescription>
               <AlertAction>
                 <Button onClick={() => void leasesQuery.refetch()} size="sm" variant="outline">
                   Odśwież
@@ -199,7 +210,13 @@ export function AppealsPage(): React.JSX.Element {
           <CardDescription>Uzasadnienie jest wymagane i nie może się powtarzać.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {leasesQuery.isPending ? <Skeleton className="h-24 w-full" /> : null}
+          {leasesQuery.isPending ? (
+            <div className="flex flex-col gap-2" role="status">
+              <span className="sr-only">Wczytywanie listy dzierżaw do odwołania…</span>
+              <Skeleton aria-hidden className="h-10 w-full" />
+              <Skeleton aria-hidden className="h-9 w-full" />
+            </div>
+          ) : null}
 
           {leasesQuery.isError ? (
             <p className="text-sm text-muted-foreground">
@@ -227,7 +244,9 @@ export function AppealsPage(): React.JSX.Element {
           {submitAppeal.error === null ? null : (
             <Alert variant="destructive">
               <AlertTitle>Nie udało się złożyć odwołania</AlertTitle>
-              <AlertDescription>{submitAppeal.error.message}</AlertDescription>
+              <AlertDescription>
+                {describeApiError(submitAppeal.error, 'Nie udało się złożyć odwołania.')}
+              </AlertDescription>
             </Alert>
           )}
         </CardContent>
@@ -241,12 +260,22 @@ export function AppealsPage(): React.JSX.Element {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {appealsQuery.isPending ? <Skeleton className="h-20 w-full" /> : null}
+          {appealsQuery.isPending ? (
+            <div className="flex flex-col gap-2" role="status">
+              <span className="sr-only">Wczytywanie złożonych odwołań…</span>
+              <Skeleton aria-hidden className="h-10 w-full" />
+              <Skeleton aria-hidden className="h-9 w-full" />
+            </div>
+          ) : null}
 
           {appealsQuery.isError ? (
             <Alert variant="destructive">
               <AlertTitle>Nie udało się pobrać odwołań</AlertTitle>
-              <AlertDescription>{appealsQuery.error?.message ?? 'Nieznany błąd'}</AlertDescription>
+              <AlertDescription>
+                {appealsQuery.error === null
+                  ? 'Nieznany błąd'
+                  : describeApiError(appealsQuery.error, 'Nie udało się pobrać odwołań.')}
+              </AlertDescription>
               <AlertAction>
                 <Button onClick={() => void appealsQuery.refetch()} size="sm" variant="outline">
                   Odśwież

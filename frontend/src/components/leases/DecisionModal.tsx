@@ -11,6 +11,7 @@ import {
 } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
 import { LeaseActivityPanel } from '@/components/leases/LeaseActivityPanel';
+import { RecommendationBadge } from '@/components/leases/RecommendationBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,7 @@ import { useLeaseDecision } from '@/hooks/useLeaseDecision';
 import { useResolveAppeal } from '@/hooks/useResolveAppeal';
 import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { daysRemaining, formatDaysRemaining } from '@/lib/dateTime';
-import { getRecommendationLabel, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
+import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import type { AppealRead, DecisionRequest, LeaseOverview } from '@/types/api';
 
 export interface DecisionModalProps {
@@ -159,7 +160,9 @@ function DecisionForm({ lease, appeal, onOpenChange }: DecisionFormProps): React
         <dt className="text-muted-foreground">Czas do wygaśnięcia</dt>
         <dd>{formatDaysRemaining(lease.days_remaining)}</dd>
         <dt className="text-muted-foreground">Rekomendacja</dt>
-        <dd className="font-medium">{getRecommendationLabel(lease.recommendation)}</dd>
+        <dd>
+          <RecommendationBadge recommendation={lease.recommendation} />
+        </dd>
       </dl>
 
       {/* Dowód użycia tylko w trybie dzierżawy: tryb odwołania ma własny panel z tymi

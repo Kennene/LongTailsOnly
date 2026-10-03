@@ -13,7 +13,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 
 const UNIQUE_JUSTIFICATION = 'Prowadzę release v2.1 w przyszłym tygodniu';
 const FORM_ERROR = 'Uzasadnienie jest wymagane';
-const DUPLICATE_MESSAGE = 'Justification already used';
+const DUPLICATE_MESSAGE = 'To uzasadnienie zostało już użyte przy innym odwołaniu. Podaj inne.';
 const PENDING_LEASE_ID = '2';
 const EXPIRED_LEASE_ID = '3';
 
@@ -75,7 +75,7 @@ describe('AppealsPage', () => {
     expect(within(submitted).getAllByText('Marta Zielińska').length).toBeGreaterThan(0);
   });
 
-  it('pokazuje komunikat API, gdy uzasadnienie zostało już użyte', async () => {
+  it('pokazuje polski komunikat, gdy uzasadnienie zostało już użyte (409)', async () => {
     const user = userEvent.setup();
     renderAppealsPage();
 
