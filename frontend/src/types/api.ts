@@ -342,6 +342,16 @@ export interface PermissionGraph {
   nodes: GraphNode[];
 }
 /**
+ * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0010 §4).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "SimulationClock".
+ */
+export interface SimulationClock {
+  offset_days: number;
+  simulated_now: string;
+}
+/**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "TimeTravelRequest".
  */

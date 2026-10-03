@@ -988,6 +988,24 @@
       "title": "Role",
       "type": "string"
     },
+    "SimulationClock": {
+      "description": "Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0010 \u00a74).",
+      "properties": {
+        "offset_days": {
+          "type": "integer"
+        },
+        "simulated_now": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "simulated_now",
+        "offset_days"
+      ],
+      "title": "SimulationClock",
+      "type": "object"
+    },
     "TeamRead": {
       "properties": {
         "id": {

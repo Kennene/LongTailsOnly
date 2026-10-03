@@ -16,3 +16,10 @@ class DemoResetResult(BaseModel):
     now: datetime
     offset_days: int
     counts: dict[str, int]
+
+
+class SimulationClock(BaseModel):
+    """Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0010 §4)."""
+
+    simulated_now: datetime
+    offset_days: int
