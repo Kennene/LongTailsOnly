@@ -259,21 +259,22 @@ Punkt „usługa docelowa nie istnieje w katalogu → ignoruj” **nie wystarcza
 Reguła (dokładnie ta kolejność):
 
 ```ts
-if (getServiceConfig(id) === undefined) {
-  return;              // poza rejestrem frontendu nie jest wybieralne nigdy
-}
-if (!isPending && !isInCatalog) {
-  return;              // osiadły katalog jest rozstrzygający, nawet gdy pomija wpis rejestru
+const isInCatalog = services.some((service) => service.id === id);
+const isInRegistry = getServiceConfig(id) !== undefined;
+const isSelectable = isInCatalog || (isInRegistry && (isPending || isError));
+
+if (!isSelectable) {
+  return;
 }
 ```
 
 Trzy konsekwencje, każda pokryta testem:
 
-1. **Poza rejestrem frontendu → zawsze odrzucone.** Opcje w kontrolce pochodzą ze zbioru *katalog ∪ rejestr*, więc takiego id nie da się kliknąć; warunek jest jawnym zapisem niezmiennika, a nie zmianą zachowania. Dodatkowo chroni przed zapisaniem literówki w trakcie ładowania.
+1. **Katalog jest rozstrzygający, gdy jest znany.** Usługa obecna w osiadłym katalogu jest wybieralna **także wtedy, gdy rejestr frontendu jej nie zna** — to katalog jest źródłem opcji w kontrolce, więc taki wpis jest widoczny i klikalny, a nieznajomość w rejestrze degraduje się łagodnie (`fallbackIcon`, `getDefaultPath → '/'`, Ruling 12), a nie wygaszeniem powłoki. Odwrotnie: osiadły katalog, który **pomija** wpis rejestru (np. nie zawiera `github`), rozstrzyga na jego niekorzyść — wybór jest odrzucany.
 2. **W trakcie ładowania przyjmujemy** (dla id z rejestru) i zapisujemy. Katalog jeszcze się nie wypowiedział, a kontrolka celowo renderuje wpisy rejestru już w tym oknie — inaczej klik w widoczną opcję byłby martwy. Rozstrzygnięcie i tak odrzuci nieznane id, więc nic niezweryfikowanego nie zostaje aktywne.
 3. **Po błędzie żądania przyjmujemy id z rejestru frontendu.** To realizacja §5.6.1 celu „użytkownik z nieaktualną usługą musi móc się przełączyć, gdy backend leży” — i dlatego kontrolka **zostaje widoczna** obok alertu błędu, zamiast zostać nim zastąpiona. Aktywna usługa pozostaje wtedy zastępczą, więc znów nic niezweryfikowanego nie staje się aktywne.
 
-Poza tymi przypadkami obowiązuje reguła z punktu 3.: **osiadły katalog jest rozstrzygający** — jeśli nie zawiera `github`, to wybór `github` jest odrzucany, mimo że rejestr frontendu go zna.
+**Czego ta reguła świadomie nie robi:** nie wymaga obecności w rejestrze frontendu jako warunku koniecznego wyboru. Taki warunek („poza rejestrem nie jest wybieralne nigdy”) byłby **martwym klikiem** dla usługi, którą backend właśnie ogłosił w katalogu, a kontrolka renderuje ją jako opcję — czyli dokładnie ten defekt, którego cała ta sekcja ma unikać. Uzasadnienie „takiego id nie da się kliknąć” jest błędne: zbiór opcji to *katalog ∪ rejestr*, więc id z samego katalogu **jest** klikalny.
 
 ### 5.7 Nawigacja i branding
 
