@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.core.time_provider import TimeProvider, get_time_provider
-from app.schemas import ClockRead, TimeTravelRequest
+from app.schemas import ClockRead, SimulationClock, TimeTravelRequest
 
 router = APIRouter(prefix="/api/v1/simulation", tags=["simulation"])
 
@@ -12,6 +12,12 @@ ClockDep = Annotated[TimeProvider, Depends(get_time_provider)]
 
 def _state(clock: TimeProvider) -> ClockRead:
     return ClockRead(now=clock.get_current_time(), offset_days=clock.offset_days)
+
+
+@router.get("/clock", response_model=SimulationClock)
+async def simulation_clock(clock: ClockDep) -> SimulationClock:
+    """Which demo day the panel is on (ADR 0011 §4): {"simulated_now", "offset_days"}."""
+    return SimulationClock(simulated_now=clock.get_current_time(), offset_days=clock.offset_days)
 
 
 @router.get("/time-travel", response_model=ClockRead)
