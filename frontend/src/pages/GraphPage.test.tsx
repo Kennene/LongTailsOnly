@@ -1,8 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, type HttpHandler, HttpResponse } from 'msw';
 
-import { buildLeaseGraph } from '@/api/graph';
+import { buildGraphFixture } from '@/api/fixtures/graph';
 import { GraphPage } from '@/pages/GraphPage';
 import { server } from '@/test/msw/server';
 import { getLeases } from '@/test/msw/state';
@@ -24,21 +24,19 @@ beforeAll(() => {
 
 const RISK_STATUSES: readonly LeaseStatus[] = ['WARNING', 'EXPIRED'];
 
-/**
- * Zespół, po którym filtrujemy. W trybie live graf nie ma węzłów `team` — lista dostępów nie
- * niesie składu zespołów (patrz `api/graph.ts`) — więc opcje filtra to slugi z `user.team`.
- */
-const TEAM = 'qa';
+/** Nazwa zespołu w filtrze (etykieta węzła `team`) i slug, którym mówi zapytanie `?team=`. */
+const TEAM_LABEL = 'QA';
+const TEAM_SLUG = 'qa';
 
 /**
- * Oczekiwany graf: ten sam builder, którym `fetchGraph()` składa węzły z `GET /api/v1/leases`
- * (MSW oddaje dokładnie ten stan dostępów, który widzi widok).
+ * Oczekiwany graf: ten sam ładunek, który oddaje handler MSW (`GET /api/v1/graph`) — węzły
+ * zespołów, osób i repozytoriów plus krawędzie `membership`/`lease`.
  */
-function liveGraph(): PermissionGraph {
-  return buildLeaseGraph(getLeases());
+function liveGraph(team: string | null = null): PermissionGraph {
+  return buildGraphFixture(getLeases(), team);
 }
 
-/** Trasa, której backend jeszcze nie ma (4.6B): wołanie jej to regres, nie powód do fallbacku. */
+/** Trasa spoza grafu: wołanie jej to regres do składania węzłów z listy dzierżaw. */
 function forbidRoute(path: string, calls: string[]): HttpHandler {
   return http.get(path, () => {
     calls.push(path);
@@ -55,28 +53,6 @@ function nodesOfType(graph: PermissionGraph, type: GraphNode['type']): GraphNode
   return graph.nodes.filter((node: GraphNode): boolean => node.type === type);
 }
 
-function userNodesInTeam(graph: PermissionGraph, team: string): GraphNode[] {
-  return nodesOfType(graph, 'user').filter((node: GraphNode): boolean => node.data.team === team);
-}
-
-/** Krawędzie dostępów wychodzące z podanych osób — filtr zespołu zostawia dokładnie je. */
-function leaseEdgesOfUsers(graph: PermissionGraph, users: GraphNode[]): GraphEdge[] {
-  const userIds = new Set<string>(users.map((node: GraphNode): string => node.id));
-
-  return graph.edges.filter(
-    (edge: GraphEdge): boolean => edge.data.kind === 'lease' && userIds.has(edge.source),
-  );
-}
-
-/** Repozytoria, do których zespół ma dostępy — filtr zespołu zostawia je razem z osobami. */
-function reposOfUsers(graph: PermissionGraph, users: GraphNode[]): string[] {
-  return [
-    ...new Set<string>(
-      leaseEdgesOfUsers(graph, users).map((edge: GraphEdge): string => edge.target),
-    ),
-  ];
-}
-
 /** Krawędzie o statusie podwyższonego ryzyka — po nich filtruje przełącznik w widoku. */
 function riskEdges(graph: PermissionGraph): GraphEdge[] {
   return graph.edges.filter(
@@ -85,7 +61,13 @@ function riskEdges(graph: PermissionGraph): GraphEdge[] {
   );
 }
 
-it('renders nodes and edges derived from the lease list', async () => {
+function teamOptions(): string[] {
+  const select: HTMLSelectElement = screen.getByLabelText('Zespół') as HTMLSelectElement;
+
+  return Array.from(select.options, (option: HTMLOptionElement): string => option.value);
+}
+
+it('renderuje graf z GET /api/v1/graph razem z węzłami zespołów', async () => {
   const graph: PermissionGraph = liveGraph();
   renderWithProviders(<GraphPage />);
 
@@ -94,6 +76,11 @@ it('renders nodes and edges derived from the lease list', async () => {
   expectCounter('graph-nodes', graph.nodes.length);
   expectCounter('graph-edges', graph.edges.length);
   expect(await screen.findByText('core-api')).toBeInTheDocument();
+
+  // Węzły zespołów pochodzą z ładunku API (lista dzierżaw ich nie niesie), więc widać ich nazwy.
+  expect(nodesOfType(graph, 'team')).toHaveLength(2);
+  expect(screen.getAllByText('DEV').length).toBeGreaterThan(0);
+  expect(screen.getAllByText(TEAM_LABEL).length).toBeGreaterThan(0);
 });
 
 it('shows the seeded organisation instead of the invented stand-ins', async () => {
@@ -106,22 +93,36 @@ it('shows the seeded organisation instead of the invented stand-ins', async () =
   expect(screen.queryByText('anna-qa')).not.toBeInTheDocument();
 });
 
-it('filters the visible nodes by team', async () => {
+it('zawęża graf po stronie backendu przez ?team=<slug> i nie gubi listy zespołów', async () => {
   const user = userEvent.setup();
+  const searches: string[] = [];
+  server.use(
+    http.get('/api/v1/graph', ({ request }) => {
+      const url = new URL(request.url);
+      searches.push(url.search);
+      return HttpResponse.json(liveGraph(url.searchParams.get('team')));
+    }),
+  );
+
   renderWithProviders(<GraphPage />);
+  await screen.findByTestId('graph-nodes');
+  await user.selectOptions(await screen.findByLabelText('Zespół'), TEAM_LABEL);
 
-  const graph: PermissionGraph = liveGraph();
-  const teamUsers = userNodesInTeam(graph, TEAM);
-  const teamRepos = reposOfUsers(graph, teamUsers);
-  const teamEdges = leaseEdgesOfUsers(graph, teamUsers);
+  // Zawężenie robi backend: widok pokazuje dokładnie ten ładunek, o który poprosił.
+  const narrowed: PermissionGraph = liveGraph(TEAM_SLUG);
+  await waitFor(() => {
+    expectCounter('graph-nodes', narrowed.nodes.length);
+  });
+  expectCounter('graph-edges', narrowed.edges.length);
+  expect(searches).toContain(`?team=${TEAM_SLUG}`);
+  expect(nodesOfType(narrowed, 'team')).toHaveLength(1);
+  expect(
+    narrowed.edges.filter((edge: GraphEdge): boolean => edge.data.kind === 'membership').length,
+  ).toBeGreaterThan(0);
 
-  await user.selectOptions(await screen.findByLabelText('Zespół'), TEAM);
-
-  // Zespół: jego osoby i repozytoria z ich dostępów; krawędzie to same dostępy tych osób
-  // (krawędzi członkostwa nie ma, bo graf nie ma węzłów zespołów).
-  expect(teamUsers.length).toBeGreaterThan(0);
-  expectCounter('graph-nodes', teamUsers.length + teamRepos.length);
-  expectCounter('graph-edges', teamEdges.length);
+  // Lista zespołów nie zawęża się do bieżącego wyboru — inaczej nie da się przełączyć zespołu.
+  await screen.findByLabelText('Zespół');
+  expect(teamOptions()).toEqual(['', 'DEV', TEAM_LABEL]);
 });
 
 it('removes repositories without elevated risk when the risk filter is on', async () => {
@@ -142,17 +143,15 @@ it('removes repositories without elevated risk when the risk filter is on', asyn
   expectCounter('graph-edges', risky.length);
 });
 
-it('renders the empty state and an intact team filter when there are no leases', async () => {
-  server.use(http.get('/api/v1/leases', () => HttpResponse.json([])));
+it('pokazuje pusty stan i nietknięty filtr zespołu, gdy graf jest pusty', async () => {
+  server.use(http.get('/api/v1/graph', () => HttpResponse.json({ nodes: [], edges: [] })));
   renderWithProviders(<GraphPage />);
 
   expect(await screen.findByText('Brak danych do wyświetlenia')).toBeInTheDocument();
 
   // Brak zespołów nie wywraca filtra: zostaje sama opcja „Wszystkie”.
-  const select: HTMLSelectElement = (await screen.findByLabelText('Zespół')) as HTMLSelectElement;
-  expect(Array.from(select.options, (option: HTMLOptionElement): string => option.value)).toEqual([
-    '',
-  ]);
+  await screen.findByLabelText('Zespół');
+  expect(teamOptions()).toEqual(['']);
 });
 
 it('shows a destructive alert and refetches the graph from the error state', async () => {
@@ -160,10 +159,10 @@ it('shows a destructive alert and refetches the graph from the error state', asy
   let failing: boolean = true;
 
   server.use(
-    http.get('/api/v1/leases', () =>
+    http.get('/api/v1/graph', () =>
       failing
-        ? HttpResponse.json({ detail: 'Leases unavailable' }, { status: 500 })
-        : HttpResponse.json(getLeases()),
+        ? HttpResponse.json({ detail: 'Graph unavailable' }, { status: 500 })
+        : HttpResponse.json(liveGraph()),
     ),
   );
 
@@ -178,26 +177,27 @@ it('shows a destructive alert and refetches the graph from the error state', asy
   expectCounter('graph-nodes', liveGraph().nodes.length);
 });
 
-it('derives the graph from the lease list without calling the missing /api/v1/graph', async () => {
+it('nie składa grafu z listy dzierżaw, gdy GET /api/v1/graph zawodzi', async () => {
   const calls: string[] = [];
-  server.use(forbidRoute('/api/v1/graph', calls), forbidRoute('/api/v1/dashboard', calls));
+  server.use(
+    http.get('/api/v1/graph', () => HttpResponse.json({ detail: 'Not Found' }, { status: 404 })),
+    forbidRoute('/api/v1/leases', calls),
+  );
 
-  const graph: PermissionGraph = liveGraph();
+  renderWithProviders(<GraphPage />);
+
+  // Brak endpointu jest błędem widoku, a nie powodem do cichego fallbacku na listę dzierżaw.
+  expect(await screen.findByText('Nie udało się pobrać grafu')).toBeInTheDocument();
+  expect(screen.queryByTestId('graph-nodes')).not.toBeInTheDocument();
+  expect(calls).toEqual([]);
+});
+
+it('pokazuje zespoły w filtrach jako nazwy z węzłów, nie slugi', async () => {
   renderWithProviders(<GraphPage />);
 
   await screen.findByTestId('graph-nodes');
-  expectCounter('graph-nodes', graph.nodes.length);
-  expectCounter('graph-edges', graph.edges.length);
-  expect(await screen.findByText('core-api')).toBeInTheDocument();
-  expect(calls).toEqual([]);
 
-  // Węzłów zespołów nie ma, więc filtr oferuje slugi z `user.team` (posortowane po polsku).
-  const select: HTMLSelectElement = (await screen.findByLabelText('Zespół')) as HTMLSelectElement;
-  const options: string[] = Array.from(
-    select.options,
-    (option: HTMLOptionElement): string => option.value,
-  );
-
-  expect(options).toEqual(['', 'dev', 'qa']);
-  expect(within(select).queryByRole('option', { name: 'DEV' })).not.toBeInTheDocument();
+  expect(teamOptions()).toEqual(['', 'DEV', TEAM_LABEL]);
+  const select: HTMLSelectElement = screen.getByLabelText('Zespół') as HTMLSelectElement;
+  expect(within(select).queryByRole('option', { name: TEAM_SLUG })).not.toBeInTheDocument();
 });

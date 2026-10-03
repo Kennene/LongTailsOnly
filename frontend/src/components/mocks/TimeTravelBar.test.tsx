@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { delay, http, HttpResponse } from 'msw';
 import { toast } from 'sonner';
 
-import { TimeTravelBar } from '@/components/layout/TimeTravelBar';
+import { TimeTravelBar } from '@/components/mocks/TimeTravelBar';
 import { server } from '@/test/msw/server';
 import {
   BASE_SIMULATED_NOW,

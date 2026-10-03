@@ -1,17 +1,22 @@
 import type { XYPosition } from '@xyflow/react';
 
 import { graphFixture } from '@/api/fixtures/graph';
-import { leasesFixture } from '@/api/fixtures/leases';
-import { buildLeaseGraph } from '@/api/graph';
 import {
   computeForceLayout,
   GRAPH_NODE_RADIUS,
   type LayoutPositions,
 } from '@/lib/graphForceLayout';
-import type { GraphNode, PermissionGraph } from '@/types/api';
+import type { GraphEdge, GraphNode, PermissionGraph } from '@/types/api';
 
-/** Graf z trybu live: bez węzłów zespołów i bez krawędzi `membership` (patrz `api/graph.ts`). */
-const LIVE_GRAPH: PermissionGraph = buildLeaseGraph(leasesFixture);
+/**
+ * Graf bez węzłów zespołów i bez krawędzi `membership` — rzadszy przypadek brzegowy dla układu.
+ * Tryb live dostaje dziś gotowy graf z `GET /api/v1/graph` (z zespołami), więc budujemy go
+ * z fixture'a, zamiast z usuniętej ścieżki pochodnej z listy dostępów.
+ */
+const GRAPH_WITHOUT_TEAMS: PermissionGraph = {
+  nodes: graphFixture.nodes.filter((node: GraphNode): boolean => node.type !== 'team'),
+  edges: graphFixture.edges.filter((edge: GraphEdge): boolean => edge.data.kind !== 'membership'),
+};
 
 function layoutOf(graph: PermissionGraph): LayoutPositions {
   return computeForceLayout(graph.nodes, graph.edges);
@@ -46,7 +51,7 @@ function overlappingPairs(graph: PermissionGraph, positions: LayoutPositions): s
 
 describe.each([
   ['fixtures (zespoły + membership)', graphFixture],
-  ['live (bez zespołów)', LIVE_GRAPH],
+  ['bez zespołów', GRAPH_WITHOUT_TEAMS],
 ])('computeForceLayout — %s', (_name: string, graph: PermissionGraph) => {
   it('gives every node a finite position', () => {
     const positions: LayoutPositions = layoutOf(graph);

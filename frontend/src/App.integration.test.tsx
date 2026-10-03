@@ -56,7 +56,8 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
     within(screen.getByTestId('kpi-warning')).getByText(String(dashboardFixture.warning)),
   ).toBeInTheDocument();
 
-  // 2. Podróż w czasie o 25 dni (UC-4) — własna liczba dni, bo presety to +15/+30/+60.
+  // 2. Podróż w czasie o 25 dni (UC-4) w widoku „Mocki” — własna liczba dni, bo presety to +15/+30/+60.
+  await user.click(screen.getByRole('link', { name: 'Mocki' }));
   await user.type(screen.getByLabelText('Własna liczba dni'), '25');
   await user.click(screen.getByRole('button', { name: 'Przesuń' }));
   await waitFor(() => expect(getSimulatedNow()).toBe('2026-10-28T00:00:00.000Z'));

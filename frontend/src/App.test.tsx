@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { App } from '@/App';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
-const NAV_LABELS = ['Pulpit', 'Dostępy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt'];
+const NAV_LABELS = ['Pulpit', 'Dostępy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt', 'Mocki'];
 
-it('renders navigation for all six views and switches route', async () => {
+it('renders navigation for all seven views and switches route', async () => {
   const user = userEvent.setup();
   renderWithProviders(<App />, { route: '/' });
 
@@ -19,8 +19,18 @@ it('renders navigation for all six views and switches route', async () => {
   expect(await screen.findByRole('heading', { name: 'Dostępy' })).toBeInTheDocument();
 });
 
-it('mounts the simulated clock bar in the top bar', () => {
+it('keeps the simulated clock out of the top bar', () => {
   renderWithProviders(<App />, { route: '/' });
 
-  expect(screen.getByTestId('time-travel-bar')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '+15 dni' })).not.toBeInTheDocument();
+});
+
+it('opens the mocks view with the simulated clock from the navigation', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<App />, { route: '/' });
+
+  await user.click(screen.getByRole('link', { name: 'Mocki' }));
+
+  expect(await screen.findByRole('heading', { level: 1, name: 'Mocki' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '+15 dni' })).toBeInTheDocument();
 });

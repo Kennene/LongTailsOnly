@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { buildLeaseGraph } from '@/api/graph';
+import { buildGraphFixture } from '@/api/fixtures/graph';
 import { getStatusBadge } from '@/lib/statusBadges';
 import { GraphPage } from '@/pages/GraphPage';
 import { getLeases } from '@/test/msw/state';
@@ -17,12 +17,13 @@ beforeAll(() => {
   };
 });
 
-/** Graf, który widzi widok w trybie live — z listy dostępów MSW, bez węzłów zespołów. */
+/** Graf, który widzi widok — ten sam builder, którym MSW odpowiada na `GET /api/v1/graph`. */
 function liveGraph(): PermissionGraph {
-  return buildLeaseGraph(getLeases());
+  return buildGraphFixture(getLeases());
 }
 
-function leasesTouching(nodeId: string): GraphEdge[] {
+/** Wszystkie krawędzie węzła — dostępy i, od `GET /api/v1/graph`, członkostwo w zespole. */
+function edgesTouching(nodeId: string): GraphEdge[] {
   return liveGraph().edges.filter(
     (edge: GraphEdge): boolean => edge.source === nodeId || edge.target === nodeId,
   );
@@ -40,7 +41,7 @@ function nodeIdOf(label: string): string {
 
 /** Węzeł zaznaczony + drugi koniec każdego jego dostępu. */
 function expectedHighlight(label: string): number {
-  return 1 + leasesTouching(nodeIdOf(label)).length;
+  return 1 + edgesTouching(nodeIdOf(label)).length;
 }
 
 function highlighted(): string | null {
@@ -111,7 +112,10 @@ it('restores the selection from the URL and lists the access in the details pane
   renderWithProviders(<GraphPage />, { route: '/graph?user=kamil' });
 
   const panel: HTMLElement = await screen.findByRole('region', { name: 'Szczegóły: kamil' });
-  const leases: GraphEdge[] = leasesTouching(nodeIdOf('kamil'));
+  // Panel wylicza dostępy (repo), więc krawędź członkostwa zespół → osoba nie wchodzi do licznika.
+  const leases: GraphEdge[] = edgesTouching(nodeIdOf('kamil')).filter(
+    (edge: GraphEdge): boolean => edge.data.kind === 'lease',
+  );
   const risky: number = leases.filter(
     (edge: GraphEdge): boolean => edge.data.status === 'WARNING' || edge.data.status === 'EXPIRED',
   ).length;
