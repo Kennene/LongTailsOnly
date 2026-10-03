@@ -64,15 +64,22 @@ backend/
 ```
 frontend/
 └── src/
+    ├── api/               # Klient HTTP i funkcje per domena (jedyny styk z transportem)
+    │   └── fixtures/      # Dane demo w kształcie kontraktu + typowany re-export
     ├── components/        # Modułowe komponenty (każdy < 300 linii)
-    │   ├── ui/            # Komponenty bazowe (shadcn/ui: button, dialog, badge, table itp.)
-    │   ├── layout/        # Navbar, Sidebar, TimeTravelBar
-    │   ├── leases/        # Widok dzierżaw, karty ostrzeżeń, modal decyzji
+    │   ├── ui/            # Komponenty bazowe (shadcn/ui — kod generowany)
+    │   ├── layout/        # AppShell, Sidebar, TopBar, TimeTravelBar
+    │   ├── dashboard/     # Karty KPI
+    │   ├── leases/        # Tabela dzierżaw, modal decyzji
+    │   ├── appeals/       # Formularz i historia odwołań
     │   ├── baseline/      # Widok standardu zespołów
-    │   └── graph/         # Graf uprawnień (@xyflow/react)
-    ├── hooks/             # Custom hooks (API data fetching)
-    ├── lib/               # Utility functions (cn, apiClient, dateTime)
-    ├── types/             # Typy TypeScript (współdzielone interfejsy)
+    │   ├── graph/         # Graf uprawnień (@xyflow/react)
+    │   └── audit/         # Dziennik audytu
+    ├── hooks/             # Custom hooks (TanStack Query)
+    ├── lib/               # dateTime, statusBadges, graphLayout, utils (cn)
+    ├── pages/             # Widoki składane z hooków i komponentów
+    ├── test/              # setup, renderWithProviders, handlery MSW
+    ├── types/api.ts       # GENEROWANY z backend/contract/schema.json (ADR 0009) — nie edytować
     ├── App.tsx
     └── main.tsx
 ```
@@ -88,3 +95,9 @@ frontend/
   - `src/lib/dateTime.ts`: Wszystkie operacje na datach i porównaniach z czasem symulowanym.
   - `src/lib/statusBadges.ts`: Mapowanie statusów (`ACTIVE`, `WARNING`, `EXPIRED`) na kolory i etykiety.
   - `src/lib/utils.ts`: `cn()` dla klas Tailwind.
+- **Kontrakt typów**:
+  - `src/types/api.ts` jest **generowany** z backendu (`backend/contract/schema.json`, ADR 0009) — nie edytujemy go ręcznie. Brakujące DTO dodajemy w `backend/app/schemas/` i regenerujemy kontrakt.
+- **Jakość kodu (automaty)**:
+  - Prettier + ESLint (flat config) + hook `pre-commit` (`lint-staged`): formatowanie i autofix przed commitem.
+  - Bramki lokalne: `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm test -- --run`, `npm run build`.
+  - Reguły pilnują m.in. limitu 300 linii, jawnych typów zwracanych, braku `any`, zakazu `useMemo`/`useCallback` i kolejności importów. Katalog `src/components/ui/` (kod shadcn) ma świadomie złagodzone reguły.

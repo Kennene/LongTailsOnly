@@ -8,7 +8,6 @@ venv/
 .ruff_cache/
 *.egg-info/
 build/
-dist/
 
 # Baza danych demo
 *.sqlite3
@@ -16,17 +15,29 @@ dist/
 
 # Node / frontend
 node_modules/
-frontend/dist/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Cache npm używany w środowisku agenta (sandbox nie ma dostępu do ~/.npm)
+.npm-cache/
+
+# Środowiska lokalne
+.env
+.env.local
+.env.*.local
 
 # Edytory i system
 .DS_Store
 Thumbs.db
 .idea/
+.vscode/*
+!.vscode/extensions.json
 *.swp
-__pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-*.egg-info/
-*.db
-node_modules/
+
+# Logi
+*.log
+npm-debug.log*
+
+# Artefakty narzędzi przeglądarkowych (Playwright MCP i podobne)
+.playwright-mcp/
