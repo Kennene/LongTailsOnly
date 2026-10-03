@@ -4,6 +4,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 import { Toaster } from '@/components/ui/sonner';
+import { ServicesProvider } from '@/services/ServicesContext';
 
 export interface RenderWithProvidersOptions {
   route?: string;
@@ -21,9 +22,12 @@ function createTestQueryClient(): QueryClient {
 }
 
 /**
- * Wrapper dla testów komponentów i stron: świeży `QueryClient`, `MemoryRouter`
- * i jeden `Toaster`, żeby testy mogły asertować komunikaty bez montowania go lokalnie
- * (dwa toastery w drzewie dają zduplikowane komunikaty).
+ * Wrapper dla testów komponentów i stron: świeży `QueryClient`, `MemoryRouter`,
+ * `ServicesProvider` i jeden `Toaster`, żeby testy mogły asertować komunikaty bez montowania go
+ * lokalnie (dwa toastery w drzewie dają zduplikowane komunikaty).
+ *
+ * Provider jest tu obowiązkowy, bo `useActiveService` rzuca poza nim, a domyślna usługa to
+ * `github` z wszystkimi sześcioma trasami — dzięki temu istniejące testy nie zmieniają asercji.
  */
 export function renderWithProviders(
   ui: ReactElement,
@@ -35,7 +39,7 @@ export function renderWithProviders(
     return (
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[options.route ?? '/']}>
-          {children}
+          <ServicesProvider>{children}</ServicesProvider>
           <Toaster />
         </MemoryRouter>
       </QueryClientProvider>

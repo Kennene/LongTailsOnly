@@ -52,6 +52,13 @@ export type Recommendation = "KEEP" | "DOWNSCOPE" | "REVOKE";
  * via the `definition` "LeaseStatus".
  */
 export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED" | "PERMANENT" | "REVOKED";
+/**
+ * The class of external system a service represents.
+ *
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
+ * via the `definition` "ServiceKind".
+ */
+export type ServiceKind = "vcs" | "issue_tracker" | "cloud_iam";
 
 export interface TailCutAPIContract {
   [k: string]: unknown;
@@ -387,6 +394,19 @@ export interface OnboardingProposal {
 export interface PermissionGraph {
   edges: GraphEdge[];
   nodes: GraphNode[];
+}
+/**
+ * One selectable external service: its identity, what it can do and whether it is usable.
+ *
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
+ * via the `definition` "ServiceRead".
+ */
+export interface ServiceRead {
+  capabilities: string[];
+  id: string;
+  is_available: boolean;
+  kind: ServiceKind;
+  name: string;
 }
 /**
  * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0014 §4).

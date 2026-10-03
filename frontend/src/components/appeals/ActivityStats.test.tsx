@@ -223,6 +223,9 @@ describe('useActivityStats', () => {
     renderWithProviders(<ConnectedActivityStats lease_id={0} />);
 
     expect(screen.getByText('Wczytywanie')).toBeInTheDocument();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    // Asercja celuje w endpoint statystyk, a nie w „żadne wywołanie `fetch`”: `ServicesProvider`
+    // z harnessu pobiera katalog usług (`GET /api/v1/services`) przy każdym montowaniu, więc
+    // globalny warunek byłby fałszywy niezależnie od tego komponentu (zadanie 6, service-picker).
+    expect(fetchSpy).not.toHaveBeenCalledWith('/api/v1/leases/0/activity-stats', expect.anything());
   });
 });

@@ -16,3 +16,4 @@ export { clockFixture } from './clock';
 export { countDashboard, dashboardFixture } from './dashboard';
 export { buildGraphFixture, graphFixture } from './graph';
 export { expiredLeasesFixture, leasesFixture } from './leases';
+export { servicesFixture } from './services';

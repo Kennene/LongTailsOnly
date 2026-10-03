@@ -1,6 +1,7 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { fetchGraph } from '@/api/graph';
+import { useActiveService } from '@/services/ServicesContext';
 import type { PermissionGraph } from '@/types/api';
 
 /**
@@ -9,14 +10,20 @@ import type { PermissionGraph } from '@/types/api';
  * Kształt to kontraktowy `PermissionGraph` (ADR 0009) razem z węzłami zespołów i krawędziami
  * członkostwa — frontend niczego nie dokłada.
  *
- * `team` to **slug** zespołu (`dev`, `qa`) i wchodzi zarówno do zapytania (`?team=<slug>`), jak
- * i do klucza cache: pełny graf (`null`) i zawężony do zespołu to dwa osobne wpisy, więc powrót do
- * „Wszystkie” nie czeka na sieć. Prefiks `['graph']` unieważniamy po każdej decyzji o dzierżawie
- * (spec §7.3), żeby krawędzie niosły świeże statusy po podróży w czasie i po decyzjach.
+ * Do czasu 4.6B graf powstaje z listy dzierżaw, więc nie ma w nim węzłów zespołów (szczegóły
+ * i uzasadnienie: `api/graph.ts`). Klucz `['graph', <id usługi>]` jest unieważniany po każdej
+ * decyzji o dzierżawie (spec §7.3), żeby widok pokazywał świeże statusy krawędzi po podróży
+ * w czasie i po decyzjach administratora.
+ *
+ * `enabled` — patrz `useLeases`: bramka nie pyta o dane, dopóki nie ma identyfikatora usługi,
+ * której można by je przypisać.
  */
 export function useGraph(team: string | null = null): UseQueryResult<PermissionGraph> {
+  const { activeService, isPending } = useActiveService();
+
   return useQuery({
-    queryKey: ['graph', team],
+    queryKey: ['graph', activeService.id, team],
     queryFn: () => fetchGraph(team === null ? {} : { team }),
+    enabled: !isPending && activeService.id !== '',
   });
 }

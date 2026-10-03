@@ -185,18 +185,20 @@ it('explains an empty standard instead of showing an empty table', async () => {
   ).not.toBeInTheDocument();
 });
 
-it('invalidates the baseline, onboarding, lease, dashboard and audit caches after approving', async () => {
+it('invalidates the baseline, onboarding, lease, dashboard and audit caches of the active service after approving', async () => {
   const user = userEvent.setup();
   const { queryClient } = renderBaselinePage();
   const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
 
   await user.click(await screen.findByRole('button', { name: APPROVE_LABEL }));
 
+  // Prefiksy niosą id usługi, bo cache jest namespace'owany po usłudze: strona działa w kontekście
+  // domyślnej usługi testów (`github`, patrz `renderWithProviders`), więc to jej wpisy unieważniamy.
   await waitFor(() => {
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['onboarding'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['onboarding', 'github'] });
   });
-  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['baseline'] });
-  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['leases'] });
-  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['dashboard'] });
-  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['audit'] });
+  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['baseline', 'github'] });
+  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['leases', 'github'] });
+  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['dashboard', 'github'] });
+  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['audit', 'github'] });
 });
