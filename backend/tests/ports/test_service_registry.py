@@ -85,6 +85,7 @@ def test_all_services_is_sorted_by_id() -> None:
         "alpha",
         "demo-tracker",
         "github",
+        "jira",
         "zeta",
     ]
 

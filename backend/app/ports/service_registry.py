@@ -61,6 +61,16 @@ _BUILTIN: tuple[ServiceDescriptor, ...] = (
         is_available=True,
     ),
     ServiceDescriptor(
+        id="jira",
+        name="Jira",
+        kind=ServiceKind.ISSUE_TRACKER,
+        # Jira is a real provider (ADR 0016: projects are `Repository` rows with
+        # `provider=jira`) but the product has no issue-tracker routes yet, so it serves the
+        # shared ones. Widen this tuple when a view starts reading Jira issues.
+        capabilities=("dashboard", "audit"),
+        is_available=True,
+    ),
+    ServiceDescriptor(
         id="demo-tracker",
         name="Demo Tracker (integracja demonstracyjna)",
         kind=ServiceKind.ISSUE_TRACKER,

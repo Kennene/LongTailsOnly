@@ -6,7 +6,7 @@ import { appealsFixture, leasesFixture } from '@/api/fixtures';
 import { AppealCandidatesTable } from '@/components/appeals/AppealCandidatesTable';
 import { AppealList } from '@/components/appeals/AppealList';
 import { getAppealStatusBadge, getStatusBadge } from '@/lib/statusBadges';
-import type { LeaseOverview, LeaseStatus } from '@/types/api';
+import type { AppealStatus, LeaseOverview, LeaseStatus } from '@/types/api';
 
 /** Kandydaci do odwołania — status widać dopiero po rozwinięciu wiersza osoby. */
 const CANDIDATES: LeaseOverview[] = leasesFixture.filter((lease: LeaseOverview): boolean =>
@@ -30,8 +30,14 @@ function expectBadgeIcon(badge: HTMLElement, slug: string): void {
   expect(icon?.getAttribute('class')).toContain(`lucide-${slug}`);
 }
 
-function uniqueStatuses<T extends { status: LeaseStatus }>(rows: T[]): LeaseStatus[] {
-  return [...new Set(rows.map((row: T): LeaseStatus => row.status))];
+/**
+ * Unikalne statusy wierszy — generyczne po samym statusie, bo plik pokrywa dwie różne osie:
+ * statusy dzierżaw (`LeaseStatus`, tabela kandydatów) i statusy odwołań (`AppealStatus`, lista
+ * odwołań). Wcześniejsza sygnatura unieruchamiała `LeaseStatus` i przez to odrzucała fixture
+ * odwołań na etapie typowania.
+ */
+function uniqueStatuses<S extends string>(rows: { status: S }[]): S[] {
+  return [...new Set(rows.map((row: { status: S }): S => row.status))];
 }
 
 describe('pigułki statusu w widoku odwołań', () => {
@@ -53,7 +59,7 @@ describe('pigułki statusu w widoku odwołań', () => {
 
   it('lista złożonych odwołań niesie ikonę statusu przy etykiecie', async () => {
     const user = userEvent.setup();
-    const statuses: LeaseStatus[] = uniqueStatuses(appealsFixture);
+    const statuses: AppealStatus[] = uniqueStatuses(appealsFixture);
     expect(statuses.length).toBeGreaterThan(0);
     render(
       <AppealList

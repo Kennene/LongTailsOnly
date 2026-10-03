@@ -75,23 +75,25 @@ Rekomendacje są w pełni deterministyczne i oparte na regułach. Można je prze
 | 2 | ✅ Mock GitHuba, aktywność i time-travel w `main` (PR #4, ADR 0010) |
 | 3 | ✅ 3.1–3.6 na gałęzi `guziol/silnik-dzierzawy` (3.4 osobno: `guziol/ochrona-ostatniego-admina`), jeszcze nie w `main`. Odblokowuje 4.3C i 4.6B. Szczegóły: [`docs/3-silnik-dzierzawy/DOCUMENTATION.md`](docs/3-silnik-dzierzawy/DOCUMENTATION.md) |
 | 4 | ✅ 4.1, 4.2, 4.3 (złożenie i odrzucenie), 4.4, 4.5, 4.6 (logika i typy), zegar symulacji, poprawki po audycie kodu; ⏳ 4.3C i 4.6B czekają na Osobę 3. Szczegóły: [`docs/osoba-4.md`](docs/osoba-4.md) |
-| 5 | ✅ Wybór usługi (picker w pasku górnym), rejestr dostawców i endpoint katalogu usług (ADR 0014) |
+| 5 | ✅ Wybór usługi (picker w pasku górnym), rejestr dostawców i endpoint katalogu usług (ADR 0017) |
 | 6 | ⏳ Scenariusze, testy E2E, Prelint i slajdy nie zaczęte w repo |
 
 ---
 
 ## API — katalog usług
 
-Panel nie jest już konsolą jednej integracji: w pasku górnym stoi kontrolka wyboru usługi, a trasy pozostają płaskie (`/leases`, nie `/github/leases`) — usługa deklaruje, które z nich obsługuje (ADR 0014).
+Panel nie jest już konsolą jednej integracji: w pasku górnym stoi kontrolka wyboru usługi, a trasy pozostają płaskie (`/leases`, nie `/github/leases`) — usługa deklaruje, które z nich obsługuje (ADR 0017). Katalog ma dziś trzy wpisy: GitHub, Jirę (ADR 0016) i integrację demonstracyjną `demo-tracker`. Trasa `/mocks` jest współdzielona — dokumentuje wszystkie mocki naraz, więc obsługuje ją każda usługa.
 
 ```
 GET /api/v1/services → 200
 
 [
   {"id": "demo-tracker", "name": "Demo Tracker (integracja demonstracyjna)", "kind": "issue_tracker",
-   "capabilities": ["dashboard", "audit"], "is_available": false},
+   "capabilities": ["audit", "dashboard"], "is_available": false},
   {"id": "github", "name": "GitHub", "kind": "vcs", "is_available": true,
-   "capabilities": ["appeals", "audit", "baseline", "dashboard", "graph", "leases"]}
+   "capabilities": ["appeals", "audit", "baseline", "dashboard", "graph", "leases"]},
+  {"id": "jira", "name": "Jira", "kind": "issue_tracker", "is_available": true,
+   "capabilities": ["audit", "dashboard"]}
 ]
 ```
 

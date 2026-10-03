@@ -8,6 +8,7 @@ import {
   SERVICE_REGISTRY,
   type ServiceRoute,
   type ServiceRouteId,
+  SHARED_ROUTE_IDS,
 } from '@/services/serviceRegistry';
 import { server } from '@/test/msw/server';
 import type { ServiceRead } from '@/types/api';
@@ -31,7 +32,8 @@ describe('fetchServices', () => {
   it('reads the catalog from the API when fixtures are off', async () => {
     vi.stubEnv('VITE_USE_FIXTURES', 'false');
 
-    await expect(fetchServices()).resolves.toHaveLength(2);
+    // Liczba z fixture'a, nie literał: dodanie usługi nie wymaga edycji tego testu.
+    await expect(fetchServices()).resolves.toHaveLength(servicesFixture.length);
   });
 
   it('returns the shared fixture when VITE_USE_FIXTURES is true', async () => {
@@ -72,9 +74,14 @@ describe('registry conformance', () => {
       (service: ServiceRead): boolean => service.id === 'github',
     );
 
+    // Trasy wspólne (`/mocks`) nie są capability żadnej usługi — backend ich nie wymienia, więc
+    // porównujemy wyłącznie trasy własne GitHuba. Równość (a nie zawieranie) zostaje, żeby
+    // nadmiarowa trasa w rejestrze nadal była błędem.
     expect(new Set(github?.capabilities)).toEqual(
       new Set(
-        SERVICE_REGISTRY.github.routes.map((route: ServiceRoute): ServiceRouteId => route.id),
+        SERVICE_REGISTRY.github.routes
+          .map((route: ServiceRoute): ServiceRouteId => route.id)
+          .filter((id: ServiceRouteId): boolean => !SHARED_ROUTE_IDS.includes(id)),
       ),
     );
   });

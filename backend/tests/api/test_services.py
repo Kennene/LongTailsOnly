@@ -23,11 +23,11 @@ def test_no_operation_exposes_service_id_as_a_request_parameter() -> None:
     assert offenders == {}
 
 
-async def test_services_catalog_returns_github_and_demo(client: AsyncClient) -> None:
+async def test_services_catalog_returns_github_jira_and_demo(client: AsyncClient) -> None:
     response = await client.get("/api/v1/services")
     assert response.status_code == 200
     body = response.json()
-    assert [item["id"] for item in body] == ["demo-tracker", "github"]
+    assert [item["id"] for item in body] == ["demo-tracker", "github", "jira"]
 
 
 async def test_github_entry_carries_vcs_kind_and_six_capabilities(client: AsyncClient) -> None:
@@ -51,6 +51,15 @@ async def test_capabilities_are_normalised_to_sorted_order(client: AsyncClient) 
     assert github["capabilities"] == [
         "appeals", "audit", "baseline", "dashboard", "graph", "leases",
     ]
+
+
+async def test_jira_entry_is_an_available_issue_tracker(client: AsyncClient) -> None:
+    """Jira is a real provider (ADR 0016) that serves the shared routes only (ADR 0017)."""
+    body = (await client.get("/api/v1/services")).json()
+    jira = next(item for item in body if item["id"] == "jira")
+    assert jira["kind"] == "issue_tracker"
+    assert jira["is_available"] is True
+    assert jira["capabilities"] == ["audit", "dashboard"]
 
 
 async def test_demo_tracker_entry_is_marked_unavailable(client: AsyncClient) -> None:

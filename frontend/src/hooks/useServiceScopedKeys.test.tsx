@@ -186,7 +186,8 @@ describe('service-scoped query keys', () => {
     await waitFor(() => {
       expect(cachedKeys(queryClient)).toContainEqual(['dashboard', DEMO_TRACKER]);
     });
-    expect(cachedKeys(queryClient)).toContainEqual(['graph', DEMO_TRACKER]);
+    // `useGraph(team)` trzyma pełny graf (`null`) i zawężony osobno, więc `team` jest trzeci.
+    expect(cachedKeys(queryClient)).toContainEqual(['graph', DEMO_TRACKER, null]);
     expect(cachedKeys(queryClient)).toContainEqual(['audit', DEMO_TRACKER]);
     expect(cachedKeys(queryClient)).toContainEqual(['activity-stats', DEMO_TRACKER, LEASE_ID]);
     expect(cachedKeys(queryClient)).toContainEqual(['baseline', DEMO_TRACKER, TEAM_SLUG]);

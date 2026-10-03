@@ -16,7 +16,7 @@ import {
 } from '@/services/serviceRegistry';
 
 /** The six route ids the backend advertises as `github` capabilities (service-picker spec §5.1). */
-const ALL_ROUTE_IDS: ServiceRouteId[] = [
+const GITHUB_CAPABILITY_IDS: ServiceRouteId[] = [
   'dashboard',
   'leases',
   'appeals',
@@ -25,14 +25,24 @@ const ALL_ROUTE_IDS: ServiceRouteId[] = [
   'audit',
 ];
 
+/**
+ * `/mocks` dokumentuje wszystkie mocki naraz, więc należy do **każdej** usługi i nie jest
+ * capability żadnej z osobna — dlatego stoi poza listą sześciu powyżej.
+ */
+const SHARED_ROUTE_IDS: ServiceRouteId[] = ['mocks'];
+
+/** Wszystkie trasy, jakie rejestr zna — capability GitHuba plus trasy wspólne. */
+const ALL_ROUTE_IDS: ServiceRouteId[] = [...GITHUB_CAPABILITY_IDS, ...SHARED_ROUTE_IDS];
+
 /** Path, Polish nav label and nav order are the ones the pre-registry `Sidebar.tsx` used. */
 const SIDEBAR_ROUTES: [ServiceRouteId, string, string][] = [
   ['dashboard', '/', 'Pulpit'],
-  ['leases', '/leases', 'Dzierżawy'],
+  ['leases', '/leases', 'Dostępy'],
   ['appeals', '/appeals', 'Odwołania'],
   ['baseline', '/baseline', 'Standard zespołu'],
   ['graph', '/graph', 'Graf'],
   ['audit', '/audit', 'Audyt'],
+  ['mocks', '/mocks', 'Mocki'],
 ];
 
 describe('SERVICE_REGISTRY', () => {
@@ -50,24 +60,27 @@ describe('SERVICE_REGISTRY', () => {
     }
   });
 
-  it('keys every entry by its own id and registers exactly the two known services', () => {
-    expect(Object.keys(SERVICE_REGISTRY).sort()).toEqual(['demo-tracker', 'github']);
+  it('registers jira as an issue tracker serving the shared routes', () => {
+    expect(SERVICE_REGISTRY.jira.routes.map((route): ServiceRouteId => route.id)).toEqual([
+      'dashboard',
+      'audit',
+      ...SHARED_ROUTE_IDS,
+    ]);
+  });
+
+  it('keys every entry by its own id and registers exactly the three known services', () => {
+    expect(Object.keys(SERVICE_REGISTRY).sort()).toEqual(['demo-tracker', 'github', 'jira']);
 
     for (const config of Object.values(SERVICE_REGISTRY)) {
       expect(SERVICE_REGISTRY[config.id]).toBe(config);
     }
   });
 
-  it('declares exactly the six route ids the backend grants github', () => {
+  it('declares exactly the routes the backend grants github plus the shared ones', () => {
     const github = SERVICE_REGISTRY.github;
-    expect(github.routes.map((route): ServiceRouteId => route.id).sort()).toEqual([
-      'appeals',
-      'audit',
-      'baseline',
-      'dashboard',
-      'graph',
-      'leases',
-    ]);
+    expect(github.routes.map((route): ServiceRouteId => route.id).sort()).toEqual(
+      [...ALL_ROUTE_IDS].sort(),
+    );
   });
 
   it('keeps the sidebar order, paths and Polish labels for every route id', () => {
@@ -81,10 +94,10 @@ describe('SERVICE_REGISTRY', () => {
     );
   });
 
-  it('gives demo-tracker exactly the dashboard and audit routes', () => {
+  it('gives demo-tracker exactly the dashboard, audit and shared routes', () => {
     expect(
       SERVICE_REGISTRY['demo-tracker'].routes.map((route): ServiceRouteId => route.id),
-    ).toEqual(['dashboard', 'audit']);
+    ).toEqual(['dashboard', 'audit', ...SHARED_ROUTE_IDS]);
   });
 
   it('reuses the shared route objects instead of duplicating them per service', () => {

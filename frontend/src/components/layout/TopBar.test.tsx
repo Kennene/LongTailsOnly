@@ -6,11 +6,15 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 
 /**
  * Regresja układu ze spec §10: nagłówek jest `justify-between` i ma **dokładnie dwoje** dzieci —
- * kontrolka usługi i slot paska czasu siedzą w jednej prawej grupie, bo trzecie dziecko
- * konkurowałoby o miejsce z lewym blokiem kontekstu.
+ * kontrolka usługi stoi w prawej grupie, bo trzecie dziecko konkurowałoby o miejsce z lewym
+ * blokiem kontekstu.
+ *
+ * Pasek czasu symulowanego **nie** jest już częścią nagłówka: przeniósł się do widoku „Mocki”
+ * razem z podglądem symulatorów, a jego własne zachowanie pinuje `components/mocks/
+ * TimeTravelBar.test.tsx` i widok `pages/MocksPage.test.tsx`. Ten plik pilnuje wyłącznie układu.
  */
 describe('TopBar', () => {
-  it('keeps the picker and the time-travel slot in one right-hand group', async () => {
+  it('keeps the header to two blocks with the picker as the right-hand one', async () => {
     renderWithProviders(<TopBar />);
 
     const header = await screen.findByRole('banner');
@@ -22,7 +26,6 @@ describe('TopBar', () => {
 
     expect(blocks).toHaveLength(2);
     expect(within(rightGroup).getByLabelText('Usługa')).toBeInTheDocument();
-    expect(within(rightGroup).getByTestId('time-travel-bar')).toBeInTheDocument();
   });
 
   it('names the product rather than the integration', async () => {

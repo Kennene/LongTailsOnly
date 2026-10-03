@@ -3,14 +3,34 @@
     "id": "demo-tracker",
     "name": "Demo Tracker (integracja demonstracyjna)",
     "kind": "issue_tracker",
-    "capabilities": ["dashboard", "audit"],
+    "capabilities": [
+      "dashboard",
+      "audit"
+    ],
     "is_available": false
   },
   {
     "id": "github",
     "name": "GitHub",
     "kind": "vcs",
-    "capabilities": ["appeals", "audit", "baseline", "dashboard", "graph", "leases"],
+    "capabilities": [
+      "appeals",
+      "audit",
+      "baseline",
+      "dashboard",
+      "graph",
+      "leases"
+    ],
+    "is_available": true
+  },
+  {
+    "id": "jira",
+    "name": "Jira",
+    "kind": "issue_tracker",
+    "capabilities": [
+      "audit",
+      "dashboard"
+    ],
     "is_available": true
   }
 ]

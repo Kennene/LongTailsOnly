@@ -55,7 +55,7 @@ export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED" | "PERMANENT" | "REVO
 /**
  * The class of external system a service represents.
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "ServiceKind".
  */
 export type ServiceKind = "vcs" | "issue_tracker" | "cloud_iam";
@@ -396,10 +396,9 @@ export interface PermissionGraph {
   nodes: GraphNode[];
 }
 /**
- * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0014 §4).
  * One selectable external service: its identity, what it can do and whether it is usable.
  *
- * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "ServiceRead".
  */
 export interface ServiceRead {
@@ -410,7 +409,7 @@ export interface ServiceRead {
   name: string;
 }
 /**
- * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0011 §4).
+ * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0014 §4).
  *
  * This interface was referenced by `TailCutAPIContract`'s JSON-Schema
  * via the `definition` "SimulationClock".

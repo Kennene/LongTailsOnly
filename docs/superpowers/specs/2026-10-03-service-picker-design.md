@@ -9,7 +9,7 @@
 
 ## 1. Cel i zrozumienie intencji
 
-Panel ma przestać być panelem *jednej* integracji. Użytkownik wybiera, **z którą usługą** (GitHub, w przyszłości GitLab, Jira, chmurowe IAM) pracuje, a aplikacja pokazuje widoki obsługiwane przez tę usługę.
+Panel ma przestać być panelem *jednej* integracji. Użytkownik wybiera, **z którą usługą** (GitHub, Jira, w przyszłości GitLab i chmurowe IAM) pracuje, a aplikacja pokazuje widoki obsługiwane przez tę usługę.
 
 Produkt od początku deklaruje architekturę pluginową (Porty i Adaptery), ale **w kodzie nie ma żadnego mechanizmu rejestru** — patrz §2. Ta zmiana domyka tę lukę: wprowadza rejestr dostawców po stronie backendu i wynikający z niego wybór usługi po stronie frontendu.
 
@@ -384,7 +384,7 @@ Dzięki temu rejestr frontendu i dane, na których pracuje backend, mają **jedn
 
 ## 11. Poza zakresem (YAGNI)
 
-- Drugi działający adapter (Jira/GitLab) i jego model danych.
+- Drugi działający adapter z własnymi widokami (GitLab) i izolacja danych per usługa. **Jira przestała być pozycją odłożoną**: ADR 0016 został scalony do `main`, więc Jira jest zarejestrowana jako pełnoprawna usługa (Ruling 48) — dziś na trasach wspólnych, bo produkt nie ma jeszcze widoków zgłoszeń.
 - Izolacja danych per usługa i trasy w postaci `/api/v1/services/{id}/leases` — wymagałoby zmian w każdym module API, każdym handlerze MSW i każdym teście.
 - Uprawnienia per usługa, logowanie, wielodostępność organizacji.
 - Discovery przez `entry_points` / `importlib.metadata`.

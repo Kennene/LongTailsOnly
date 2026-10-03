@@ -10,17 +10,20 @@
 import {
   Blocks,
   FileCheck2,
+  FlaskConical,
   Gavel,
   LayoutDashboard,
   Network,
   ScrollText,
   ShieldCheck,
+  SquareCheckBig,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 
 import { GitHubIcon } from '@/services/brandIcons';
 
-export type ServiceRouteId = 'dashboard' | 'leases' | 'appeals' | 'baseline' | 'graph' | 'audit';
+export type ServiceRouteId =
+  'dashboard' | 'leases' | 'appeals' | 'baseline' | 'graph' | 'audit' | 'mocks';
 
 /** Kontrakt ikony usługi: `className` przekazywany dalej, `aria-hidden` jak w lucide. */
 export type ServiceIconComponent = ComponentType<{
@@ -49,12 +52,27 @@ export interface ServiceConfig {
  */
 const ROUTES: Record<ServiceRouteId, ServiceRoute> = {
   dashboard: { id: 'dashboard', path: '/', label: 'Pulpit', icon: LayoutDashboard },
-  leases: { id: 'leases', path: '/leases', label: 'Dzierżawy', icon: FileCheck2 },
+  leases: { id: 'leases', path: '/leases', label: 'Dostępy', icon: FileCheck2 },
   appeals: { id: 'appeals', path: '/appeals', label: 'Odwołania', icon: Gavel },
   baseline: { id: 'baseline', path: '/baseline', label: 'Standard zespołu', icon: ShieldCheck },
   graph: { id: 'graph', path: '/graph', label: 'Graf', icon: Network },
   audit: { id: 'audit', path: '/audit', label: 'Audyt', icon: ScrollText },
+  // `/mocks` dokumentuje **wszystkie** mocki (GitHub i Jira razem), więc nie należy do żadnej
+  // usługi z osobna — mają go wszystkie, na końcu nawigacji.
+  mocks: { id: 'mocks', path: '/mocks', label: 'Mocki', icon: FlaskConical },
 };
+
+/** Trasy, które obsługuje **każda** usługa — dziś tylko podgląd mocków. */
+const SHARED_ROUTES: ServiceRoute[] = [ROUTES.mocks];
+
+/**
+ * Identyfikatory tras wspólnych. Eksportowane, bo test zgodności rejestrów (spec §7.4) porównuje
+ * `capabilities` usługi z jej trasami **własnymi** — bez tego zbioru każda trasa wspólna
+ * wyglądałaby jak rozjazd nazw.
+ */
+export const SHARED_ROUTE_IDS: ServiceRouteId[] = SHARED_ROUTES.map(
+  (route: ServiceRoute): ServiceRouteId => route.id,
+);
 
 /** Usługa spoza rejestru nie ma własnych tras, więc ląduje na pulpicie. */
 const FALLBACK_PATH = ROUTES.dashboard.path;
@@ -73,15 +91,26 @@ export const SERVICE_REGISTRY: Record<string, ServiceConfig> = {
       ROUTES.baseline,
       ROUTES.graph,
       ROUTES.audit,
+      ...SHARED_ROUTES,
     ],
+    defaultRouteId: 'dashboard',
+  },
+  jira: {
+    id: 'jira',
+    // Glif z `lucide-react`, nie znak firmowy: DESIGN.md §6 dopuszcza własne SVG tylko tam,
+    // gdzie lucide nie ma odpowiednika (`Github`, `Gitlab`), a tu odpowiednik jest.
+    // `is_available: true`, bo Jira to prawdziwy dostawca (ADR 0016) — produkt nie ma jeszcze
+    // własnych widoków zgłoszeń, więc obsługuje trasy wspólne.
+    icon: SquareCheckBig,
+    routes: [ROUTES.dashboard, ROUTES.audit, ...SHARED_ROUTES],
     defaultRouteId: 'dashboard',
   },
   'demo-tracker': {
     id: 'demo-tracker',
-    // Neutralna ikona: GitLab jest przyszłym, nieobjętym tym zakresem adapterem, a `GitLabIcon`
-    // obiecywałby w kontrolce integrację, której nie ma. Eksport zostaje dla tego adaptera.
+    // Neutralna ikona: to integracja demonstracyjna, a `GitLabIcon` obiecywałby adapter GitLaba,
+    // którego nie ma. Eksport zostaje dla tego przyszłego adaptera.
     icon: fallbackIcon,
-    routes: [ROUTES.dashboard, ROUTES.audit],
+    routes: [ROUTES.dashboard, ROUTES.audit, ...SHARED_ROUTES],
     defaultRouteId: 'dashboard',
   },
 };

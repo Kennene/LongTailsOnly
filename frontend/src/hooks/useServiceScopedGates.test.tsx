@@ -123,8 +123,10 @@ function CatalogUnresolvedProbe(): React.JSX.Element {
 const GATED_READERS: GatedReader[] = [
   { resource: 'leases', path: '/api/v1/leases', tail: [], Probe: LeasesProbe },
   { resource: 'appeals', path: '/api/v1/appeals', tail: [{}], Probe: AppealsProbe },
-  { resource: 'dashboard', path: '/api/v1/leases', tail: [], Probe: DashboardProbe },
-  { resource: 'graph', path: '/api/v1/leases', tail: [], Probe: GraphProbe },
+  // Osóbne endpointy: pulpit liczy backend (`/dashboard/stats`), a graf ma własną trasę z filtrem
+  // zespołu — `team` należy do klucza, bo `useGraph(team)` trzyma pełny i zawężony graf osobno.
+  { resource: 'dashboard', path: '/api/v1/dashboard/stats', tail: [], Probe: DashboardProbe },
+  { resource: 'graph', path: '/api/v1/graph', tail: [null], Probe: GraphProbe },
   { resource: 'audit', path: '/api/v1/audit', tail: [], Probe: AuditProbe },
   {
     resource: 'activity-stats',

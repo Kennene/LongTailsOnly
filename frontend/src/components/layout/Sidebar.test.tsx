@@ -7,7 +7,15 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 const STORAGE_KEY = 'lease-governor.service';
 
 /** Sześć tras `github` w kolejności z rejestru usług — tej samej, którą nawigacja renderuje. */
-const GITHUB_LABELS = ['Pulpit', 'Dzierżawy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt'];
+const GITHUB_LABELS = [
+  'Pulpit',
+  'Dostępy',
+  'Odwołania',
+  'Standard zespołu',
+  'Graf',
+  'Audyt',
+  'Mocki',
+];
 
 /**
  * Nawigacja startuje pusta, bo trasy pochodzą z aktywnej usługi, a ta istnieje dopiero po
@@ -26,7 +34,7 @@ beforeEach(() => {
 });
 
 describe('Sidebar', () => {
-  it('renders six links driven by the registry for the default github service', async () => {
+  it('renders every registry link for the default github service', async () => {
     renderWithProviders(<Sidebar />);
 
     const nav = await waitForNav('Pulpit');
@@ -38,16 +46,18 @@ describe('Sidebar', () => {
     expect(screen.getByText('Dostęp: GitHub')).toBeInTheDocument();
   });
 
-  it('narrows navigation to the two views demo-tracker serves', async () => {
+  it('narrows navigation to the views demo-tracker serves', async () => {
     window.localStorage.setItem(STORAGE_KEY, 'demo-tracker');
     renderWithProviders(<Sidebar />);
 
     const nav = await waitForNav('Audyt');
 
-    expect(within(nav).getAllByRole('link')).toHaveLength(2);
+    expect(within(nav).getAllByRole('link')).toHaveLength(3);
     expect(within(nav).getByRole('link', { name: 'Pulpit' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Audyt' })).toBeInTheDocument();
-    expect(within(nav).queryByRole('link', { name: 'Dzierżawy' })).not.toBeInTheDocument();
+    // `/mocks` obsługuje każda usługa, więc zawężenie go nie zabiera.
+    expect(within(nav).getByRole('link', { name: 'Mocki' })).toBeInTheDocument();
+    expect(within(nav).queryByRole('link', { name: 'Dostępy' })).not.toBeInTheDocument();
     expect(
       screen.getByText('Dostęp: Demo Tracker (integracja demonstracyjna)'),
     ).toBeInTheDocument();
