@@ -1,13 +1,12 @@
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import type { AuditLogResponse } from '@/api/audit';
 import { type AuditActorFilter, AuditFilters } from '@/components/audit/AuditFilters';
 import { AuditLogTable, AuditLogTableSkeleton } from '@/components/audit/AuditLogTable';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAuditLog } from '@/hooks/useAuditLog';
-import type { AuditLogRead } from '@/types/api';
+import type { AuditEntry } from '@/types/api';
 
 const EMPTY_LOG = 'Brak zdarzeń w dzienniku';
 const EMPTY_FILTER = 'Brak zdarzeń dla wybranego filtra';
@@ -19,7 +18,7 @@ const EMPTY_FILTER = 'Brak zdarzeń dla wybranego filtra';
  * widok jest samodzielny i nie zależy od pozostałych stron.
  */
 export function AuditPage(): React.JSX.Element {
-  const auditQuery: UseQueryResult<AuditLogResponse> = useAuditLog();
+  const auditQuery: UseQueryResult<AuditEntry[]> = useAuditLog();
   const [actorType, setActorType] = useState<AuditActorFilter>('ALL');
 
   return (
@@ -38,7 +37,7 @@ export function AuditPage(): React.JSX.Element {
 }
 
 interface AuditLogProps {
-  query: UseQueryResult<AuditLogResponse>;
+  query: UseQueryResult<AuditEntry[]>;
   actorType: AuditActorFilter;
 }
 
@@ -62,8 +61,8 @@ function AuditLog({ query, actorType }: AuditLogProps): React.JSX.Element {
     );
   }
 
-  const allEntries: AuditLogRead[] = query.data.entries;
-  const entries: AuditLogRead[] = filterByActor(allEntries, actorType);
+  const allEntries: AuditEntry[] = query.data;
+  const entries: AuditEntry[] = filterByActor(allEntries, actorType);
 
   if (entries.length === 0) {
     return (
@@ -77,10 +76,10 @@ function AuditLog({ query, actorType }: AuditLogProps): React.JSX.Element {
 }
 
 /** Filtr działa na tym, co już pobrane — dziennik jednego demo jest krótki. */
-function filterByActor(entries: AuditLogRead[], actorType: AuditActorFilter): AuditLogRead[] {
+function filterByActor(entries: AuditEntry[], actorType: AuditActorFilter): AuditEntry[] {
   if (actorType === 'ALL') {
     return entries;
   }
 
-  return entries.filter((entry: AuditLogRead): boolean => entry.actor_type === actorType);
+  return entries.filter((entry: AuditEntry): boolean => entry.actor_type === actorType);
 }

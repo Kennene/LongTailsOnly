@@ -13,7 +13,7 @@
     'Geist Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono',
     monospace;
 
-  /* Statusy dzierżaw i rekomendacji — jedyne źródło koloru stanu (DESIGN.md §1) */
+  /* Statusy dostępów i rekomendacji — jedyne źródło koloru stanu (DESIGN.md §1) */
   --color-status-active: var(--status-active);
   --color-status-active-foreground: var(--status-active-foreground);
   --color-status-active-subtle: var(--status-active-subtle);

@@ -5,7 +5,16 @@
  * via the `definition` "ActionType".
  */
 export type ActionType =
-  "PushEvent" | "PullRequestReviewEvent" | "IssueCommentEvent" | "PullRequestEvent" | "IssuesEvent" | "PublicEvent";
+  | "PushEvent"
+  | "PullRequestReviewEvent"
+  | "IssueCommentEvent"
+  | "PullRequestEvent"
+  | "IssuesEvent"
+  | "PublicEvent"
+  | "jira:issue_created"
+  | "jira:issue_updated"
+  | "comment_created"
+  | "project_updated";
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "Role".

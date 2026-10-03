@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 from app.db.activity_extras import seed_activity_extras
+from app.db.jira_seed import seed_jira_demo
 from app.db.migrations import downgrade_to_base
 from app.db.seed import seed_demo_data, table_counts
 from app.db.session import init_db
@@ -15,4 +16,5 @@ async def prepare_database(target: AsyncEngine, clock: ClockPort, *, reset: bool
     async with async_sessionmaker(target, expire_on_commit=False)() as session:
         await seed_demo_data(session, clock)
         await seed_activity_extras(session, clock)
+        await seed_jira_demo(session, clock)
         return await table_counts(session)

@@ -1,6 +1,6 @@
 # PRODUKT: GitHub Access Lease Governor (Zero Standing Privileges)
 
-> **Hasło przewodnie:** *Żaden dostęp nie jest wieczny.* Wszystkie uprawnienia podlegają odnawialnej dzierżawie opartej na dowodach rzeczywistego użycia.
+> **Hasło przewodnie:** *Żaden dostęp nie jest wieczny.* Wszystkie uprawnienia są odnawialnymi dostępami czasowymi, opartymi na dowodach rzeczywistego użycia.
 
 ---
 
@@ -17,9 +17,9 @@ W nowoczesnych organizacjach uprawnienia w systemach kontroli wersji (GitHub) s�
 3. **Brak rozliczalności**: Administratorzy nie wiedzą, które uprawnienia są rzeczywiście wykorzystywane, a procesy periodycznego audytu są powierzchowne.
 
 #### Rozwiązanie
-Panel administratora bezpieczeństwa IT wprowadzający mechanizm **odnawialnej dzierżawy dostępów (Access Lease)** do GitHuba:
+Panel administratora bezpieczeństwa IT wprowadzający mechanizm **odnawialnych dostępów czasowych (Access Lease)** do GitHuba:
 - Dostęp wygasa samoistnie po ustalonym czasie (domyślnie 30 dni, konfigurowalny przez admina); tryb `warning` wymaga decyzji administratora, a tryb `auto` odbiera lub obniża dostęp automatycznie.
-- Dzierżawa odnawia się wyłącznie w wyniku dowiedzionej aktywności na adekwatnym poziomie uprawnień.
+- Dostęp odnawia się wyłącznie w wyniku dowiedzionej aktywności na adekwatnym poziomie uprawnień.
 - Dostęp na poziomie `write` (push) nie odnawia się przy samym komentowaniu czy review — system wykrywa brak pushów i proponuje deeskalację do `read`.
 - Rola `admin` ma charakter stały (break-glass/owner) i jest zabezpieczona regułą *Last Admin Protection*.
 - Przed wygaśnięciem generowane jest ostrzeżenie; użytkownik może złożyć odwołanie z unikalnym uzasadnieniem biznesowym (intentional friction), a administrator dysponuje elastycznym wyborem przedłużenia (mnożniki np. 2x, presety, custom).
@@ -53,7 +53,7 @@ Panel administratora bezpieczeństwa IT wprowadzający mechanizm **odnawialnej d
 - System oznacza uprawnienie `write` jako wygasające, proponując obniżenie uprawnień do `read` (użytkownik zachowuje możliwość dyskusji i review, tracąc prawo zapisu do kodu).
 
 #### UC-3: Cykl ostrzeżenia, odwołania i elastycznej decyzji administratora (Warning & Appeal Flow)
-- Na 7 dni przed wygaśnięciem dzierżawy generowane jest ostrzeżenie w panelu.
+- Na 7 dni przed wygaśnięciem dostępu generowane jest ostrzeżenie w panelu.
 - Użytkownik składa odwołanie z uzasadnieniem (np. „W przyszłym tygodniu prowadzę release wersji v2.1”).
 - Administrator w panelu widzi: historię odwołań użytkownika, statystyki realnego użycia (`ActivityEvent`) oraz treść wniosku.
 - Administrator podejmuje decyzję:
@@ -76,7 +76,7 @@ Panel administratora bezpieczeństwa IT wprowadzający mechanizm **odnawialnej d
 
 | Moduł | Zakres MVP | Priorytet | Status |
 | :--- | :--- | :--- | :--- |
-| **M1: Inwentarz uprawnień** | Tabela osób, repozytoriów, poziomów ról, dat ostatniego użycia i statusu dzierżawy | P0 (Must Have) | MVP |
+| **M1: Inwentarz uprawnień** | Tabela osób, repozytoriów, poziomów ról, dat ostatniego użycia i statusu dostępu | P0 (Must Have) | MVP |
 | **M2: Detekcja nadmiarowości** | Analiza aktywności vs poziom roli (`admin` nieużywany od $N$ dni) | P0 (Must Have) | MVP |
 | **M3: Rekomendacje i powiadomienia** | Karta alertów dla admina (Zatwierdź / Odrzuć / Przedłuż) | P0 (Must Have) | MVP |
 | **M4: Egzekwowanie polityk** | Tryb `warning` (domyślny v1) oraz opcja `auto` (automatyczne odbieranie) | P0 (Must Have) | MVP |

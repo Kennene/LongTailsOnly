@@ -50,7 +50,7 @@ backend/
 #### Standardy backendu
 - **Asynchroniczność**: Endpointy i zapytania bazodanowe oparte na `async`/`await` (SQLAlchemy 2.0 async session).
 - **Zegar symulowany (Simulated Clock)**:
-  - Wszelkie kalkulacje czasu (upłynięcie dzierżawy, okno ostrzegawcze) opierają się na `time_provider.get_current_time()`.
+  - Wszelkie kalkulacje czasu (upłynięcie dostępu, okno ostrzegawcze) opierają się na `time_provider.get_current_time()`.
   - Zegar można przesuwać endpointem `/api/v1/simulation/time-travel`.
 - **Modele i DTO**:
   - Pydantic v2 z jawnym mapowaniem `from_attributes = True`.
@@ -70,7 +70,7 @@ frontend/
     │   ├── ui/            # Komponenty bazowe (shadcn/ui — kod generowany)
     │   ├── layout/        # AppShell, Sidebar, TopBar, TimeTravelBar
     │   ├── dashboard/     # Karty KPI
-    │   ├── leases/        # Tabela dzierżaw, modal decyzji
+    │   ├── leases/        # Tabela dostępów, modal decyzji
     │   ├── appeals/       # Formularz i historia odwołań
     │   ├── baseline/      # Widok standardu zespołów
     │   ├── graph/         # Graf uprawnień (@xyflow/react)

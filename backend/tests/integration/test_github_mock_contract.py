@@ -10,7 +10,8 @@ import httpx
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
-from app.models import ActivityEvent
+from app.domain.enums import Provider
+from app.models import ActivityEvent, Repository
 
 TTL, WARN = 30, 7
 API = "/api/v3"
@@ -148,6 +149,9 @@ async def test_extra_activity_is_visible_but_never_renews(demo: httpx.AsyncClien
 
 async def test_events_endpoint_matches_activity_table_rows(demo: httpx.AsyncClient, engine: AsyncEngine) -> None:
     async with async_sessionmaker(engine)() as session:
-        stored = await session.scalar(select(func.count()).select_from(ActivityEvent))
+        stored = await session.scalar(
+            select(func.count()).select_from(ActivityEvent).join(Repository)
+            .where(Repository.provider == Provider.GITHUB)
+        )
     total = sum([len(await all_pages(demo, f"{API}/repos/longtails/{repo}/events")) for repo in REPOS])
     assert total == stored  # every stored row (all within 90 days) is served by exactly one repo feed

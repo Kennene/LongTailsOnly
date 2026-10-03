@@ -6,6 +6,8 @@ from fastapi import FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.api.jira_mock.http import PREFIX as JIRA_PREFIX
+from app.api.jira_mock.http import jira_validation_response
 from app.core.time_provider import get_time_provider
 
 PREFIX = "/api/v3"
@@ -53,6 +55,8 @@ async def _github_error_handler(request: Request, exc: GitHubError) -> JSONRespo
 
 
 async def _validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    if request.url.path.startswith(JIRA_PREFIX):
+        return jira_validation_response(exc)
     if not request.url.path.startswith(PREFIX):
         from fastapi.exception_handlers import request_validation_exception_handler
 

@@ -2,20 +2,20 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
-import { activityStatsFixture } from '@/api/activity';
+import { fetchActivityStats } from '@/api/activity';
 import { appealsFixture, leasesFixture } from '@/api/fixtures';
 import { DecisionModal } from '@/components/leases/DecisionModal';
 import { getRecommendationBadge } from '@/lib/statusBadges';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import type { AppealRead, LeaseOverview } from '@/types/api';
+import type { AppealOverview, LeaseActivityStats, LeaseOverview } from '@/types/api';
 
 /**
- * Dowód użycia w modalu decyzji (UC-3, `DESIGN.md` §4): tryb zwykłej dzierżawy pokazuje
+ * Dowód użycia w modalu decyzji (UC-3, `DESIGN.md` §4): tryb zwykłego dostępu pokazuje
  * statystyki aktywności obok kontekstu, a tryb odwołania zostaje przy `AppealContextPanel`
  * i nie renderuje liczników drugi raz.
  *
- * Osobny plik od `DecisionModal.test.tsx` (ścieżka decyzji o dzierżawie) i
+ * Osobny plik od `DecisionModal.test.tsx` (ścieżka decyzji o dostępie) i
  * `DecisionModalAppeal.test.tsx` (tryb odwołania) — tamte są siatką regresji i zostają
  * nietknięte. Tutaj sprawdzamy wyłącznie warstwę dowodów: obecność panelu, stany
  * wczytywania i błędu oraz brak duplikatu w trybie odwołania.
@@ -26,9 +26,24 @@ const APPEAL_ACTIVITY_TEST_ID = 'appeal-activity';
 const ACTIVITY_URL = '/api/v1/leases/:leaseId/activity-stats';
 const STATS_ERROR_MESSAGE = 'Nie udało się pobrać statystyk użycia.';
 
-const activeLease: LeaseOverview = leasesFixture[0]; // Kamil Nowak, write, 30 dni do końca
-const pendingAppeal: AppealRead = appealsFixture[0]; // dzierżawa 3, status PENDING
+const activeLease: LeaseOverview = leasesFixture[0]; // pierwszy dostęp z fixture'ów, ACTIVE
+const pendingAppeal: AppealOverview = appealsFixture[0]; // dostęp 5, status PENDING
 const appealLease: LeaseOverview = { ...activeLease, id: pendingAppeal.lease_id };
+
+/**
+ * Liczniki zawsze pytamy przez API (`GET /api/v1/leases/{id}/activity-stats`), zamiast wpisywać
+ * je na sztywno: zależą od pary `(user_id, repo_id)` dostępu i od `shared/fixtures/activity.json`.
+ */
+
+/** Dostęp o zadanym kształcie ze stanu MSW — fixture'y dzielą inne zadania. */
+function findLease(predicate: (lease: LeaseOverview) => boolean): LeaseOverview {
+  const lease: LeaseOverview | undefined = leasesFixture.find(predicate);
+  if (lease === undefined) {
+    throw new Error('Fixture dostępów nie zawiera dostępu o oczekiwanym kształcie');
+  }
+
+  return lease;
+}
 
 async function renderModalWithLease(lease: LeaseOverview): Promise<void> {
   renderWithProviders(<DecisionModal lease={lease} open onOpenChange={() => {}} />);
@@ -39,28 +54,34 @@ async function renderModalWithLease(lease: LeaseOverview): Promise<void> {
   });
 }
 
-describe('DecisionModal — dowód użycia w trybie dzierżawy', () => {
-  it('pokazuje statystyki użycia dzierżawy obok kontekstu decyzji', async () => {
+describe('DecisionModal — dowód użycia w trybie dostępu', () => {
+  it('pokazuje statystyki użycia dostępu obok kontekstu decyzji', async () => {
     await renderModalWithLease(activeLease);
 
     const panel = screen.getByTestId(LEASE_ACTIVITY_TEST_ID);
+    const expected: LeaseActivityStats = await fetchActivityStats(activeLease.id);
 
     expect(await within(panel).findByTestId('stat-push')).toHaveTextContent(
-      String(activityStatsFixture.push),
+      String(expected.push_count),
     );
     expect(within(panel).getByTestId('stat-review')).toHaveTextContent(
-      String(activityStatsFixture.review),
+      String(expected.review_count),
     );
     expect(within(panel).getByTestId('stat-comment')).toHaveTextContent(
-      String(activityStatsFixture.comment),
+      String(expected.comment_count),
+    );
+    // Panel nie kończy się na trzech liczbach: pokazuje też okno, w którym je policzono.
+    expect(within(panel).getByTestId('activity-window')).toHaveTextContent(
+      `Ostatnie ${String(expected.window_days)} dni`,
     );
   });
 
   it('pokazuje szkielet w miejscu liczników, dopóki statystyki się wczytują', async () => {
+    const expected: LeaseActivityStats = await fetchActivityStats(activeLease.id);
     server.use(
       http.get(ACTIVITY_URL, async () => {
         await delay('infinite');
-        return HttpResponse.json(activityStatsFixture);
+        return HttpResponse.json(expected);
       }),
     );
 
@@ -85,7 +106,9 @@ describe('DecisionModal — dowód użycia w trybie dzierżawy', () => {
   });
 
   it('używa rodzin tokenów rekomendacji także dla „Odbierz”', async () => {
-    const revokeLease: LeaseOverview = leasesFixture[2]; // Piotr Lewandowski, rekomendacja REVOKE
+    const revokeLease: LeaseOverview = findLease(
+      (lease: LeaseOverview): boolean => lease.recommendation === 'REVOKE',
+    );
 
     await renderModalWithLease(revokeLease);
 
@@ -114,7 +137,7 @@ describe('DecisionModal — dowód użycia w trybie dzierżawy', () => {
 });
 
 describe('DecisionModal — brak duplikatu dowodu w trybie odwołania', () => {
-  it('nie montuje panelu dzierżawy, więc statystyki renderują się tylko raz', async () => {
+  it('nie montuje panelu dostępu, więc statystyki renderują się tylko raz', async () => {
     renderWithProviders(
       <DecisionModal appeal={pendingAppeal} lease={appealLease} open onOpenChange={() => {}} />,
     );
@@ -123,13 +146,16 @@ describe('DecisionModal — brak duplikatu dowodu w trybie odwołania', () => {
       expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
     });
 
-    // Panel dzierżawy należy wyłącznie do trybu bez odwołania — inaczej liczniki i zapytanie
-    // o statystyki startowałyby dwa razy dla tej samej dzierżawy.
+    // Panel dostępu należy wyłącznie do trybu bez odwołania — inaczej liczniki i zapytanie
+    // o statystyki startowałyby dwa razy dla tego samego dostępu.
     expect(screen.queryByTestId(LEASE_ACTIVITY_TEST_ID)).not.toBeInTheDocument();
 
     const appealActivity = await screen.findByTestId(APPEAL_ACTIVITY_TEST_ID);
+    // Panel w trybie odwołania pyta o statystyki **dostępu wskazanego przez odwołanie**
+    // (`AppealOverview.lease_id`), a nie tej, którą ktoś podał w propie `lease`.
+    const expected: LeaseActivityStats = await fetchActivityStats(pendingAppeal.lease_id);
     expect(await within(appealActivity).findByTestId('stat-push')).toHaveTextContent(
-      String(activityStatsFixture.push),
+      String(expected.push_count),
     );
     expect(screen.getAllByTestId('stat-push')).toHaveLength(1);
   });

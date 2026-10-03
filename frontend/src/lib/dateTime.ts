@@ -27,7 +27,7 @@ export function formatDateTimePl(iso: string): string {
 }
 
 /**
- * Forma skrócona („3 paź 2026, 15:24”) — **wyłącznie** dla gęstej tabeli dzierżaw, gdzie pełna
+ * Forma skrócona („3 paź 2026, 15:24”) — **wyłącznie** dla gęstej tabeli dostępów, gdzie pełna
  * data w `font-mono` zjadała 67 px (kolumna 234 → 167 px, zmierzone w Chromium) i wypychała
  * kolumny decyzyjne poza ekran. Ten sam znacznik czasu i ten sam kontrakt odporności co
  * `formatDateTimePl`.
@@ -76,7 +76,7 @@ export function formatDaysRemaining(days: number | null): string {
   if (days > 0) {
     return `Pozostało ${days} ${dayWord(days)}`;
   }
-  return `Wygasła ${-days} ${dayWord(-days)} temu`;
+  return `Wygasł ${-days} ${dayWord(-days)} temu`;
 }
 
 export function formatOffsetDays(offset_days: number): string {

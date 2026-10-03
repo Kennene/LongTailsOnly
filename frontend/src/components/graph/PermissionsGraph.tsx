@@ -14,11 +14,10 @@ import {
 } from '@xyflow/react';
 import { useTheme } from 'next-themes';
 
-import type { GraphEdge, GraphNode } from '@/api/graph';
 import { applyColumnLayout } from '@/lib/graphLayout';
 import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import { cn } from '@/lib/utils';
-import type { LeaseStatus } from '@/types/api';
+import type { GraphEdge, GraphNode, LeaseStatus } from '@/types/api';
 
 export interface PermissionsGraphProps {
   nodes: GraphNode[];
@@ -32,11 +31,33 @@ const RISK_STATUSES: readonly LeaseStatus[] = ['WARNING', 'EXPIRED'];
 /** Legenda kolorów — te same rodziny stanów, których używa `getStatusBadge`. */
 const LEGEND_STATUSES: readonly LeaseStatus[] = ['ACTIVE', 'WARNING', 'EXPIRED'];
 
-type GraphNodeData = GraphNode['data'];
-type FlowNode = Node<GraphNodeData, GraphNode['type']>;
+/** Od najgroźniejszego: kolor węzła bierze najgorszy status z jego dostępów. */
+const SEVERITY: readonly LeaseStatus[] = ['EXPIRED', 'WARNING', 'ACTIVE'];
 
-function hasElevatedRisk(status: LeaseStatus | undefined): boolean {
-  return status !== undefined && RISK_STATUSES.includes(status);
+/**
+ * Wysokość panelu jest **wymierzona** (Chromium, dane demo): kolumna ma 7 wierszy po 72 px,
+ * czyli 504 px treści, a przy 512 px `fitView` dobijał do `minZoom` i ścinał skrajne węzły.
+ * 38rem (608 px) zostawia zapas, więc o powiększeniu decyduje szerokość panelu — przy 1440 px
+ * okna etykiety węzłów mają ~12 px, a nie ~9 px.
+ */
+const PANE_CLASSES = 'h-[38rem] overflow-hidden rounded-xl border border-border bg-card';
+
+/**
+ * Dane węzła dla React Flow. Kontrakt (`GraphNodeData`) nie ma statusu — wisi on wyłącznie na
+ * krawędziach dostępów, więc widok wylicza go z krawędzi i dokłada tutaj, żeby kolor węzła
+ * nadal niósł stan uprawnień.
+ */
+type GraphDisplayData = {
+  label: string;
+  team: string | null;
+  is_admin: boolean;
+  status: LeaseStatus | null;
+};
+
+type FlowNode = Node<GraphDisplayData, GraphNode['type']>;
+
+function hasElevatedRisk(status: LeaseStatus | null): boolean {
+  return status !== null && RISK_STATUSES.includes(status);
 }
 
 /** Węzły dotknięte ryzykiem: końce krawędzi o statusie `WARNING`/`EXPIRED`. */
@@ -44,7 +65,7 @@ function collectRiskNodeIds(edges: GraphEdge[]): Set<string> {
   const ids = new Set<string>();
 
   edges.forEach((edge: GraphEdge): void => {
-    if (hasElevatedRisk(edge.data?.status)) {
+    if (hasElevatedRisk(edge.data.status)) {
       ids.add(edge.source);
       ids.add(edge.target);
     }
@@ -53,35 +74,62 @@ function collectRiskNodeIds(edges: GraphEdge[]): Set<string> {
   return ids;
 }
 
+/** Najgorszy status węzła, wyliczony z jego krawędzi dostępów (bez krawędzi = brak statusu). */
+function collectStatusByNode(edges: GraphEdge[]): Map<string, LeaseStatus> {
+  const statuses = new Map<string, LeaseStatus>();
+
+  function remember(nodeId: string, status: LeaseStatus | null): void {
+    if (status === null) {
+      return;
+    }
+
+    const current: LeaseStatus | undefined = statuses.get(nodeId);
+    statuses.set(nodeId, current === undefined ? status : worseOf(current, status));
+  }
+
+  edges.forEach((edge: GraphEdge): void => {
+    remember(edge.source, edge.data.status);
+    remember(edge.target, edge.data.status);
+  });
+
+  return statuses;
+}
+
+function worseOf(current: LeaseStatus, candidate: LeaseStatus): LeaseStatus {
+  return SEVERITY.indexOf(candidate) < SEVERITY.indexOf(current) ? candidate : current;
+}
+
 function labelOf(nodes: GraphNode[], id: string): string {
   return nodes.find((node: GraphNode): boolean => node.id === id)?.data.label ?? id;
 }
 
-function toFlowNodes(nodes: GraphNode[]): FlowNode[] {
+function toFlowNodes(nodes: GraphNode[], statuses: Map<string, LeaseStatus>): FlowNode[] {
   return applyColumnLayout(nodes).map((node: GraphNode): FlowNode => ({
     id: node.id,
     type: node.type,
-    position: node.position ?? { x: 0, y: 0 },
-    data: node.data,
+    position: node.position,
+    data: { ...node.data, status: statuses.get(node.id) ?? null },
   }));
 }
 
 /**
  * Kolor krawędzi pochodzi z `getStatusBadge` (klasa `text-status-*` na grupie), a `stroke`
  * ustawiamy na `currentColor` — dzięki temu działa jedno źródło prawdy o kolorach stanu.
+ * `animated` bierzemy z kontraktu (backend zapala je dla `WARNING`/`EXPIRED`).
  */
 function toFlowEdges(edges: GraphEdge[], nodes: GraphNode[]): Edge[] {
   return edges.map((edge: GraphEdge): Edge => {
-    const status = edge.data?.status;
-    const role = edge.data?.role;
-    const badge = status === undefined ? null : getStatusBadge(status);
-    const roleLabel = role === undefined ? '' : ` (${getRoleLabel(role)})`;
+    const status: LeaseStatus | null = edge.data.status;
+    const role = edge.data.role;
+    const badge = status === null ? null : getStatusBadge(status);
+    const roleLabel = role === null ? '' : ` (${getRoleLabel(role)})`;
 
     return {
       id: edge.id,
       source: edge.source,
       target: edge.target,
       type: 'smoothstep',
+      animated: edge.animated,
       className: badge?.className,
       style: badge === null ? undefined : { stroke: 'currentColor' },
       ariaLabel: `${labelOf(nodes, edge.source)} → ${labelOf(nodes, edge.target)}${roleLabel}`,
@@ -91,7 +139,7 @@ function toFlowEdges(edges: GraphEdge[], nodes: GraphNode[]): Edge[] {
 
 /** Węzeł grafu: wypełnienie i obramowanie z rodziny statusu, etykiety po polsku obok koloru. */
 function GraphStatusNode({ data }: NodeProps<FlowNode>): React.JSX.Element {
-  const badge = data.status === undefined ? null : getStatusBadge(data.status);
+  const badge = data.status === null ? null : getStatusBadge(data.status);
 
   return (
     <div
@@ -162,13 +210,14 @@ export function PermissionsGraph({
 }: PermissionsGraphProps): React.JSX.Element {
   const { theme = 'system' } = useTheme();
   const riskNodeIds = collectRiskNodeIds(edges);
+  const statuses = collectStatusByNode(edges);
   const visibleNodes = onlyRisk
     ? nodes.filter((node: GraphNode): boolean => riskNodeIds.has(node.id))
     : nodes;
   const visibleNodeIds = new Set(visibleNodes.map((node: GraphNode): string => node.id));
   const visibleEdges = edges.filter(
     (edge: GraphEdge): boolean =>
-      (!onlyRisk || hasElevatedRisk(edge.data?.status)) &&
+      (!onlyRisk || hasElevatedRisk(edge.data.status)) &&
       visibleNodeIds.has(edge.source) &&
       visibleNodeIds.has(edge.target),
   );
@@ -194,13 +243,16 @@ export function PermissionsGraph({
           Brak danych do wyświetlenia
         </p>
       ) : (
-        <div className="h-[32rem] overflow-hidden rounded-xl border border-border bg-card">
+        <div className={PANE_CLASSES}>
           <ReactFlow
             ariaLabelConfig={ARIA_LABEL_CONFIG}
             colorMode={theme === 'light' ? 'light' : 'dark'}
             edges={toFlowEdges(visibleEdges, visibleNodes)}
             fitView
-            nodes={toFlowNodes(visibleNodes)}
+            // Domyślne 0.5 ucinało graf na wąskim panelu (węzły poza ramką). 0.3 to bezpiecznik:
+            // przy typowej szerokości `fitView` i tak dobiera ~0.8–1.0, więc etykiety są czytelne.
+            minZoom={0.3}
+            nodes={toFlowNodes(visibleNodes, statuses)}
             nodesConnectable={false}
             nodesDraggable={false}
             nodeTypes={NODE_TYPES}

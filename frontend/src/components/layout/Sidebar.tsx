@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Pulpit', icon: LayoutDashboard },
-  { to: '/leases', label: 'Dzierżawy', icon: FileCheck2 },
+  { to: '/leases', label: 'Dostępy', icon: FileCheck2 },
   { to: '/appeals', label: 'Odwołania', icon: Gavel },
   { to: '/baseline', label: 'Standard zespołu', icon: ShieldCheck },
   { to: '/graph', label: 'Graf', icon: Network },

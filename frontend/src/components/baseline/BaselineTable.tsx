@@ -1,4 +1,3 @@
-import type { BaselineResponse } from '@/api/baseline';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -10,17 +9,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getRoleLabel } from '@/lib/statusBadges';
+import type { BaselineEntry } from '@/types/api';
 
 export interface BaselineTableProps {
-  response: BaselineResponse;
+  entries: BaselineEntry[];
 }
 
 /**
  * Propozycje standardu zespołu (UC-1): repozytorium, proponowana rola i udział aktywnych
- * członków. Etykieta roli pochodzi wyłącznie z `lib/statusBadges.ts` — poziom `admin` nie ma
- * tu prawa się pojawić, bo ADR 0005 wyklucza go ze standardu.
+ * członków. Dane pochodzą wprost z `GET /api/v1/teams/{slug}/baseline` (goła lista wpisów).
+ * Etykieta roli pochodzi wyłącznie z `lib/statusBadges.ts` — poziom `admin` nie ma tu prawa się
+ * pojawić, bo ADR 0005 wyklucza go ze standardu.
  */
-export function BaselineTable({ response }: BaselineTableProps): React.JSX.Element {
+export function BaselineTable({ entries }: BaselineTableProps): React.JSX.Element {
   return (
     <Card>
       <CardHeader>
@@ -30,7 +31,7 @@ export function BaselineTable({ response }: BaselineTableProps): React.JSX.Eleme
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {response.entries.length === 0 ? (
+        {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Za mało aktywnych członków w ostatnich 30 dniach — ten zespół nie ma jeszcze propozycji
             standardu.
@@ -45,7 +46,7 @@ export function BaselineTable({ response }: BaselineTableProps): React.JSX.Eleme
               </TableRow>
             </TableHeader>
             <TableBody>
-              {response.entries.map((entry) => (
+              {entries.map((entry) => (
                 <TableRow key={entry.repository.id}>
                   <TableCell className="font-mono">
                     {entry.repository.owner}/{entry.repository.name}

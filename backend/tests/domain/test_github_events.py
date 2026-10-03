@@ -19,8 +19,14 @@ def event(action_type: ActionType, event_id: int = 7) -> ActivityEvent:
     )
 
 
+GITHUB_ACTIONS = [
+    ActionType.PUSH, ActionType.PR_MERGE, ActionType.PR_REVIEW,
+    ActionType.ISSUE_COMMENT, ActionType.ISSUE_LABEL, ActionType.REPO_SETTINGS,
+]
+
+
 def test_event_type_permission_table_and_renewing_set() -> None:
-    assert {a.value: required_permission_for(a) for a in ActionType} == {
+    assert {a.value: required_permission_for(a) for a in GITHUB_ACTIONS} == {
         "PushEvent": Role.WRITE,
         "PullRequestEvent": Role.WRITE,
         "PullRequestReviewEvent": Role.READ,
@@ -28,9 +34,19 @@ def test_event_type_permission_table_and_renewing_set() -> None:
         "IssuesEvent": Role.READ,
         "PublicEvent": Role.ADMIN,
     }
-    assert RENEWING_ACTIONS == {ActionType.PUSH, ActionType.PR_REVIEW, ActionType.ISSUE_COMMENT}
-    assert not is_renewing(ActionType.PR_MERGE) and not is_renewing(ActionType.ISSUE_LABEL)
-    assert not is_renewing(ActionType.REPO_SETTINGS)
+    assert {ActionType.PUSH, ActionType.PR_REVIEW, ActionType.ISSUE_COMMENT} <= RENEWING_ACTIONS
+    assert not any(is_renewing(a) for a in (ActionType.PR_MERGE, ActionType.ISSUE_LABEL, ActionType.REPO_SETTINGS))
+
+
+def test_jira_action_levels_and_renewal() -> None:
+    assert {a.value: required_permission_for(a) for a in ActionType if a not in GITHUB_ACTIONS} == {
+        "jira:issue_created": Role.WRITE,
+        "jira:issue_updated": Role.WRITE,
+        "comment_created": Role.READ,
+        "project_updated": Role.ADMIN,
+    }
+    assert is_renewing(ActionType.JIRA_ISSUE_UPDATED) and is_renewing(ActionType.JIRA_COMMENT_CREATED)
+    assert not is_renewing(ActionType.JIRA_PROJECT_UPDATED)
 
 
 def test_push_payload() -> None:
@@ -73,7 +89,7 @@ def test_settings_change_payload_is_public_event() -> None:
     assert build_event_payload(event(ActionType.REPO_SETTINGS), REPO, USER) == {}
 
 
-@pytest.mark.parametrize("kind", list(ActionType))
+@pytest.mark.parametrize("kind", GITHUB_ACTIONS)
 def test_payload_is_deterministic(kind: ActionType) -> None:
     assert build_event_payload(event(kind), REPO, USER) == build_event_payload(event(kind), REPO, USER)
 

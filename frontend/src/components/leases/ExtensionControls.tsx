@@ -26,6 +26,11 @@ export interface ExtensionControlsProps {
   choice: ExtensionChoice | null;
   customDays: string;
   simulatedNow: string | null;
+  /**
+   * Zdanie zamiast kontrolek, gdy silnik nie przyjmie `EXTEND` (np. dostęp administratora);
+   * `null`/brak = zwykłe przedłużanie. Tryb odwołania nie podaje go wcale.
+   */
+  disabledReason?: string | null;
   onChoiceChange: (choice: ExtensionChoice) => void;
   onCustomDaysChange: (value: string) => void;
 }
@@ -34,6 +39,7 @@ export function ExtensionControls({
   choice,
   customDays,
   simulatedNow,
+  disabledReason = null,
   onChoiceChange,
   onCustomDaysChange,
 }: ExtensionControlsProps): React.JSX.Element {
@@ -45,6 +51,15 @@ export function ExtensionControls({
     }
     onChoiceChange({ kind: 'date', date: toIsoDate(date) });
     setIsDatePickerOpen(false);
+  }
+
+  if (disabledReason !== null) {
+    return (
+      <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
+        <h3 className="text-sm font-medium">Przedłuż</h3>
+        <p className="text-xs text-muted-foreground">{disabledReason}</p>
+      </section>
+    );
   }
 
   return (

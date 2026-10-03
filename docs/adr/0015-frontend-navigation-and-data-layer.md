@@ -2,7 +2,7 @@
 
 ## Kontekst
 
-ADR 0001 ustalił stos technologiczny frontendu (React 19 + React Compiler + TypeScript + Vite + Tailwind CSS + shadcn/ui + `@xyflow/react`), a ADR 0009 rozstrzygnął, że typy TS frontendu są generowane ze schematów Pydantic. Pozostają decyzje dotyczące całego panelu: jak nawigować między sześcioma widokami, gdzie trzymać stan serwerowy, jak pracować, gdy endpointy 2.5 oraz 3.6–4.6 jeszcze nie istnieją, i skąd frontend bierze czas oraz status dzierżawy. ADR 0003 wymaga natychmiastowego odświeżenia stanu po podróży w czasie, a ADR 0001 — bezawaryjnej prezentacji na żywo.
+ADR 0001 ustalił stos technologiczny frontendu (React 19 + React Compiler + TypeScript + Vite + Tailwind CSS + shadcn/ui + `@xyflow/react`), a ADR 0009 rozstrzygnął, że typy TS frontendu są generowane ze schematów Pydantic. Pozostają decyzje dotyczące całego panelu: jak nawigować między sześcioma widokami, gdzie trzymać stan serwerowy, jak pracować, gdy endpointy 2.5 oraz 3.6–4.6 jeszcze nie istnieją, i skąd frontend bierze czas oraz status dostępu. ADR 0003 wymaga natychmiastowego odświeżenia stanu po podróży w czasie, a ADR 0001 — bezawaryjnej prezentacji na żywo.
 
 ## Decyzja
 

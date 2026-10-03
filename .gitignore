@@ -44,3 +44,5 @@ npm-debug.log*
 
 # Lokalny Node dla build.sh / run.sh (systemowy bywa za stary dla Vite 8)
 .tools/
+# Worktree agentów (izolacja równoległych sesji)
+.worktrees/

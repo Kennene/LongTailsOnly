@@ -68,7 +68,7 @@ Odwzorowują realny seed z `backend/app/db/seed_data.py`: `tomasz-admin`, `kamil
 `nowy-dev`, 10 deweloperów DEV, 5 QA i 10 repozytoriów organizacji `longtails`.
 Daty i liczby dni pochodzą z faktycznie zaseedowanej bazy, nie z oszacowań.
 
-Zbiór dzierżaw jest **reprezentatywny (15 z 53)**, a nie pełnym zrzutem bazy — pokrywa każdy
+Zbiór dostępów jest **reprezentatywny (15 z 53)**, a nie pełnym zrzutem bazy — pokrywa każdy
 status, każdą rolę i każdą rekomendację. Tabela w panelu ma obsłużyć listę dowolnej długości,
 więc 15 rekordów wystarczy do zbudowania i przetestowania widoku.
 
@@ -78,13 +78,13 @@ więc 15 rekordów wystarczy do zbudowania i przetestowania widoku.
 
 | Przypadek | `expires_at` | `days_remaining` | Przykład |
 | --- | --- | --- | --- |
-| Dzierżawa z terminem | ISO-8601 | liczba dodatnia | `kamil@core-api` → `28` |
-| Dzierżawa wygasła | ISO-8601 (w przeszłości) | **liczba ujemna** | `kamil@legacy-reports` → `-61` |
+| Dostęp z terminem | ISO-8601 | liczba dodatnia | `kamil@core-api` → `28` |
+| Dostęp wygasł | ISO-8601 (w przeszłości) | **liczba ujemna** | `kamil@legacy-reports` → `-61` |
 | Stały admin (break-glass) | `null` | `null` | `tomasz-admin@core-api` |
 
 Wartości ujemne **nie są przycinane do zera** — odpowiadają naturalnemu wynikowi
-`(expires_at - now).days` i pokazują, jak dawno dzierżawa wygasła. `null` jest zarezerwowane
-wyłącznie dla dzierżaw bez terminu, więc `days_remaining is None` ⇔ `expires_at is None`.
+`(expires_at - now).days` i pokazują, jak dawno dostęp wygasł. `null` jest zarezerwowane
+wyłącznie dla dostępów bez terminu, więc `days_remaining is None` ⇔ `expires_at is None`.
 
 Panel powinien kluczować po polu `status`, a nie po znaku `days_remaining`.
 Jeżeli Osoba 3 zdecyduje inaczej (np. przycięcie do zera), trzeba zaktualizować fixtures

@@ -14,8 +14,8 @@ from app.services.decision_service import downscope_lease, revoke_lease
 from app.services.errors import LastAdminError
 from app.services.lease_service import list_lease_overviews
 
-AUTO_DOWNSCOPE = "Tryb auto: dzierżawa wygasła bez pushy w oknie dzierżawy, zostaje dostęp do odczytu"
-AUTO_REVOKE = "Tryb auto: dzierżawa wygasła bez aktywności w oknie dzierżawy"
+AUTO_DOWNSCOPE = "Tryb auto: dostęp wygasł bez pushy w oknie dostępu, zostaje dostęp do odczytu"
+AUTO_REVOKE = "Tryb auto: dostęp wygasł bez aktywności w oknie dostępu"
 
 
 @dataclass(frozen=True)

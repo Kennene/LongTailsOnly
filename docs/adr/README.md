@@ -24,7 +24,7 @@ git ls-tree -r --name-only origin/main -- docs/adr
 | Nr | Tytuł | Status | Dotyczy |
 | --- | --- | --- | --- |
 | [0001](0001-tech-stack-and-spa-architecture.md) | Wybór stosu technologicznego i architektury SPA | Accepted | Backend, Frontend, komunikacja |
-| [0002](0002-zero-standing-privileges-and-lease-hierarchy.md) | Model dzierżawy dostępu i hierarchia uprawnień (MVP) | Accepted | Domena, `write`/`read`, `admin` break-glass |
+| [0002](0002-zero-standing-privileges-and-lease-hierarchy.md) | Model dostępu czasowego i hierarchia uprawnień (MVP) | Accepted | Domena, `write`/`read`, `admin` break-glass |
 | [0003](0003-simulated-clock-and-time-travel.md) | Zegar symulowany (`TimeProvider`) i sterowanie czasem | Accepted | Zegar, `time-travel` |
 | [0004](0004-github-mock-and-last-admin-protection.md) | Emulacja GitHub REST API i reguła Last Admin Protection | Accepted | `api/github_mock`, kody HTTP |
 | [0005](0005-team-baseline-and-intentional-friction.md) | Standard zespołu i elastyczne decyzje administratora | Accepted | `BaselineService`, odwołania, TTL |
@@ -38,6 +38,7 @@ git ls-tree -r --name-only origin/main -- docs/adr
 | [0013](0013-prelint-i-straz-adr-w-procesie-pr.md) | Prelint jako pamięć decyzji i straż ADR-ów w procesie PR | Proponowany | Proces, `.mcp.json`, szablon PR, krok 6.0 |
 | [0014](0014-person-4-baseline-appeals-audit-insights.md) | Kontrakty Osoby 4: standard zespołu, onboarding, odwołania, audyt, dane widoków | Proponowany | `baseline_service`, `appeal_service`, `audit_service`, `insights`, kroki 4.1–4.6 |
 | [0015](0015-frontend-navigation-and-data-layer.md) | Frontend SPA: nawigacja, warstwa danych i praca na generowanym kontrakcie | Proponowany | `frontend/src`, kroki 5.x |
+| [0016](0016-multi-provider-resources-and-jira-mock.md) | Wielu dostawców (`provider`) i mock Jiry | Proponowany | `repositories.provider`, `api/jira_mock`, `access_leases`, `jql` |
 
 ## Statusy
 

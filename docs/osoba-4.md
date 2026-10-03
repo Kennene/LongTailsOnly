@@ -29,7 +29,7 @@ Cała praca Osoby 4 jest na gałęzi `feat/osoba-4` (pierwsza część scalona w
 | `POST /api/v1/appeals` `{"lease_id", "justification"}` | 201 `AppealOverview`; 422 puste/powtórzone uzasadnienie; 409 dostęp nie wygasa w ciągu 7 dni albo odwołanie już czeka; 404 |
 | `POST /api/v1/appeals/{id}/reject` `{"justification"}` | `AppealOverview` ze statusem `REJECTED`; 409 jeśli już rozpatrzone |
 | `GET /api/v1/appeals?login=marta` | historia odwołań osoby (najnowsze pierwsze), z `days_remaining`, `recent_activity_count`, `previous_appeals` |
-| `GET /api/v1/appeals?lease_id=5&status=PENDING` | czy dzierżawa ma oczekujące odwołanie (dla modala decyzji) |
+| `GET /api/v1/appeals?lease_id=5&status=PENDING` | czy dostęp ma oczekujące odwołanie (dla modala decyzji) |
 | `GET /api/v1/audit?actor_type=&action=&actor_login=&target=&since=&until=&limit=` | `AuditEntry[]` z gotowym `actor_login`, najnowsze pierwsze |
 | `POST /api/v1/appeals/{id}/decision` (body jak `DecisionRequest`) | wykonuje decyzję silnikiem Osoby 3 i zamyka odwołanie: `EXTEND` → `APPROVED`, `DOWNSCOPE`/`REVOKE` → `REJECTED`; 409 już rozpatrzone; 403 ostatni admin |
 | `GET /api/v1/dashboard/stats` | `{"generated_at", "active", "warning", "expired", "permanent", "revoked", "downscope_recommendations", "revoke_recommendations", "pending_appeals", "onboarding_candidates"}` |
@@ -40,9 +40,9 @@ Wszystkie typy są w `frontend/src/types/api.ts`: `SimulationClock`, `Onboarding
 ## 3. Najważniejsze decyzje (pełna treść: ADR 0014)
 
 1. **Wpisów audytu nie da się zmienić ani usunąć.** Pilnuje tego baza (wyzwalacze w migracji `0002`), także przy surowym SQL. Reset demo dalej działa.
-2. **Wpisy do audytu tylko przez `write_audit_event`**, a opis celu dzierżawy przez `lease_target`.
-3. **Dostęp nadajemy tylko przez port `VCSProvider`.** Mock Osoby 2 jest w `main`, ale jeszcze nie implementuje portu, więc działa tymczasowy adapter (dzierżawa = kolaborator).
-4. **Odwołanie przysługuje**, gdy dostęp odebrano albo wygasa w ciągu 7 dni (także już wygasł). Każde odwołanie wymaga **nowego** uzasadnienia: wielkość liter i spacje się nie liczą. Na jedną dzierżawę może czekać tylko jedno odwołanie; pilnuje tego też baza (migracja `0003`), więc podwójne kliknięcie daje 409.
+2. **Wpisy do audytu tylko przez `write_audit_event`**, a opis celu dostępu przez `lease_target`.
+3. **Dostęp nadajemy tylko przez port `VCSProvider`.** Mock Osoby 2 jest w `main`, ale jeszcze nie implementuje portu, więc działa tymczasowy adapter (dostęp = kolaborator).
+4. **Odwołanie przysługuje**, gdy dostęp odebrano albo wygasa w ciągu 7 dni (także już wygasł). Każde odwołanie wymaga **nowego** uzasadnienia: wielkość liter i spacje się nie liczą. Na jeden dostęp może czekać tylko jedno odwołanie; pilnuje tego też baza (migracja `0003`), więc podwójne kliknięcie daje 409.
 5. **Status odwołania:** przedłużenie → `APPROVED`; deeskalacja, odebranie albo odrzucenie → `REJECTED`.
 6. **Liczba 7 dni i „ile dni zostało”** są w jednym miejscu: `app/domain/lease_window.py`. Osoba 3 korzysta z tego samego.
 7. **Aktor „admin”** to konto z `Settings.admin_login` (domyślnie `tomasz-admin`), bo MVP nie ma logowania.
@@ -87,9 +87,9 @@ Reset demo działa jak wcześniej, sprawdziłem. Jeśli kiedyś zrobisz migracj�
 Endpointy, które już działają, są w tabeli w sekcji 2. Najważniejsze dla Ciebie:
 - **który dzień demo pokazać w pasku:** `GET /api/v1/simulation/clock`;
 - **historia odwołań w modalu:** `GET /api/v1/appeals?login=...`;
-- **czy dzierżawa ma oczekujące odwołanie:** `GET /api/v1/appeals?lease_id=...&status=PENDING`.
+- **czy dostęp ma oczekujące odwołanie:** `GET /api/v1/appeals?lease_id=...&status=PENDING`.
 
-Jeśli odwołanie czeka, decyzję wysyłasz na `POST /api/v1/appeals/{id}/decision` (to samo body co dla dzierżawy), a nie na endpoint dzierżawy, bo ten zwróci 409.
+Jeśli odwołanie czeka, decyzję wysyłasz na `POST /api/v1/appeals/{id}/decision` (to samo body co dla dostępu), a nie na endpoint dostępu, bo ten zwróci 409.
 
 Działają też `GET /api/v1/dashboard/stats` (gotowe liczby do kart) i `GET /api/v1/graph?team=dev` (gotowe `nodes` i `edges` do `<ReactFlow>`, bez liczenia pozycji). Typy masz w `frontend/src/types/api.ts`.
 

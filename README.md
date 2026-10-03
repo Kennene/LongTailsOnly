@@ -2,7 +2,7 @@
 
 Projekt na hackathon **Hack Yeah 2026** (kategoria Defence + nagroda Prelint).
 
-**Żaden dostęp nie jest wieczny.** Panel administratora bezpieczeństwa IT, w którym uprawnienia do repozytoriów GitHuba są dzierżawą: wygasają, chyba że realna aktywność albo decyzja admina je odnowi. Opis produktu: [`PRODUKT.md`](PRODUKT.md), słownik: [`GLOSSARY.md`](GLOSSARY.md).
+**Żaden dostęp nie jest wieczny.** Panel administratora bezpieczeństwa IT, w którym uprawnienia do repozytoriów GitHuba są dostępem czasowym: wygasają, chyba że realna aktywność albo decyzja admina je odnowi. Opis produktu: [`PRODUKT.md`](PRODUKT.md), słownik: [`GLOSSARY.md`](GLOSSARY.md).
 
 ## Zespół i podział pracy
 
@@ -10,7 +10,7 @@ Projekt na hackathon **Hack Yeah 2026** (kategoria Defence + nagroda Prelint).
 | --- | --- | --- |
 | 1 | Fundament backendu: szkielet, schematy + kontrakt TS, modele, zegar, seed, reset demo | Kocik |
 | 2 | Mock GitHuba i aktywność, time-travel | Dawid |
-| 3 | Silnik dzierżawy: statusy, odnawianie, deeskalacja, ostatni admin, tryby, decyzje | Guziol — [`docs/3-silnik-dzierzawy/DOCUMENTATION.md`](docs/3-silnik-dzierzawy/DOCUMENTATION.md) |
+| 3 | Silnik dostępów: statusy, odnawianie, deeskalacja, ostatni admin, tryby, decyzje | Guziol — [`docs/3-silnik-dzierzawy/DOCUMENTATION.md`](docs/3-silnik-dzierzawy/DOCUMENTATION.md) |
 | 4 | Standard zespołu, onboarding, odwołania, audyt, dane dla dashboardu i grafu | Durczkos — [`docs/osoba-4.md`](docs/osoba-4.md) |
 | 5 | Frontend (React + React Flow) | Kubuś |
 | 6 | Scenariusze, testy E2E, Prelint, slajdy, zgłoszenie | Sydor |
@@ -21,7 +21,7 @@ Projekt na hackathon **Hack Yeah 2026** (kategoria Defence + nagroda Prelint).
 | --- | --- |
 | 1 | ✅ Kroki 1.1–1.6 w `main` (PR #5) |
 | 2 | ✅ Mock GitHuba, aktywność i time-travel w `main` (PR #4, ADR 0010) |
-| 3 | ✅ Silnik dzierżawy 3.1–3.6 w `main` (PR #11) |
+| 3 | ✅ Silnik dostępów 3.1–3.6 w `main` (PR #11) |
 | 4 | ✅ 4.1–4.6 komplet: standard zespołu, onboarding, odwołania z decyzją, historia, audyt, dashboard, graf, zegar symulacji. Szczegóły: [`docs/osoba-4.md`](docs/osoba-4.md) |
 | 5, 6 | ⏳ Nie zaczęte w repo |
 
@@ -45,7 +45,7 @@ Przy pierwszym starcie serwer sam buduje bazę i wgrywa dane demo (19 osób, 10 
 ```
 backend/            FastAPI + SQLAlchemy + Alembic (app/, tests/, contract/schema.json)
 frontend/src/types/ typy TS generowane z kontraktu backendu (ADR 0009) — nie edytować ręcznie
-docs/adr/           decyzje architektoniczne (ADR 0001–0011)
+docs/adr/           decyzje architektoniczne (ADR 0001–0016)
 docs/superpowers/   plany zadań (plans/) i specyfikacje (specs/)
 docs/osoba-4.md     stan i kontrakty Osoby 4
 ```

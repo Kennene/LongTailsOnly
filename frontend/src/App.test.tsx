@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { App } from '@/App';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
-const NAV_LABELS = ['Pulpit', 'Dzierżawy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt'];
+const NAV_LABELS = ['Pulpit', 'Dostępy', 'Odwołania', 'Standard zespołu', 'Graf', 'Audyt'];
 
 it('renders navigation for all six views and switches route', async () => {
   const user = userEvent.setup();
@@ -14,9 +14,9 @@ it('renders navigation for all six views and switches route', async () => {
     expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
   }
 
-  await user.click(screen.getByRole('link', { name: 'Dzierżawy' }));
+  await user.click(screen.getByRole('link', { name: 'Dostępy' }));
 
-  expect(await screen.findByRole('heading', { name: 'Dzierżawy' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Dostępy' })).toBeInTheDocument();
 });
 
 it('mounts the simulated clock bar in the top bar', () => {
