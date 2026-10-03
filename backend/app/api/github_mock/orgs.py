@@ -26,7 +26,7 @@ async def list_org_teams(
     org: str, request: Request, response: Response, page: PageParams = Depends(),
     svc: GitHubMockService = Depends(get_mock_service),
 ) -> list[GHTeam]:
-    teams = paginate(svc.list_teams(org), request, response, page)
+    teams = paginate(await svc.list_teams(org), request, response, page)
     return [GHTeam.build(t.id, t.name, t.slug, org, _base(request)) for t in teams]
 
 

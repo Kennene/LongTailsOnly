@@ -4,28 +4,29 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.github_events import EVENT_REQUIRED_PERMISSION
+from app.domain.enums import ActionType
+from app.domain.roles import required_permission_for
 from app.models import ActivityEvent, Repository, User
-from tests.api.conftest import BASE
+from tests.api.github_mock.conftest import BASE
 
 URL = "/api/v3/repos/longtails/core-api/events"
 
 
-async def add_event(db: AsyncSession, login: str, repo: str, kind: str, age_days: float) -> None:
+async def add_event(db: AsyncSession, login: str, repo: str, kind: ActionType, age_days: float) -> None:
     user = await db.scalar(select(User).where(User.login == login))
     repository = await db.scalar(select(Repository).where(Repository.name == repo))
     assert user is not None and repository is not None
     db.add(ActivityEvent(
         user_id=user.id, repo_id=repository.id, timestamp=BASE - timedelta(days=age_days),
-        action_type=kind, required_permission=EVENT_REQUIRED_PERMISSION[kind],
+        action_type=kind, required_permission=required_permission_for(kind),
     ))
     await db.commit()
 
 
 async def test_events_endpoint_shape_and_order(client: httpx.AsyncClient, db: AsyncSession) -> None:
-    await add_event(db, "dev-01", "core-api", "PushEvent", 5)
-    await add_event(db, "dev-02", "core-api", "PullRequestReviewEvent", 1)
-    await add_event(db, "dev-01", "auth-service", "PushEvent", 2)  # other repo, must not leak
+    await add_event(db, "dev-01", "core-api", ActionType.PUSH, 5)
+    await add_event(db, "dev-02", "core-api", ActionType.PR_REVIEW, 1)
+    await add_event(db, "dev-01", "auth-service", ActionType.PUSH, 2)  # other repo, must not leak
     r = await client.get(URL)
     assert r.status_code == 200
     events = r.json()
@@ -39,8 +40,8 @@ async def test_events_endpoint_shape_and_order(client: httpx.AsyncClient, db: As
 
 
 async def test_events_window_is_90_days_after_time_travel(client: httpx.AsyncClient, db: AsyncSession, clock) -> None:
-    await add_event(db, "dev-01", "core-api", "PushEvent", 80)
-    await add_event(db, "dev-01", "core-api", "PushEvent", 10)
+    await add_event(db, "dev-01", "core-api", ActionType.PUSH, 80)
+    await add_event(db, "dev-01", "core-api", ActionType.PUSH, 10)
     assert len((await client.get(URL)).json()) == 2
     clock.advance(15)  # the 80-day-old event is now 95 days old
     assert len((await client.get(URL)).json()) == 1
@@ -49,7 +50,7 @@ async def test_events_window_is_90_days_after_time_travel(client: httpx.AsyncCli
 
 
 async def test_future_events_are_not_returned(client: httpx.AsyncClient, db: AsyncSession) -> None:
-    await add_event(db, "dev-01", "core-api", "PushEvent", -1)
+    await add_event(db, "dev-01", "core-api", ActionType.PUSH, -1)
     assert (await client.get(URL)).json() == []
 
 
@@ -60,7 +61,7 @@ async def test_events_capped_at_300(client: httpx.AsyncClient, db: AsyncSession)
     db.add_all(
         ActivityEvent(
             user_id=user.id, repo_id=repo.id, timestamp=BASE - timedelta(minutes=i),
-            action_type="PushEvent", required_permission="write",
+            action_type=ActionType.PUSH, required_permission=required_permission_for(ActionType.PUSH),
         )
         for i in range(305)
     )
@@ -78,6 +79,6 @@ async def test_events_unknown_repo_404(client: httpx.AsyncClient) -> None:
 
 async def test_events_paginated(client: httpx.AsyncClient, db: AsyncSession) -> None:
     for i in range(3):
-        await add_event(db, "dev-01", "core-api", "PushEvent", i + 1)
+        await add_event(db, "dev-01", "core-api", ActionType.PUSH, i + 1)
     r = await client.get(URL, params={"per_page": 2})
     assert len(r.json()) == 2 and 'rel="next"' in r.headers["link"]

@@ -4,7 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.domain.github_permissions import NO_PERMISSION, LeaseRole, permission_flags, to_role_name
+from app.domain.enums import Role
+from app.domain.github_permissions import permission_flags, role_name
 from app.models import ActivityEvent, Repository, User
 from app.utils.dates import iso_z
 
@@ -101,10 +102,9 @@ class GHCollaborator(GHUser):
     role_name: str
 
     @classmethod
-    def from_view(cls, user: User, role: LeaseRole | None, base: str) -> GHCollaborator:
+    def from_view(cls, user: User, role: Role | None, base: str) -> GHCollaborator:
         base_user = GHUser.from_user(user, base)
-        flags = NO_PERMISSION if role is None else permission_flags(role)
-        return cls(**base_user.model_dump(), permissions=flags, role_name="none" if role is None else to_role_name(role))
+        return cls(**base_user.model_dump(), permissions=permission_flags(role), role_name=role_name(role))
 
 
 class GHPermission(BaseModel):
@@ -113,7 +113,7 @@ class GHPermission(BaseModel):
     user: GHCollaborator
 
     @classmethod
-    def from_view(cls, user: User, role: LeaseRole | None, base: str) -> GHPermission:
+    def from_view(cls, user: User, role: Role | None, base: str) -> GHPermission:
         collaborator = GHCollaborator.from_view(user, role, base)
         return cls(permission=collaborator.role_name, role_name=collaborator.role_name, user=collaborator)
 
@@ -129,11 +129,11 @@ class GHInvitation(BaseModel):
     url: str
 
     @classmethod
-    def build(cls, lease_id: int, repo: Repository, invitee: User, inviter: User, role: LeaseRole, created_at: str, base: str) -> GHInvitation:
+    def build(cls, lease_id: int, repo: Repository, invitee: User, inviter: User, role: Role, created_at: str, base: str) -> GHInvitation:
         return cls(
             id=lease_id, node_id=node_id("RepositoryInvitation", lease_id),
             repository=GHRepo.from_repo(repo, base), invitee=GHUser.from_user(invitee, base),
-            inviter=GHUser.from_user(inviter, base), permissions=to_role_name(role), created_at=created_at,
+            inviter=GHUser.from_user(inviter, base), permissions=role_name(role), created_at=created_at,
             url=api_url(base, f"/user/repository_invitations/{lease_id}"),
         )
 
@@ -166,7 +166,7 @@ class GHEvent(BaseModel):
     def build(cls, event: ActivityEvent, user: User, repo: Repository, payload: dict[str, Any], base: str) -> GHEvent:
         full = f"{repo.owner}/{repo.name}"
         return cls(
-            id=str(10_000_000_000 + event.id), type=event.action_type,
+            id=str(10_000_000_000 + event.id), type=event.action_type.value,
             actor=GHActor(
                 id=user.id, login=user.login, display_login=user.login,
                 url=api_url(base, f"/users/{user.login}"), avatar_url=f"{base}/avatars/u/{user.id}",

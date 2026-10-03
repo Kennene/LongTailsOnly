@@ -216,3 +216,14 @@ Wykonano wszystkie 7 zadań (112 testów). Zmiany względem tekstu planu:
 4. **Task 6:** QA ma 6 osób (`qa-marta` + `qa-01..05`); dodano `db/demo_data.py` (`ensure_population`, `load_demo_data`, wyprowadzanie leasów z historii) oraz podpięcie seeda do startu aplikacji. `load_demo_data` jest no-op, gdy w bazie są już zdarzenia (restart nie przesuwa historii). `ActivityEventSpec` ma `age_days: int` i `hour_offset: int`.
 5. **Task 7:** silnik dzierżaw nie istniał, więc test kontraktowy używa lokalnego oracle zapisanego z reguł ADR 0002 (do podmiany na `lease_service`).
 6. Fundament z planu głównego (Zadania 1–3: `pyproject.toml`, `TimeProvider` z `reset()`, modele `User/Repository/Lease/ActivityEvent`, sesja async, `create_app`) został dodany w minimalnym zakresie, bo repo go jeszcze nie miało. Modele `Appeal` i `AuditLog` nie powstały.
+
+## Odchylenia po scaleniu z `main` (ADR 0010)
+
+Po pojawieniu się fundamentu zadań 1.x w `main` (modele z `Team`, `is_active`, Alembic, `ClockPort`, seed, kontrakt TS) mock został do niego dopasowany. Zamiast punktów 3, 4 i 6 powyżej obowiązuje:
+
+1. Własny fundament (`create_app`, `Settings`, sesja, modele, `TimeProvider.offset_seconds`) usunięty; mock używa `get_session`, `get_settings`, `get_time_provider` z `main`. Routery i handlery błędów są podpięte w `app/main.py`.
+2. Własny seed (`demo_data.py`, `demo_scenarios.py`, `activity_generator.py`) usunięty. Zadanie 2.6 to teraz `db/activity_extras.py`: dokłada merge/label/zmianę ustawień do seeda zespołu (deterministycznie, idempotentnie, bez wpływu na statusy i baseline).
+3. `DELETE` collaboratora ustawia `is_active=False`; ponowny `PUT` reaktywuje wiersz (`201`).
+4. `ActionType` rozszerzony o `PullRequestEvent`, `IssuesEvent`, `PublicEvent`; `LEASE_RENEWING_EVENT_TYPES` zastąpione przez `roles.RENEWING_ACTIONS` / `is_renewing`. Kontrakt `schema.json` i `api.ts` wygenerowane ponownie.
+5. Time-travel zgodny z kontraktem `main`: `POST {days}` → `ClockRead{now, offset_days}`, plus `GET` i `DELETE`; wariant `{"reset": true}` usunięty.
+6. Testy mocka przeniesione na fixture'y `engine`/`client`/`session` z `main` (`tests/api/github_mock/conftest.py`), oracle w testach integracyjnych liczony na personach seeda (kamil, marta, ania…jan). Razem 161 testów.

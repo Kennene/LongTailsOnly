@@ -1,11 +1,16 @@
-from dataclasses import dataclass
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-@dataclass(frozen=True)
-class Settings:
-    database_url: str = "sqlite+aiosqlite:///./lease_governor.db"
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    database_url: str = "sqlite+aiosqlite:///./longtails.db"
     github_org: str = "longtails"
-    default_lease_days: int = 30
-    warning_days: int = 7
-    seed_demo: bool = True
-    github_docs_url: str = "https://docs.github.com/rest"
+    enable_demo_reset: bool = True
+
+
+settings = Settings()
+
+
+def get_settings() -> Settings:
+    return settings

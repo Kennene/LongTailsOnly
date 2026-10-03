@@ -1,0 +1,617 @@
+{
+  "$defs": {
+    "ActionType": {
+      "enum": [
+        "PushEvent",
+        "PullRequestReviewEvent",
+        "IssueCommentEvent",
+        "PullRequestEvent",
+        "IssuesEvent",
+        "PublicEvent"
+      ],
+      "title": "ActionType",
+      "type": "string"
+    },
+    "ActivityEventRead": {
+      "properties": {
+        "action_type": {
+          "$ref": "#/$defs/ActionType"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "repo_id": {
+          "type": "integer"
+        },
+        "required_permission": {
+          "$ref": "#/$defs/Role"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "user_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "user_id",
+        "repo_id",
+        "timestamp",
+        "action_type",
+        "required_permission"
+      ],
+      "title": "ActivityEventRead",
+      "type": "object"
+    },
+    "ActorType": {
+      "enum": [
+        "ADMIN",
+        "USER",
+        "SYSTEM"
+      ],
+      "title": "ActorType",
+      "type": "string"
+    },
+    "AppealCreate": {
+      "properties": {
+        "justification": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "lease_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "lease_id",
+        "justification"
+      ],
+      "title": "AppealCreate",
+      "type": "object"
+    },
+    "AppealRead": {
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "justification": {
+          "type": "string"
+        },
+        "lease_id": {
+          "type": "integer"
+        },
+        "repo_id": {
+          "type": "integer"
+        },
+        "requested_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/AppealStatus"
+        },
+        "user_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "lease_id",
+        "user_id",
+        "repo_id",
+        "requested_role",
+        "justification",
+        "status",
+        "created_at",
+        "resolved_at"
+      ],
+      "title": "AppealRead",
+      "type": "object"
+    },
+    "AppealStatus": {
+      "enum": [
+        "PENDING",
+        "APPROVED",
+        "REJECTED"
+      ],
+      "title": "AppealStatus",
+      "type": "string"
+    },
+    "AuditLogRead": {
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "actor_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor_type": {
+          "$ref": "#/$defs/ActorType"
+        },
+        "details": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "justification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "actor_type",
+        "actor_id",
+        "action",
+        "target",
+        "details",
+        "justification"
+      ],
+      "title": "AuditLogRead",
+      "type": "object"
+    },
+    "BaselineEntry": {
+      "properties": {
+        "active_members": {
+          "type": "integer"
+        },
+        "proposed_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "repository": {
+          "$ref": "#/$defs/RepositoryRead"
+        },
+        "team_id": {
+          "type": "integer"
+        },
+        "team_size": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "team_id",
+        "repository",
+        "proposed_role",
+        "active_members",
+        "team_size"
+      ],
+      "title": "BaselineEntry",
+      "type": "object"
+    },
+    "ClockRead": {
+      "properties": {
+        "now": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "offset_days": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "now",
+        "offset_days"
+      ],
+      "title": "ClockRead",
+      "type": "object"
+    },
+    "DecisionAction": {
+      "enum": [
+        "EXTEND",
+        "DOWNSCOPE",
+        "REVOKE"
+      ],
+      "title": "DecisionAction",
+      "type": "string"
+    },
+    "DecisionRequest": {
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/DecisionAction"
+        },
+        "extension": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Extension"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "justification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "DecisionRequest",
+      "type": "object"
+    },
+    "DemoResetResult": {
+      "properties": {
+        "counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "now": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "offset_days": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "now",
+        "offset_days",
+        "counts"
+      ],
+      "title": "DemoResetResult",
+      "type": "object"
+    },
+    "Extension": {
+      "description": "Exactly one way of extending a lease (ADR 0005).",
+      "properties": {
+        "custom_days": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 365,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "multiplier": {
+          "anyOf": [
+            {
+              "enum": [
+                1.5,
+                2.0
+              ],
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "preset_days": {
+          "anyOf": [
+            {
+              "enum": [
+                7,
+                14,
+                30,
+                90
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "until_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Extension",
+      "type": "object"
+    },
+    "LeaseOverview": {
+      "description": "Lease plus values computed by the lease service (Task 8 of the team plan).",
+      "properties": {
+        "current_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "days_remaining": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "granted_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "is_active": {
+          "type": "boolean"
+        },
+        "last_activity_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommendation": {
+          "$ref": "#/$defs/Recommendation"
+        },
+        "repository": {
+          "$ref": "#/$defs/RepositoryRead"
+        },
+        "status": {
+          "$ref": "#/$defs/LeaseStatus"
+        },
+        "user": {
+          "$ref": "#/$defs/UserRead"
+        }
+      },
+      "required": [
+        "id",
+        "user",
+        "repository",
+        "current_role",
+        "granted_at",
+        "expires_at",
+        "is_active",
+        "status",
+        "days_remaining",
+        "last_activity_at",
+        "recommendation"
+      ],
+      "title": "LeaseOverview",
+      "type": "object"
+    },
+    "LeaseRead": {
+      "properties": {
+        "current_role": {
+          "$ref": "#/$defs/Role"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "granted_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "is_active": {
+          "type": "boolean"
+        },
+        "repository": {
+          "$ref": "#/$defs/RepositoryRead"
+        },
+        "user": {
+          "$ref": "#/$defs/UserRead"
+        }
+      },
+      "required": [
+        "id",
+        "user",
+        "repository",
+        "current_role",
+        "granted_at",
+        "expires_at",
+        "is_active"
+      ],
+      "title": "LeaseRead",
+      "type": "object"
+    },
+    "LeaseStatus": {
+      "enum": [
+        "ACTIVE",
+        "WARNING",
+        "EXPIRED"
+      ],
+      "title": "LeaseStatus",
+      "type": "string"
+    },
+    "Recommendation": {
+      "enum": [
+        "KEEP",
+        "DOWNSCOPE",
+        "REVOKE"
+      ],
+      "title": "Recommendation",
+      "type": "string"
+    },
+    "RepositoryRead": {
+      "properties": {
+        "default_branch": {
+          "type": "string"
+        },
+        "default_lease_duration_days": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "owner",
+        "default_branch",
+        "default_lease_duration_days"
+      ],
+      "title": "RepositoryRead",
+      "type": "object"
+    },
+    "Role": {
+      "enum": [
+        "read",
+        "write",
+        "admin"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "TeamRead": {
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "slug",
+        "name"
+      ],
+      "title": "TeamRead",
+      "type": "object"
+    },
+    "TimeTravelRequest": {
+      "properties": {
+        "days": {
+          "maximum": 365,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "days"
+      ],
+      "title": "TimeTravelRequest",
+      "type": "object"
+    },
+    "UserRead": {
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "is_admin": {
+          "type": "boolean"
+        },
+        "login": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "team": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TeamRead"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "login",
+        "name",
+        "team",
+        "is_admin"
+      ],
+      "title": "UserRead",
+      "type": "object"
+    }
+  },
+  "title": "LongTailsOnly API contract"
+}

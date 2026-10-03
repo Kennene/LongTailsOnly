@@ -1,43 +1,18 @@
-"""Mapping between GitHub permission names and the project's lease roles (ADR 0002).
+"""GitHub-shaped permission flags for the mock (names mapping lives in `roles`, ADR 0006)."""
+from app.domain.enums import Role
 
-Only `read | write | admin` are stored. `triage` and `maintain` are accepted (GitHub
-vocabulary) but collapse to `read` / `write`; they are a post-MVP extension path.
-"""
-from typing import Literal
-
-LeaseRole = Literal["admin", "write", "read"]
-GitHubPermission = Literal["admin", "push", "pull"]
-
-_FROM_GITHUB: dict[str, LeaseRole] = {
-    "pull": "read",
-    "triage": "read",
-    "push": "write",
-    "maintain": "write",
-    "admin": "admin",
-}
-_TO_GITHUB: dict[LeaseRole, GitHubPermission] = {"admin": "admin", "write": "push", "read": "pull"}
-_FLAGS: dict[LeaseRole, dict[str, bool]] = {
-    "admin": dict(admin=True, maintain=True, push=True, triage=True, pull=True),
-    "write": dict(admin=False, maintain=False, push=True, triage=True, pull=True),
-    "read": dict(admin=False, maintain=False, push=False, triage=False, pull=True),
-}
 NO_PERMISSION: dict[str, bool] = dict(admin=False, maintain=False, push=False, triage=False, pull=False)
+_FLAGS: dict[Role, dict[str, bool]] = {
+    Role.ADMIN: dict(admin=True, maintain=True, push=True, triage=True, pull=True),
+    Role.WRITE: dict(admin=False, maintain=False, push=True, triage=True, pull=True),
+    Role.READ: dict(admin=False, maintain=False, push=False, triage=False, pull=True),
+}
 
 
-def from_github_permission(name: str) -> LeaseRole:
-    try:
-        return _FROM_GITHUB[name]
-    except KeyError:
-        raise ValueError(f"unknown GitHub permission: {name}") from None
+def permission_flags(role: Role | None) -> dict[str, bool]:
+    return dict(NO_PERMISSION if role is None else _FLAGS[role])
 
 
-def to_github_permission(role: LeaseRole) -> GitHubPermission:
-    return _TO_GITHUB[role]
-
-
-def to_role_name(role: LeaseRole) -> str:
-    return role  # GitHub role_name for push/pull is "write"/"read"; admin stays "admin"
-
-
-def permission_flags(role: LeaseRole) -> dict[str, bool]:
-    return dict(_FLAGS[role])
+def role_name(role: Role | None) -> str:
+    """GitHub `role_name`: read/write/admin, or `none` for people without access."""
+    return "none" if role is None else role.value

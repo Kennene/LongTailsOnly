@@ -1,33 +1,83 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+import pytest
+from sqlalchemy import inspect, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from app.db.session import init_db
-from app.models import ActivityEvent, Lease, Repository, User
+from app.domain.enums import ActionType, ActorType, AppealStatus, Role
+from app.models import ActivityEvent, Appeal, AuditLog, Lease, Repository, Team, User
 
-T = datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
-
-
-async def test_init_db_creates_tables(engine) -> None:
-    await init_db(engine)
-    async with engine.connect() as conn:
-        names = await conn.run_sync(lambda c: set(__import__("sqlalchemy").inspect(c).get_table_names()))
-    assert {"users", "repositories", "leases", "activity_events"} <= names
+NOW = datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
+TABLES = {"teams", "users", "repositories", "leases", "activity_events", "appeals", "audit_logs"}
 
 
-async def test_models_persist_required_fields_and_timezone(session) -> None:
-    user = User(login="dev-01", name="Dev One", team="DEV", is_admin=False)
+async def _people(session: AsyncSession) -> tuple[User, Repository]:
+    team = Team(slug="dev", name="DEV")
+    user = User(login="kamil", name="Kamil", team=team, is_admin=False)
     repo = Repository(name="core-api", owner="longtails", default_branch="main")
-    session.add_all([user, repo])
+    session.add_all([team, user, repo])
     await session.flush()
+    return user, repo
+
+
+async def test_init_db_creates_tables(engine: AsyncEngine) -> None:
+    async with engine.connect() as conn:
+        names = await conn.run_sync(lambda sync: set(inspect(sync).get_table_names()))
+    assert TABLES <= names
+
+
+async def test_models_persist_required_fields(session: AsyncSession) -> None:
+    user, repo = await _people(session)
+    lease = Lease(user=user, repository=repo, current_role=Role.WRITE,
+                  granted_at=NOW - timedelta(days=10), expires_at=NOW + timedelta(days=20))
+    admin_lease = Lease(user=User(login="tomasz-admin", name="Tomasz", is_admin=True),
+                        repository=repo, current_role=Role.ADMIN, granted_at=NOW, expires_at=None)
     session.add_all([
-        Lease(user_id=user.id, repo_id=repo.id, current_role="admin", granted_at=T, expires_at=None),
-        ActivityEvent(user_id=user.id, repo_id=repo.id, timestamp=T, action_type="PushEvent", required_permission="write"),
+        lease, admin_lease,
+        ActivityEvent(user=user, repository=repo, timestamp=NOW, action_type=ActionType.PUSH,
+                      required_permission=Role.WRITE),
+        Appeal(lease=lease, user_id=user.id, repo_id=repo.id, requested_role=Role.WRITE,
+               justification="Release v2.1", status=AppealStatus.PENDING, created_at=NOW),
+        AuditLog(timestamp=NOW, actor_type=ActorType.SYSTEM, action="LEASE_WARNING",
+                 target="kamil/core-api", details={"days_remaining": 7}),
     ])
     await session.commit()
-    lease = (await session.execute(select(Lease))).scalar_one()
+    session.expunge_all()
+
+    stored = (await session.execute(select(Lease).where(Lease.current_role == Role.WRITE))).scalar_one()
+    assert stored.user.login == "kamil"
+    assert stored.user.team is not None and stored.user.team.slug == "dev"
+    assert stored.repository.default_lease_duration_days == 30
+    assert stored.is_active is True
+    assert stored.expires_at == NOW + timedelta(days=20)
+    assert stored.expires_at.tzinfo is UTC
+
+    admin = (await session.execute(select(Lease).where(Lease.current_role == Role.ADMIN))).scalar_one()
+    assert admin.expires_at is None
+
     event = (await session.execute(select(ActivityEvent))).scalar_one()
-    assert lease.expires_at is None
-    assert lease.granted_at == T and lease.granted_at.tzinfo is not None
-    assert event.timestamp == T and event.required_permission == "write"
-    assert repo.default_lease_duration_days == 30
+    assert (event.action_type, event.required_permission) == (ActionType.PUSH, Role.WRITE)
+
+    appeal = (await session.execute(select(Appeal))).scalar_one()
+    assert appeal.status is AppealStatus.PENDING and appeal.resolved_at is None
+
+    audit = (await session.execute(select(AuditLog))).scalar_one()
+    assert audit.actor_id is None and audit.details == {"days_remaining": 7}
+
+
+async def test_lease_is_unique_per_user_and_repo(session: AsyncSession) -> None:
+    user, repo = await _people(session)
+    session.add_all([
+        Lease(user=user, repository=repo, current_role=Role.WRITE, granted_at=NOW, expires_at=NOW),
+        Lease(user=user, repository=repo, current_role=Role.READ, granted_at=NOW, expires_at=NOW),
+    ])
+    with pytest.raises(IntegrityError):
+        await session.commit()
+
+
+async def test_foreign_keys_are_enforced(session: AsyncSession) -> None:
+    session.add(ActivityEvent(user_id=999, repo_id=999, timestamp=NOW,
+                              action_type=ActionType.PUSH, required_permission=Role.WRITE))
+    with pytest.raises(IntegrityError):
+        await session.commit()

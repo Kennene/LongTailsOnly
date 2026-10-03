@@ -1,27 +1,24 @@
-from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from pathlib import Path
 
 import httpx
 import pytest
-from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncEngine
 
-from app.core.config import Settings
-from app.core.time_provider import TimeProvider
-from app.main import create_app
+from app.core.time_provider import TimeProvider, get_time_provider
+from app.db.bootstrap import prepare_database
+from app.main import app
 
 BASE = datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
 
 
 @pytest.fixture
-async def demo_app(tmp_path: Path) -> AsyncIterator[FastAPI]:
-    settings = Settings(database_url=f"sqlite+aiosqlite:///{tmp_path / 'demo.db'}", seed_demo=True)
-    app = create_app(settings, TimeProvider(base_clock=lambda: BASE))
-    async with app.router.lifespan_context(app):
-        yield app
+def clock() -> TimeProvider:
+    return TimeProvider(base_time_source=lambda: BASE)
 
 
 @pytest.fixture
-async def demo(demo_app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=demo_app), base_url="http://test") as c:
-        yield c
+async def demo(client: httpx.AsyncClient, engine: AsyncEngine, clock: TimeProvider) -> httpx.AsyncClient:
+    """The real demo dataset (seed + extras) behind the root `client`, with a frozen clock."""
+    app.dependency_overrides[get_time_provider] = lambda: clock
+    await prepare_database(engine, clock)
+    return client

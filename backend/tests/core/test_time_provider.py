@@ -2,35 +2,63 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.core.time_provider import TimeProvider
+from app.core.time_provider import TimeProvider, get_time_provider, time_provider
+from app.ports.clock import ClockPort
 
 BASE = datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
 
 
-def make_clock() -> TimeProvider:
-    return TimeProvider(base_clock=lambda: BASE)
+def fixed_clock() -> TimeProvider:
+    return TimeProvider(base_time_source=lambda: BASE)
 
 
 def test_current_time_uses_utc_and_offset() -> None:
-    clock = make_clock()
+    clock = fixed_clock()
     assert clock.get_current_time() == BASE
-    assert clock.get_current_time().tzinfo is not None
+    assert clock.get_current_time().tzinfo is UTC
+    assert clock.offset_days == 0
 
 
 def test_advance_moves_clock_by_requested_days() -> None:
-    clock = make_clock()
+    clock = fixed_clock()
     assert clock.advance(7) == BASE + timedelta(days=7)
-    assert clock.advance(15) == BASE + timedelta(days=22)
-    assert clock.offset_seconds == 22 * 86400
+    assert clock.get_current_time() == BASE + timedelta(days=7)
+    assert clock.offset_days == 7
+
+
+def test_advances_accumulate() -> None:
+    clock = fixed_clock()
+    clock.advance(25)
+    clock.advance(35)
+    assert clock.offset_days == 60
+
+
+@pytest.mark.parametrize("days", [0, -5])
+def test_advance_rejects_non_positive_days(days: int) -> None:
+    with pytest.raises(ValueError):
+        fixed_clock().advance(days)
 
 
 def test_reset_returns_to_base_time() -> None:
-    clock = make_clock()
+    clock = fixed_clock()
     clock.advance(30)
-    assert clock.reset() == BASE
-    assert clock.offset_seconds == 0
+    clock.reset()
+    assert clock.get_current_time() == BASE
+    assert clock.offset_days == 0
 
 
-def test_advance_rejects_non_positive_days() -> None:
-    with pytest.raises(ValueError):
-        make_clock().advance(0)
+def test_naive_base_time_is_rejected() -> None:
+    clock = TimeProvider(base_time_source=lambda: datetime(2026, 10, 3, 12, 0))
+    with pytest.raises(ValueError, match="timezone"):
+        clock.get_current_time()
+
+
+def test_default_clock_follows_real_utc_time() -> None:
+    before = datetime.now(UTC)
+    current = TimeProvider().get_current_time()
+    assert before <= current <= datetime.now(UTC)
+
+
+def test_global_instance_is_a_clock_port() -> None:
+    assert get_time_provider() is time_provider
+    assert isinstance(time_provider, ClockPort)

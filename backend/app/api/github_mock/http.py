@@ -6,7 +6,10 @@ from fastapi import FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.core.time_provider import get_time_provider
+
 PREFIX = "/api/v3"
+DOCS_URL = "https://docs.github.com/rest"
 MEDIA_TYPE = "github.v3; format=json"
 
 
@@ -21,7 +24,9 @@ class GitHubError(Exception):
 
 
 def base_headers(request: Request) -> dict[str, str]:
-    now = int(request.app.state.clock.get_current_time().timestamp())
+    # Exception handlers run outside Depends, so honour dependency overrides (tests) by hand.
+    provider = request.app.dependency_overrides.get(get_time_provider, get_time_provider)
+    now = int(provider().get_current_time().timestamp())
     return {
         "X-GitHub-Media-Type": MEDIA_TYPE,
         "X-RateLimit-Limit": "5000",
@@ -35,15 +40,15 @@ async def github_headers(request: Request, response: Response) -> None:
     response.headers.update(base_headers(request))
 
 
-def _doc_url(request: Request, path: str = "") -> str:
-    return f"{request.app.state.settings.github_docs_url}/{path}".rstrip("/")
+def _doc_url(path: str = "") -> str:
+    return f"{DOCS_URL}/{path}".rstrip("/")
 
 
 async def _github_error_handler(request: Request, exc: GitHubError) -> JSONResponse:
     body: dict[str, object] = {"message": exc.message}
     if exc.errors:
         body["errors"] = exc.errors
-    body["documentation_url"] = _doc_url(request, exc.doc_path)
+    body["documentation_url"] = _doc_url(exc.doc_path)
     return JSONResponse(body, status_code=exc.status, headers=base_headers(request))
 
 
@@ -56,7 +61,7 @@ async def _validation_handler(request: Request, exc: RequestValidationError) -> 
         {"resource": "Request", "field": ".".join(str(p) for p in e["loc"][1:]) or str(e["loc"][0]), "code": "invalid"}
         for e in exc.errors()
     ]
-    body = {"message": "Validation Failed", "errors": errors, "documentation_url": _doc_url(request)}
+    body = {"message": "Validation Failed", "errors": errors, "documentation_url": _doc_url()}
     return JSONResponse(body, status_code=422, headers=base_headers(request))
 
 
