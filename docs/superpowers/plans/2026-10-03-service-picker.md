@@ -614,6 +614,8 @@ Expected: FAIL — modules do not exist.
 
 `ServiceRouteGuard.tsx`: reads `useLocation().pathname` and returns `<Navigate to={getDefaultPath(activeService.id)} replace />` when `isRouteSupported` is false, otherwise `<Outlet />`. Use the declarative `<Navigate>` — never a `useEffect` redirect.
 
+**Carry-forward condition from the Task 4 review (do not skip):** `isRouteSupported` normalises a trailing `/` and letter case, but it does **not** understand parameterised routes — `/leases/42` is deliberately `false` because `App.tsx` declares only six flat routes today. If you add any route with a path parameter while doing this task, `isRouteSupported` must switch to `matchRoutes`/prefix matching first, or the guard will silently bounce that detail page to `/`. No test goes red on that trigger, so it is on you to notice. If you add no parameterised route, leave the predicate alone.
+
 `test/renderWithProviders.tsx`: wrap `{children}` in `<ServicesProvider>` inside `MemoryRouter` (the provider needs router context for the guard). Keep the single `Toaster`. This is a one-place change that keeps all 20 existing test files working, because the default service is `github` with all six routes.
 
 - [ ] **Step 5: Run the services tests and then the whole suite for regressions**
