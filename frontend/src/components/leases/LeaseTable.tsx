@@ -45,8 +45,8 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
             <HeadCell>Użytkownik</HeadCell>
             <HeadCell className={SECONDARY_COLUMN}>Zespół</HeadCell>
             <HeadCell>Repozytorium</HeadCell>
-            {/* „Poziom” i „Status” opisują dostęp, nie osobę: na ekranie stają w wierszu osoby
-                dopiero po jej rozwinięciu, a nagłówek trzyma je tylko dla czytników ekranu. */}
+            {/* „Poziom”, „Status” i „Akcje” dotyczą dostępu, nie osoby: na ekranie stają w wierszu
+                osoby dopiero po jej rozwinięciu, a nagłówek trzyma je tylko dla czytników ekranu. */}
             <HeadCell className={SECONDARY_COLUMN}>
               <span className="sr-only">Poziom</span>
             </HeadCell>
@@ -56,7 +56,11 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
               <span className="sr-only">Status</span>
             </HeadCell>
             <HeadCell>Rekomendacja</HeadCell>
-            {onDecide === undefined ? null : <HeadCell className={ACTION_COLUMN}>Akcje</HeadCell>}
+            {onDecide === undefined ? null : (
+              <HeadCell className={ACTION_COLUMN}>
+                <span className="sr-only">Akcje</span>
+              </HeadCell>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -81,5 +85,7 @@ interface HeadCellProps {
 }
 
 function HeadCell({ children, className }: HeadCellProps): React.JSX.Element {
-  return <TableHead className={cn('text-muted-foreground', className)}>{children}</TableHead>;
+  return (
+    <TableHead className={cn('text-center text-muted-foreground', className)}>{children}</TableHead>
+  );
 }

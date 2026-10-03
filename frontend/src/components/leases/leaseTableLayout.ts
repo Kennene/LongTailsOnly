@@ -36,4 +36,4 @@ export const SECONDARY_COLUMN = 'hidden 2xl:table-cell';
  * `--card`; inaczej przewijane kolumny przeświecają pod przyciskiem. Obramowanie z lewej oddziela
  * przyklejoną kolumnę od przewijanej treści.
  */
-export const ACTION_COLUMN = 'sticky right-0 border-l bg-background text-right';
+export const ACTION_COLUMN = 'sticky right-0 border-l bg-background text-center';
