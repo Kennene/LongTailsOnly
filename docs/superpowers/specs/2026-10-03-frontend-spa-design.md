@@ -1,9 +1,9 @@
 # Specyfikacja: Frontend SPA — GitHub Access Lease Governor
 
-**Data:** 2026-10-03
+**Data:** 2026-10-03 (rewizja po PR #5 — kontrakt z kroku 1.2 już istnieje)
 **Autor:** Osoba 5 (KUBUŚ) — cały frontend (`frontend/`)
 **Status:** do przeglądu przed planem implementacji
-**Powiązane dokumenty:** `PRODUKT.md`, `PLAN.md`, `GLOSSARY.md`, `CODING_STANDARDS.md`, ADR 0001–0006, `docs/superpowers/plans/2026-10-03-frontend-spa.md`
+**Powiązane dokumenty:** `PRODUKT.md`, `PLAN.md`, `GLOSSARY.md`, `CODING_STANDARDS.md`, ADR 0001–0010, `docs/superpowers/plans/2026-10-03-frontend-spa.md`
 
 ---
 
@@ -21,35 +21,44 @@ Zbudować cały frontend jako SPA — konsolę administratora bezpieczeństwa IT
 
 ## 2. Zależności międzyzespołowe i punkty synchronizacji
 
-| Krok | Dostarcza | Czego potrzebuje frontend |
+| Krok | Dostarcza | Stan na 2026-10-03 |
 | --- | --- | --- |
-| 1.2 | Schematy Pydantic + typy TS (kontrakt) | zgodność nazw pól DTO z `src/types/api.ts` |
-| 2.5 | `POST /api/v1/simulation/time-travel` | kształt żądania/odpowiedzi oraz odczyt bieżącego czasu symulowanego |
-| 3.6 | lista dzierżaw + decyzje | pola DTO, w tym `last_activity` i `recommended_action` |
-| 4.2 | onboarding / baseline | kształt odpowiedzi oraz ścieżka i payload zatwierdzenia |
-| 4.3–4.5 | odwołania, historia odwołań, audyt | endpointy, filtry, kody błędów |
-| 4.6 | liczniki dashboardu + dane grafu | nazwy liczników oraz format węzłów/krawędzi React Flow |
-| 6.1 | fixture'y JSON dla frontu | zgodność z kontraktem 1.2 |
+| 1.2 | Schematy Pydantic + kontrakt TS | **zrobione** — `backend/contract/schema.json` → `frontend/src/types/api.ts` (ADR 0009) |
+| 1.4–1.6 | TimeProvider, seed, reset demo | **zrobione** — `/health`, `POST /api/v1/demo/reset` |
+| 2.5 | `POST /api/v1/simulation/time-travel` + odczyt zegara | brak |
+| 3.6 | lista dzierżaw z policzonym statusem + decyzje | brak |
+| 4.2 | onboarding / baseline (zapis) | brak |
+| 4.3–4.5 | odwołania, historia odwołań, audyt | brak |
+| 4.6 | liczniki dashboardu + dane grafu | brak |
+| 6.1 | fixture'y JSON dla frontu | brak — frontend tworzy własne, w kształcie kontraktu |
 
-**Punkty synchronizacji zespołu (z planu pracy):**
+**Punkty synchronizacji zespołu:**
 
-- **Po 1.2 i 6.1:** kontrakt przyjęty, frontend pracuje na fixture'ach (5.1–5.3).
+- **Po 1.2 i 6.1:** kontrakt przyjęty, frontend pracuje na fixture'ach (5.1–5.3). Kontrakt już jest, więc 5.1–5.3 startują natychmiast.
 - **Po 5.4:** tabela w panelu na prawdziwych danych; przesunięcie czasu zmienia statusy.
 - **Po 5.6:** linia cięcia osiągnięta — minimalne demo gotowe, dalsze kroki to bonus.
 - **Po 5.9:** pełny przepływ UC-1…UC-5; feature freeze.
 
-**Zasada contract-first:** frontend definiuje oczekiwane kształty w `src/types/api.ts` i buduje na fixture'ach. Rozjazd z rzeczywistym API naprawiamy **wyłącznie** w `src/types/api.ts` oraz `src/api/*` — komponenty i hooki nie znają kształtu transportu.
+**Zasada pracy na kontrakcie:** `frontend/src/types/api.ts` jest **generowany** z Pydantic (ADR 0009) i nie wolno go edytować ręcznie. Gdy brakuje typu lub pola, zmiana idzie do `backend/app/schemas/`, a potem regeneracja:
+
+```bash
+cd backend && uv run python scripts/export_contract.py
+npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts \
+  --unreachableDefinitions --additionalProperties=false
+```
+
+Dzięki temu rozjazd nazw pól jest błędem kompilacji, a nie pustą kolumną na demo.
 
 ---
 
 ## 3. Decyzje architektoniczne
 
-Pełne uzasadnienie i konsekwencje: **ADR 0006**.
+Pełne uzasadnienie i konsekwencje: **ADR 0010**.
 
 1. **Nawigacja:** `react-router-dom` v7 (tryb deklaratywny). Trasy: `/`, `/leases`, `/appeals`, `/baseline`, `/graph`, `/audit`; `*` przekierowuje na `/`. `AppShell` pełni rolę layout route.
 2. **Stan serwerowy:** TanStack Query v5 — cache, stany ładowania/błędu i jednopunktowa inwalidacja po podróży w czasie. Bez globalnego store'a (Redux/Zustand).
-3. **Praca na kontrakcie:** `src/types/api.ts` jako źródło DTO; fixture'y JSON z typowanym re-exportem (rozjazd = błąd kompilacji); flaga `VITE_USE_FIXTURES` przełącza **odczyty** na fixture'y (mutacje zawsze idą do API).
-4. **Czas symulowany:** jedynym źródłem „teraz" jest backend (`GET /api/v1/simulation/clock`). Frontend nie używa zegara systemowego w logice dzierżaw; status i „pozostało dni" liczy `lib/dateTime.ts`.
+3. **Typy generowane, nie pisane ręcznie:** `src/types/api.ts` pochodzi z kontraktu 1.2 (ADR 0009). Fixture'y używają typów z tego pliku (np. `LeaseOverview`), a flaga `VITE_USE_FIXTURES` przełącza **odczyty** na fixture'y (mutacje zawsze idą do API).
+4. **Czas i status pochodzą z backendu.** „Teraz” czytamy z `GET /api/v1/simulation/clock` (`ClockRead.now`), a `status`, `days_remaining` i `recommendation` przychodzą policzone w `LeaseOverview`. Frontend **nie duplikuje** granic 7/0 dni i nie używa zegara systemowego; `lib/dateTime.ts` odpowiada za formatowanie i pomocnicze porównania (walidacja daty w modalu).
 5. **Testy:** Vitest 5 + React Testing Library + MSW 3. Handlery MSW budowane z tych samych fixture'ów, które zasilają tryb `VITE_USE_FIXTURES`.
 6. **Motyw:** ciemny domyślnie (ADR 0001, `PLAN.md`), komponenty wyłącznie na tokenach shadcn — ewentualna zmiana na jasny motyw jest jednopunktowa i nie wymaga refaktoryzacji komponentów.
 
@@ -65,15 +74,15 @@ frontend/src/
 ├── api/
 │   ├── config.ts            # shouldUseFixtures() — czyta VITE_USE_FIXTURES
 │   ├── client.ts            # getJson / postJson + ApiError
-│   ├── fixtures/            # JSON-y (6.1) + index.ts z typowanym re-exportem
+│   ├── fixtures/            # JSON-y w kształcie kontraktu + index.ts z typowanym re-exportem
 │   └── leases.ts  simulation.ts  dashboard.ts  baseline.ts  appeals.ts  graph.ts  audit.ts
 ├── hooks/                   # useLeases, useSimulatedClock, useTimeTravel, useLeaseDecision, ...
 ├── lib/
 │   ├── utils.ts             # cn()
-│   ├── dateTime.ts          # cała matematyka czasu (jedno źródło prawdy)
-│   ├── statusBadges.ts      # etykiety i kolory statusów oraz ról (jedno źródło prawdy)
+│   ├── dateTime.ts          # formatowanie dat i porównania z czasem symulowanym
+│   ├── statusBadges.ts      # etykiety i kolory statusów, ról, rekomendacji i odwołań
 │   └── graphLayout.ts       # deterministyczny układ kolumnowy grafu (fallback bez position)
-├── types/api.ts             # kontrakt DTO
+├── types/api.ts             # GENEROWANY z backend/contract/schema.json — nie edytować ręcznie
 ├── components/
 │   ├── ui/                  # komponenty shadcn/ui
 │   ├── layout/              # AppShell, Sidebar, TopBar, TimeTravelBar
@@ -88,162 +97,80 @@ frontend/src/
 
 ---
 
-## 5. Kontrakt API
+## 5. Kontrakt API (stan faktyczny po 1.2)
 
-Pola DTO w `snake_case` — 1:1 z odpowiedziami Pydantic (bez warstwy mapowania). Nazwy pól do potwierdzenia w kroku 1.2.
+Źródłem prawdy jest `frontend/src/types/api.ts` (generowany). Poniżej tylko to, co frontend konsumuje.
 
-```ts
-export type Role = 'admin' | 'write' | 'read';
-export type LeaseStatus = 'ACTIVE' | 'WARNING' | 'EXPIRED';
-export type ActivityType = 'PushEvent' | 'PullRequestReviewEvent' | 'IssueCommentEvent';
-export type RecommendedAction = 'downscope' | 'revoke' | null;
+**Dostępne w kontrakcie:**
 
-export interface SimulatedClock { simulated_now: string; offset_days: number }
-export interface TimeTravelRequest { days?: number; reset?: boolean }
-
-export interface Lease {
-  id: number;
-  user: { login: string; name: string; team: string };
-  repository: { owner: string; name: string };
-  role: Role;
-  granted_at: string;
-  expires_at: string;
-  last_activity: { type: ActivityType; occurred_at: string } | null;
-  recommended_action: RecommendedAction;
-}
-export interface LeaseListResponse { leases: Lease[] }
-
-export interface LeaseDecisionRequest {
-  action: 'extend' | 'revoke' | 'downscope';
-  days?: number;
-  date?: string;
-  multiplier?: number;
-  justification?: string;
-}
-
-export interface DashboardCounters {
-  active: number;
-  warning: number;
-  expired: number;
-  downscope_recommendations: number;
-}
-
-export interface BaselineEntry {
-  repository: { owner: string; name: string };
-  proposed_role: Role;
-  active_members: number;
-  team_size: number;
-}
-export interface BaselineResponse { team: string; entries: BaselineEntry[] }
-export interface NewMember { login: string; name: string }
-
-export type AppealStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-
-export interface Appeal {
-  id: number;
-  lease_id: number;
-  user: { login: string; name: string; team: string };
-  justification: string;
-  status: AppealStatus;
-  created_at: string;
-  resolved_at: string | null;
-}
-
-export interface LeaseActivityStats { push: number; review: number; comment: number }
-
-export interface AuditEntry {
-  id: number;
-  timestamp: string;
-  actor_type: 'ADMIN' | 'USER' | 'SYSTEM';
-  actor_id: string;
-  action: string;
-  target: string;
-  details: string;
-  justification: string | null;
-}
-
-export interface GraphNode {
-  id: string;
-  type: 'user' | 'team' | 'repo';
-  position?: { x: number; y: number };
-  data: { label: string; status?: LeaseStatus; team?: string };
-}
-export interface GraphEdge {
-  id: string;
-  source: string;
-  target: string;
-  data?: { role?: Role; status?: LeaseStatus };
-}
-export interface GraphResponse { nodes: GraphNode[]; edges: GraphEdge[] }
-```
-
-### Endpointy
-
-| Metoda i ścieżka | Przeznaczenie | Status |
+| Typ | Kształt (skrót) | Użycie we froncie |
 | --- | --- | --- |
-| `GET /api/v1/simulation/clock` | bieżący czas symulowany i offset | potwierdzony przez backend (2.5) |
-| `POST /api/v1/simulation/time-travel` | `{days}` lub `{reset: true}` → nowy stan zegara | 2.5, kształt do potwierdzenia |
-| `GET /api/v1/leases` | lista dzierżaw dla tabeli | 3.6; wymagane `last_activity` i `recommended_action` |
-| `POST /api/v1/leases/{id}/decision` | przedłuż / wyłącz / zdeeskaluj | 3.6; `403` przy próbie odebrania ostatniego admina |
-| `GET /api/v1/dashboard` | liczniki KPI | 4.6, nazwy pól do potwierdzenia |
-| `GET /api/v1/baseline/{team_id}` | standard zespołu | 4.1 |
-| `POST /api/v1/baseline/{team_id}/approve` | zatwierdzenie onboardingu | 4.2, ścieżka i payload do potwierdzenia |
-| `POST /api/v1/appeals` | złożenie odwołania (`lease_id`, `justification`) | 4.3; duplikat uzasadnienia → `4xx` |
-| `GET /api/v1/appeals` | lista odwołań i historia dla admina | 4.4 |
-| `GET /api/v1/leases/{id}/activity-stats` | statystyki użycia (`push`/`review`/`comment`) w modalu decyzji | 4.4, do potwierdzenia |
-| `POST /api/v1/appeals/{id}/decision` | decyzja w kontekście odwołania | istniejący kontrakt v1 |
-| `GET /api/v1/audit` | dziennik audytu | 4.5 |
-| `GET /api/v1/graph` | węzły i krawędzie w formacie React Flow | 4.6 |
+| `Role` | `"read" \| "write" \| "admin"` | badge poziomu |
+| `LeaseStatus` | `"ACTIVE" \| "WARNING" \| "EXPIRED"` | badge statusu |
+| `Recommendation` | `"KEEP" \| "DOWNSCOPE" \| "REVOKE"` | kolumna rekomendacji |
+| `DecisionAction` | `"EXTEND" \| "DOWNSCOPE" \| "REVOKE"` | modal decyzji |
+| `Extension` | `preset_days?: 7\|14\|30\|90`, `multiplier?: 1.5\|2`, `custom_days?`, `until_date?` | modal decyzji |
+| `DecisionRequest` | `{ action, extension?: Extension \| null, justification?: string \| null }` | `POST /leases/{id}/decision` |
+| `LeaseOverview` | `{ id, user: UserRead, repository: RepositoryRead, current_role, granted_at, expires_at: string \| null, is_active, status, days_remaining: number \| null, last_activity_at: string \| null, recommendation }` | tabela dzierżaw |
+| `UserRead` / `TeamRead` | `{ id, login, name, team: TeamRead \| null, is_admin }` / `{ id, name, slug }` | kolumny użytkownik i zespół |
+| `ClockRead` | `{ now, offset_days }` | pasek czasu |
+| `TimeTravelRequest` | `{ days: number }` (1…365) | presety i własna liczba dni |
+| `DemoResetResult` | `{ now, offset_days, counts }` | reset scenariusza |
+| `AppealCreate` / `AppealRead` | `{ lease_id, justification }` / `{ id, lease_id, user_id, repo_id, requested_role, justification, status, created_at, resolved_at }` | formularz i historia odwołań |
+| `AuditLogRead` | `{ id, timestamp, actor_type, actor_id: number \| null, action, target, details: object, justification: string \| null }` | dziennik audytu |
+| `BaselineEntry` | `{ team_id, repository: RepositoryRead, proposed_role, active_members, team_size }` | standard zespołu |
+| `ActorType`, `AppealStatus`, `ActionType` | enumy | filtry i badge'y |
 
-**Błędy:** `ApiError { status: number; message: string }` normalizuje `{"detail": ...}` (FastAPI) oraz `{"message": ..., "documentation_url": ...}` (konwencja GitHuba, ADR 0004). Dla `403` przy akcji `revoke`/`downscope` modal pokazuje stały komunikat: *„Nie można odebrać uprawnień ostatniemu administratorowi.”*
+**Brakuje — do zamówienia u właścicieli kroków:**
+
+| Czego brakuje | Kto | Do czego | Obejście na czas braku |
+| --- | --- | --- | --- |
+| `GET /api/v1/simulation/clock` | 2.5 | czas symulowany w pasku | fixture + MSW; po dostarczeniu zmiana tylko w `api/simulation.ts` |
+| `GET /api/v1/leases` → `LeaseOverview[]` | 3.6 | tabela dzierżaw | fixture'y w kształcie `LeaseOverview` |
+| Liczniki dashboardu | 4.6 | karty KPI | fixture + MSW |
+| Payload grafu (React Flow `{nodes, edges}`) | 4.6 | graf | fixture + `lib/graphLayout.ts` jako fallback pozycji |
+| Zatwierdzenie standardu + typ nowego członka | 4.2 | onboarding UC-1 | fixture + MSW |
+| Statystyki aktywności per dzierżawa | 4.4 | modal decyzji (UC-3) | fixture + MSW |
+| Lista odwołań / historia per dzierżawa | 4.4 | widok odwołań | fixture + MSW |
+
+**Błędy:** `ApiError { status: number; message: string }` normalizuje `{"detail": ...}` (FastAPI) oraz `{"message": ..., "documentation_url": ...}` (konwencja GitHuba, ADR 0004). Dla `403` przy akcji `REVOKE`/`DOWNSCOPE` modal pokazuje stały komunikat: *„Nie można odebrać uprawnień ostatniemu administratorowi.”*
 
 ---
 
 ## 6. Semantyka czasu i statusów
 
-`lib/dateTime.ts` to jedyne miejsce, w którym porównujemy daty. Funkcje są czyste i przyjmują `simulated_now` jako parametr — bez mockowania zegara w testach.
+- **Źródło czasu:** `GET /api/v1/simulation/clock` → `ClockRead.now` (ISO 8601 UTC) i `offset_days`. Frontend nigdy nie używa zegara systemowego w logice dzierżaw.
+- **Źródło statusu:** `LeaseOverview.status`, `days_remaining` i `recommendation` — liczone przez backend (`LeaseService`) z historii zdarzeń i zegara. Frontend **nie powtarza** granic 7/0 dni; po podróży w czasie unieważnia cache i pobiera świeże wartości, więc rozjazd FE/BE jest niemożliwy.
+- **`lib/dateTime.ts`** — jedno źródło formatowania i porównań pomocniczych:
 
 ```ts
-export const DAY_MS = 86_400_000;
-export const WARNING_WINDOW_DAYS = 7;
 export const DISPLAY_TIME_ZONE = 'Europe/Warsaw';
+export const DAY_MS = 86_400_000;
 
-export function daysRemaining(expires_at: string, simulated_now: string): number;
-export function leaseStatus(expires_at: string, simulated_now: string): LeaseStatus;
-export function formatDateTimePl(iso: string): string;
-export function formatDaysRemaining(expires_at: string, simulated_now: string): string;
-export function formatOffsetDays(offset_days: number): string;
+export function formatDateTimePl(iso: string): string;               // "3 października 2026, 15:24"
+export function formatDaysRemaining(days: number | null): string;    // "Pozostało 12 dni" | "Wygasa dziś" | "Wygasła 3 dni temu" | "—"
+export function formatOffsetDays(offset_days: number): string;       // "+15 dni" | "−15 dni" | "0 dni"
+export function daysRemaining(expires_at: string, now: string): number; // walidacja daty w modalu (Math.ceil, może być ujemne)
 ```
 
-**Granice statusów (spójne z backendem, `PLAN.md` Faza 2):**
+Funkcja `leaseStatus()` **nie istnieje** po stronie frontendu — świadome odejście od przykładu w `CODING_STANDARDS.md`, bo kontrakt 1.2 przeniósł tę regułę do backendu (mniej miejsc na rozjazd). `daysRemaining` służy wyłącznie do walidacji „data musi być późniejsza niż czas symulowany”; wartość pokazywana w tabeli pochodzi z API.
 
-| Warunek (`diff = expires_at − simulated_now`) | Status |
-| --- | --- |
-| `diff > 7 dni` | `ACTIVE` |
-| `0 < diff <= 7 dni` | `WARNING` |
-| `diff <= 0` | `EXPIRED` |
-
-Dokładnie 7 dni → `WARNING`; dokładnie 0 → `EXPIRED`. `daysRemaining` zaokrągla w górę (`Math.ceil`), więc części dnia liczą się jako pełny dzień.
-
-**Formatowanie (deterministyczne, strefa `Europe/Warsaw`):** `formatDaysRemaining` zwraca `Pozostało 12 dni`, `Pozostało 1 dzień`, `Wygasa dziś` (0) lub `Wygasła 3 dni temu`. `formatOffsetDays` zwraca `+15 dni` / `−15 dni`. `formatDateTimePl` zwraca np. `3 października 2026, 15:24`.
-
-`lib/statusBadges.ts` mapuje statusy na etykiety (`Aktywna`, `Wygasa wkrótce`, `Wygasła`) i klasy kolorów, role na etykiety (`Administrator`, `Zapis (write)`, `Odczyt (read)`), a rekomendacje na etykiety (`Zdeeskaluj`, `Odbierz`). Statusy odwołań mają w tym samym pliku osobne mapowanie (`Oczekujące`, `Zatwierdzone`, `Odrzucone`). Poza tym plikiem nie wolno powtarzać tych mapowań.
+- **`lib/statusBadges.ts`** mapuje: statusy → `Aktywna` / `Wygasa wkrótce` / `Wygasła`, role → `Administrator` / `Zapis (write)` / `Odczyt (read)`, rekomendacje → `Bez zmian` / `Zdeeskaluj` / `Odbierz`, statusy odwołań → `Oczekujące` / `Zatwierdzone` / `Odrzucone`. Poza tym plikiem nie wolno powtarzać tych mapowań.
+- **Pasek czasu:** presety `+15 / +30 / +60` dni, pole własnej liczby dni (walidacja `1…365` zgodnie z `TimeTravelRequest`), `Reset` wywołujący `POST /api/v1/demo/reset` (przywraca seed i zeruje zegar — wymaga potwierdzenia, bo kasuje stan; przy `ENABLE_DEMO_RESET=false` zwraca `404`).
 
 ---
 
 ## 7. Widoki
 
-Wspólne zasady: brak własnych kolorów statusów (tylko `statusBadges`), każdy widok obsługuje stan ładowania (Skeleton), błędu (komunikat + „Odśwież”) i pusty („Brak danych do wyświetlenia”).
+Wspólne zasady: brak własnych kolorów i etykiet statusów (tylko `statusBadges`), każdy widok obsługuje stan ładowania (Skeleton), błędu (komunikat + „Odśwież”) i pusty („Brak danych do wyświetlenia”).
 
 1. **Dashboard (`/`)** — cztery karty KPI z 4.6: Aktywne dzierżawy, Ostrzeżenia, Wygaśnięte, Rekomendacje deeskalacji. Wartości odświeżają się po podróży w czasie i po decyzjach.
-2. **Dzierżawy (`/leases`)** — tabela: Użytkownik, Zespół, Repozytorium, Poziom, Ostatnia aktywność, Pozostało, Status (badge). Domyślne sortowanie: najpierw `EXPIRED`, potem `WARNING`, potem `ACTIVE`; w grupie rosnąco po `daysRemaining`. Akcja wiersza „Decyzja” otwiera modal.
-3. **Modal decyzji** — kontekst dzierżawy oraz: **Przedłuż** (presety `+7 / +14 / +30 / +90`, mnożniki `1,5x / 2x`, własna liczba dni, dokładna data), **Wyłącz** (z potwierdzeniem), **Zdeeskaluj**. Po sukcesie toast i inwalidacja `['leases']`, `['dashboard']`, `['audit']`, `['appeals']`, `['graph']`.
-4. **Odwołania (`/appeals`)** — lista dzierżaw w oknie ostrzegawczym i wygasłych, formularz odwołania (wybór dzierżawy + wymagane uzasadnienie) oraz historia odwołań użytkownika i statystyki aktywności prezentowane w modalu decyzji (UC-3).
-5. **Standard zespołu (`/baseline`)** — sekcje DEV i QA: repozytorium, proponowana rola (nigdy `admin`), udział aktywnych członków; zatwierdzenie standardu dla nowego członka zespołu jednym kliknięciem (UC-1).
+2. **Dzierżawy (`/leases`)** — tabela: Użytkownik, Zespół, Repozytorium, Poziom, Ostatnia aktywność, Pozostało, Status, Rekomendacja. Sortowanie: `EXPIRED` → `WARNING` → `ACTIVE`, w grupie rosnąco po `days_remaining`, dzierżawy bez terminu (`days_remaining: null`, czyli `admin`) na końcu. Akcja wiersza „Decyzja” otwiera modal.
+3. **Modal decyzji** — kontekst dzierżawy oraz: **Przedłuż** (`extension` z `preset_days` +7/+14/+30/+90, `multiplier` 1,5x/2x, `custom_days`, `until_date`), **Wyłącz** (`REVOKE`, z potwierdzeniem), **Zdeeskaluj** (`DOWNSCOPE`). Po sukcesie toast i inwalidacja `['leases']`, `['dashboard']`, `['audit']`, `['appeals']`, `['graph']`.
+4. **Odwołania (`/appeals`)** — lista dzierżaw w oknie ostrzegawczym i wygasłych, formularz odwołania (`AppealCreate`: wybór dzierżawy + wymagane uzasadnienie) oraz lista złożonych odwołań; pozycja `PENDING` ma akcję „Rozpatrz”, otwierającą modal decyzji z historią odwołań i statystykami użycia (UC-3). Ponieważ `AppealRead` zawiera tylko `user_id`, dane osoby łączymy z listą dzierżaw po `lease_id`.
+5. **Standard zespołu (`/baseline`)** — sekcje DEV i QA: repozytorium, proponowana rola (nigdy `admin`), udział aktywnych członków (`active_members / team_size`); zatwierdzenie standardu dla nowego członka zespołu jednym kliknięciem (UC-1).
 6. **Graf (`/graph`)** — `@xyflow/react` na danych z 4.6: węzły użytkowników, zespołów i repozytoriów, krawędzie członkostwa i dzierżaw, kolor wg statusu; filtry: zespół oraz „tylko podwyższone ryzyko”. Gdy backend nie dostarczy `position`, pozycje wylicza deterministycznie `lib/graphLayout.ts` (trzy kolumny: użytkownicy, zespoły, repozytoria).
-7. **Audyt (`/audit`)** — tabela: Czas, Aktor, Akcja, Cel, Uzasadnienie; filtr aktora (`Wszystkie`, `ADMIN`, `USER`, `SYSTEM`) po stronie klienta.
-
-**Pasek czasu (`TimeTravelBar`, w `TopBar`)** — wyświetla sformatowany czas symulowany i offset, przyciski `+15 dni`, `+30 dni`, `+60 dni`, pole własnej liczby dni (dodatnia liczba całkowita) oraz `Reset`. Po sukcesie inwaliduje cały cache; w trakcie mutacji przyciski są zablokowane.
+7. **Audyt (`/audit`)** — tabela: Czas, Aktor, Akcja, Cel, Uzasadnienie; `details` (obiekt JSON) pokazywany jako zwięzły podgląd; filtr aktora (`Wszystkie`, `ADMIN`, `USER`, `SYSTEM`) po stronie klienta.
 
 ---
 
@@ -251,7 +178,7 @@ Wspólne zasady: brak własnych kolorów statusów (tylko `statusBadges`), każd
 
 - **TDD** w każdym zadaniu: test przed implementacją, minimalny kod, refaktor.
 - **Trzy poziomy:** funkcje czyste (`lib/`) → komponenty i strony (RTL + MSW) → test integracyjny przepływu pitch (`App.integration.test.tsx`).
-- **MSW jako jedyne mockowanie sieci:** handlery zbudowane z fixture'ów; stan symulowanego zegara trzymany w `test/msw/state.ts`, dzięki czemu statusy przeliczają się po stronie klienta tak jak w produkcji.
+- **MSW jako jedyne mockowanie sieci:** handlery zbudowane z fixture'ów; stan symulowanego zegara trzymany w `test/msw/state.ts`, więc po skoku czasu interfejs pobiera świeże, policzone przez backend wartości.
 - **`renderWithProviders`** (świeży `QueryClient` z `retry: false`, `MemoryRouter`) w `src/test/`.
 - **Dowody w PR:** `cd frontend && npm test -- --run && npm run build && npm run lint` (wszystkie zielone) oraz zrzut/opis ręcznego sprawdzenia nowego widoku.
 
@@ -261,14 +188,13 @@ Wspólne zasady: brak własnych kolorów statusów (tylko `statusBadges`), każd
 
 | Ryzyko | Mitygacja |
 | --- | --- |
-| Kontrakt 1.2 jeszcze nie istnieje lub różni się od oczekiwań | contract-first + typowany re-export fixture'ów; poprawki tylko w `types/api.ts` i `api/*`; jawny krok synchronizacji po 1.2/6.1 |
-| Backend nie gotowy na 5.4 | flaga `VITE_USE_FIXTURES` pozwala rozwijać i prezentować odczyty bez API |
-| Rozbieżność presetów czasu (`+15/+30/+60` w UC-4 vs `+25/+35` w pitch flow) | presety z UC-4 **plus** pole własnej liczby dni — pitch odtwarzalny co do dnia |
-| Brak `last_activity` w DTO (model `Lease` go nie przechowuje) | wymaganie wobec 3.6/4.6 wypisane w kontrakcie; alternatywa: N+1 odpytywanie zdarzeń (odrzucona) |
+| Brakujące endpointy (2.5, 3.6, 4.2–4.6) | fixture'y w kształcie kontraktu + flaga `VITE_USE_FIXTURES`; zmiany kontraktu lądują tylko w `api/*` |
+| Rozjazd nazw pól między frontem a backendem | typy generowane z Pydantic (ADR 0009) — literówka jest błędem kompilacji |
+| Rozbieżność presetów czasu (`+15/+30/+60` z UC-4 vs `+25/+35` w pitch flow) | presety z UC-4 **plus** pole własnej liczby dni (1…365) — pitch odtwarzalny co do dnia |
 | `403` ostatniego admina wygląda jak awaria | stały komunikat PL w modalu + test na ścieżkę błędu |
+| `Reset` kasuje bazę i seed | przycisk z potwierdzeniem i jasnym opisem; obsłużony `404` przy wyłączonym resecie |
 | Dane grafu nie w formacie React Flow | adapter w `api/graph.ts` + deterministyczny układ kolumnowy w `lib/graphLayout.ts` |
 | Osoba 6 przejmuje 5.10 | widok audytu samodzielny, bez zależności od pozostałych widoków |
-| Rozjazd czasu frontend/backend | granice 7/0 dni wypisane w spec i pokryte testami; frontend nigdy nie używa zegara systemowego |
 
 ---
 

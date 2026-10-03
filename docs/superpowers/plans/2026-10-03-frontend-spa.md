@@ -16,12 +16,12 @@
 - **Deklaracje funkcji z jawnymi typami** parametrów i wartości zwracanej; brak eksportowanych funkcji strzałkowych.
 - **Zakaz ręcznych `useMemo` / `useCallback`** — memoizację zapewnia React Compiler (`CODING_STANDARDS.md` §3).
 - **Jedno źródło prawdy:** żadnych obliczeń dat poza `src/lib/dateTime.ts`; żadnych etykiet ani kolorów statusów/ról poza `src/lib/statusBadges.ts`.
-- **Zakaz `Date.now()`** w logice dzierżaw — czas pochodzi z `simulated_now` (parametr funkcji lub `useSimulatedClock()`).
-- **DTO w `snake_case`**, 1:1 z odpowiedziami Pydantic (`types/api.ts` ze spec §5); zmiany kontraktu wyłącznie w `types/api.ts` i `api/*`.
+- **Zakaz `Date.now()`** w logice dzierżaw — czas pochodzi z backendu: `ClockRead.now` przez `useSimulatedClock()`, nigdy z zegara systemowego.
+- **Typy pochodzą z kontraktu:** `frontend/src/types/api.ts` jest **generowany** z Pydantic (ADR 0009) i nie edytujemy go ręcznie. Brakujące DTO zamawiamy w `backend/app/schemas/` i regenerujemy: `cd backend && uv run python scripts/export_contract.py`, a następnie `npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false`. Nazwy pól i wartości enumów bierzemy 1:1 z tego pliku (`LeaseOverview`, `ClockRead`, `DecisionRequest`, `Extension`, `AppealRead`, `AuditLogRead`, `BaselineEntry`). Czego jeszcze nie ma (2.5, 3.6, 4.2–4.6), patrz spec §5 — do tego czasu fixture'y w tych samych kształtach.
 - **Strefa wyświetlania dat:** `Europe/Warsaw` (`DISPLAY_TIME_ZONE`), żeby testy były deterministyczne na każdej maszynie.
-- **Granice statusów:** `diff <= 0` → `EXPIRED`; `0 < diff <= 7 dni` → `WARNING`; inaczej `ACTIVE`. `daysRemaining` zaokrągla w górę.
-- **Presety paska czasu:** `+15`, `+30`, `+60` dni + pole własnej liczby dni + `Reset`.
-- **Opcje przedłużenia w modalu:** presety `+7 / +14 / +30 / +90`, mnożniki `1,5x / 2x`, własna liczba dni, dokładna data.
+- **Status, `days_remaining` i `recommendation` przychodzą z API** (`LeaseOverview`) — frontend ich nie przelicza i nie używa zegara systemowego. `daysRemaining()` w `lib/dateTime.ts` służy wyłącznie walidacji daty wybranej w modalu.
+- **Presety paska czasu:** `+15`, `+30`, `+60` dni + pole własnej liczby dni (zakres `1…365` zgodnie z `TimeTravelRequest`) + `Reset` → `POST /api/v1/demo/reset` (zeruje zegar i przywraca seed — wymaga potwierdzenia, bo kasuje stan).
+- **Opcje przedłużenia w modalu:** `DecisionRequest { action, extension, justification? }`, gdzie `Extension` zawiera dokładnie jedno z: `preset_days` (`7|14|30|90`), `multiplier` (`1.5|2`), `custom_days`, `until_date`; akcje to `EXTEND` / `DOWNSCOPE` / `REVOKE`.
 - **Język:** teksty UI i komunikaty po polsku; nazwy plików, funkcji, typów i testów po angielsku.
 - **Endpointy:** wyłącznie `/api/v1/...`; bazowy adres przez proxy Vite (`/api` → `http://localhost:8000`), bez CORS.
 - **Weryfikacja każdego zadania:** `cd frontend && npm test -- --run && npm run build && npm run lint` — wszystkie zielone przed commitem.
@@ -31,8 +31,8 @@
 
 Pięć klas danych/sytuacji, które spec implikuje, a które najczęściej psują demo — każda ma test w zadaniu wskazanym obok:
 
-1. **Granice czasu dokładnie na 7 i 0 dni oraz daty przeszłe** — status i tekst „pozostało" muszą być poprawne także dla wartości ujemnych (zadanie 2, testy `leaseStatus` / `formatDaysRemaining`; zadanie 3, render wiersza `EXPIRED`).
-2. **Walidacja wejścia** — własna liczba dni w pasku czasu (`0`, liczby ujemne, tekst, ułamek), data z przeszłości w modalu, puste uzasadnienie odwołania: brak żądania do API i widoczny komunikat (zadania 5, 7, 10).
+1. **Wartości brzegowe z API** — `days_remaining: null` i `expires_at: null` (dzierżawa `admin`), `0` („Wygasa dziś”), wartości ujemne — muszą się poprawnie renderować i sortować (zadanie 2, `formatDaysRemaining`; zadanie 3, sortowanie i wiersze `EXPIRED`/`admin`).
+2. **Walidacja wejścia** — własna liczba dni w pasku czasu (`0`, liczby ujemne, tekst, powyżej `365`), data z przeszłości w modalu, puste uzasadnienie odwołania: brak żądania do API i widoczny komunikat (zadania 5, 7, 10).
 3. **Ścieżki błędów API** — `403` ostatniego admina, `409` duplikatu uzasadnienia, `500` na dashboardzie, brak backendu przy `VITE_USE_FIXTURES=false`: komunikat, nie biały ekran (zadania 6, 7, 8, 10).
 4. **Stany puste i zerowe** — brak dzierżaw, zerowe liczniki, brak odwołań, graf bez krawędzi, audyt bez zdarzeń (zadania 3, 8, 10, 12, 13).
 5. **Polskie znaki i długie treści** — diakrytyki w etykietach oraz długie uzasadnienie/`details` nie mogą rozsadzać tabeli ani modala (zadania 3, 11, 13).
@@ -62,7 +62,7 @@ Pięć klas danych/sytuacji, które spec implikuje, a które najczęściej psuj�
 ### Zadanie 1 (PR 5.1): Szkielet SPA, motyw ciemny, nawigacja i infrastruktura testów
 
 **Pliki:**
-- Utwórz: `frontend/` (szablon Vite: `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`, `src/main.tsx`, `src/index.css`, `src/App.tsx`)
+- Utwórz: `frontend/` (szablon Vite: `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`, `src/main.tsx`, `src/index.css`, `src/App.tsx`) — katalog już istnieje i zawiera generowany `src/types/api.ts`, którego nie nadpisujemy
 - Utwórz: `frontend/src/components/layout/AppShell.tsx`, `Sidebar.tsx`, `TopBar.tsx`
 - Utwórz: `frontend/src/pages/{DashboardPage,LeasesPage,AppealsPage,BaselinePage,GraphPage,AuditPage}.tsx`
 - Utwórz: `frontend/src/test/setup.ts`, `frontend/src/test/renderWithProviders.tsx`, `frontend/src/test/msw/server.ts`, `frontend/src/test/msw/handlers.ts`
@@ -75,16 +75,19 @@ Pięć klas danych/sytuacji, które spec implikuje, a które najczęściej psuj�
 
 - [ ] **Krok 1: Utwórz projekt Vite i zainstaluj bazę.**
 
-Z katalogu głównego repozytorium:
+`frontend/` już istnieje i zawiera wygenerowany w kroku 1.2 plik `src/types/api.ts`, więc szablon tworzymy w katalogu tymczasowym i kopiujemy zawartość (żaden plik szablonu nie koliduje z `src/types/`):
+
 ```bash
-npm create vite@latest frontend -- --template react-ts
+npm create vite@latest .vite-scaffold -- --template react-ts
+cp -r .vite-scaffold/. frontend/
+rm -rf .vite-scaffold   # dopiero po sprawdzeniu, że ścieżka to <repo>/.vite-scaffold
 cd frontend && npm install
 npm install tailwindcss @tailwindcss/vite react-router-dom @tanstack/react-query
 npm install -D @types/node vitest jsdom @testing-library/react @testing-library/jest-dom @testing-library/user-event msw
 npm install -D babel-plugin-react-compiler@latest @rolldown/plugin-babel
 npm install -D shadcn@latest
 ```
-W `src/index.css` zastąp zawartość dyrektywą `@import "tailwindcss";`.
+Na koniec sprawdź, że `frontend/src/types/api.ts` nadal zaczyna się od `/* AUTO-GENERATED ...` — plik kontraktu nie może zostać nadpisany. W `src/index.css` zastąp zawartość dyrektywą `@import "tailwindcss";`.
 
 - [ ] **Krok 2: Skonfiguruj alias, Tailwind i React Compiler w `vite.config.ts`.**
 
@@ -158,106 +161,93 @@ git commit -m "feat(frontend): scaffold SPA shell with dark theme, routing and t
 
 ---
 
-### Zadanie 2 (PR 5.2): Kontrakt DTO, `lib/dateTime.ts` i `lib/statusBadges.ts`
+### Zadanie 2 (PR 5.2): `lib/dateTime.ts` i `lib/statusBadges.ts` (typy z kontraktu)
 
 **Pliki:**
-- Utwórz: `frontend/src/types/api.ts` (pełny kontrakt ze spec §5)
+- Zachowaj: `frontend/src/types/api.ts` (GENEROWANY w 1.2 — nie edytujemy go ręcznie)
 - Utwórz: `frontend/src/lib/dateTime.ts`, `frontend/src/lib/statusBadges.ts`
 - Test: `frontend/src/lib/dateTime.test.ts`, `frontend/src/lib/statusBadges.test.ts`
 
 **Interfejsy:**
-- Produkuje: `DAY_MS`, `WARNING_WINDOW_DAYS = 7`, `DISPLAY_TIME_ZONE = 'Europe/Warsaw'`; `daysRemaining(expires_at: string, simulated_now: string): number`; `leaseStatus(expires_at: string, simulated_now: string): LeaseStatus`; `formatDateTimePl(iso: string): string`; `formatDaysRemaining(expires_at: string, simulated_now: string): string`; `formatOffsetDays(offset_days: number): string`; `getStatusBadge(status: LeaseStatus): { label: string; className: string }`; `getRoleLabel(role: Role): string`; `getRecommendedActionLabel(action: RecommendedAction): string`; `getAppealStatusBadge(status: AppealStatus): { label: string; className: string }`.
-- Konsumuje: nic poza typami.
+- Produkuje: `DISPLAY_TIME_ZONE = 'Europe/Warsaw'`, `DAY_MS`; `formatDateTimePl(iso: string): string`; `formatDaysRemaining(days: number | null): string`; `formatOffsetDays(offset_days: number): string`; `daysRemaining(expires_at: string, now: string): number`; `getStatusBadge(status: LeaseStatus): { label: string; className: string }`; `getRoleLabel(role: Role): string`; `getRecommendationLabel(recommendation: Recommendation): string`; `getAppealStatusBadge(status: AppealStatus): { label: string; className: string }`.
+- Konsumuje: typy `LeaseStatus`, `Role`, `Recommendation`, `AppealStatus` z `@/types/api` (generowane, ADR 0009).
+- **Nie tworzymy `leaseStatus()`** — status, `days_remaining` i `recommendation` liczy backend i przysyła w `LeaseOverview`; frontend wyłącznie formatuje.
 
-- [ ] **Krok 1: Napisz failing testy `leaseStatus` na granicach.**
+- [ ] **Krok 1: Napisz failing testy `daysRemaining` i formatowania.**
 
 ```ts
+import { daysRemaining, formatDateTimePl, formatDaysRemaining, formatOffsetDays } from '@/lib/dateTime';
+
 const now = '2026-10-03T12:00:00Z';
 
-it.each([
-  ['2026-10-11T12:00:00Z', 'ACTIVE'],   // 8 dni
-  ['2026-10-10T13:00:00Z', 'WARNING'],  // 7 dni + 1 h
-  ['2026-10-10T12:00:00Z', 'WARNING'],  // dokładnie 7 dni
-  ['2026-10-04T12:00:00Z', 'WARNING'],  // 1 dzień
-  ['2026-10-03T12:00:00Z', 'EXPIRED'],  // dokładnie 0
-  ['2026-09-30T12:00:00Z', 'EXPIRED'],  // przeszłość
-])('leaseStatus(%s) === %s', (expiresAt, expected) => {
-  expect(leaseStatus(expiresAt, now)).toBe(expected);
-});
-```
-
-- [ ] **Krok 2: Napisz failing testy `daysRemaining` i formatowania.**
-
-```ts
-it('rounds partial days up and allows negative values', () => {
+it('computes days remaining with ceil and allows negative values', () => {
   expect(daysRemaining('2026-10-10T12:00:00Z', now)).toBe(7);
   expect(daysRemaining('2026-10-10T00:00:00Z', now)).toBe(7); // 6,5 dnia
   expect(daysRemaining('2026-09-30T12:00:00Z', now)).toBe(-3);
 });
 
 it.each([
-  ['2026-10-15T12:00:00Z', 'Pozostało 12 dni'],
-  ['2026-10-04T12:00:00Z', 'Pozostało 1 dzień'],
-  ['2026-10-03T12:00:00Z', 'Wygasa dziś'],
-  ['2026-10-02T12:00:00Z', 'Wygasła 1 dzień temu'],
-  ['2026-09-30T12:00:00Z', 'Wygasła 3 dni temu'],
-])('formatDaysRemaining(%s)', (expiresAt, expected) => {
-  expect(formatDaysRemaining(expiresAt, now)).toBe(expected);
+  [12, 'Pozostało 12 dni'],
+  [1, 'Pozostało 1 dzień'],
+  [0, 'Wygasa dziś'],
+  [-1, 'Wygasła 1 dzień temu'],
+  [-3, 'Wygasła 3 dni temu'],
+  [null, '—'],
+])('formatDaysRemaining(%s)', (days, expected) => {
+  expect(formatDaysRemaining(days)).toBe(expected);
 });
 
 it('formats dates in a fixed display time zone', () => {
   expect(formatDateTimePl('2026-10-03T13:24:00Z')).toBe('3 października 2026, 15:24');
   expect(formatOffsetDays(15)).toBe('+15 dni');
   expect(formatOffsetDays(-15)).toBe('−15 dni');
+  expect(formatOffsetDays(0)).toBe('0 dni');
 });
 ```
 
-- [ ] **Krok 3: Uruchom testy i potwierdź FAIL.**
+- [ ] **Krok 2: Uruchom testy i potwierdź FAIL.**
 
 Run: `cd frontend && npm test -- --run src/lib/dateTime.test.ts`
 Oczekiwane: FAIL — moduł nie istnieje.
 
-- [ ] **Krok 4: Zaimplementuj `types/api.ts` (kontrakt ze spec §5) oraz `lib/dateTime.ts`.**
+- [ ] **Krok 3: Zaimplementuj `lib/dateTime.ts`.**
 
-`leaseStatus` liczy `diff = Date.parse(expires_at) - Date.parse(simulated_now)`: `diff <= 0` → `EXPIRED`, `diff <= WARNING_WINDOW_DAYS * DAY_MS` → `WARNING`, inaczej `ACTIVE`. `formatDateTimePl` używa `Intl.DateTimeFormat('pl-PL', { timeZone: DISPLAY_TIME_ZONE, dateStyle: 'long', timeStyle: 'short' })`. `formatOffsetDays` używa znaku `−` (U+2212) dla wartości ujemnych.
+`daysRemaining` liczy `Math.ceil((Date.parse(expires_at) - Date.parse(now)) / DAY_MS)`. `formatDateTimePl` używa `Intl.DateTimeFormat('pl-PL', { timeZone: DISPLAY_TIME_ZONE, dateStyle: 'long', timeStyle: 'short' })` — strefa na sztywno, żeby testy były deterministyczne na każdej maszynie. `formatOffsetDays` używa znaku `−` (U+2212) dla wartości ujemnych, a `formatDaysRemaining(null)` zwraca `—` (dzierżawa bez terminu, np. `admin`).
 
-- [ ] **Krok 5: Uruchom testy `dateTime` i potwierdź PASS.**
+- [ ] **Krok 4: Uruchom testy `dateTime` i potwierdź PASS.**
 
 Run: `cd frontend && npm test -- --run src/lib/dateTime.test.ts`
 Oczekiwane: PASS.
 
-- [ ] **Krok 6: Napisz failing testy `statusBadges`.**
+- [ ] **Krok 5: Napisz failing testy `statusBadges`.**
 
 ```ts
+import { getAppealStatusBadge, getRecommendationLabel, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
+
 it('maps every status to a distinct Polish label and class', () => {
   const badges = (['ACTIVE', 'WARNING', 'EXPIRED'] as const).map(getStatusBadge);
   expect(badges.map((b) => b.label)).toEqual(['Aktywna', 'Wygasa wkrótce', 'Wygasła']);
   expect(new Set(badges.map((b) => b.className)).size).toBe(3);
 });
 
-it('maps roles and recommendations to labels', () => {
+it('maps roles, recommendations and appeal statuses to labels', () => {
   expect(['admin', 'write', 'read'].map(getRoleLabel)).toEqual(['Administrator', 'Zapis (write)', 'Odczyt (read)']);
-  expect(getRecommendedActionLabel('downscope')).toBe('Zdeeskaluj');
-  expect(getRecommendedActionLabel('revoke')).toBe('Odbierz');
-  expect(getRecommendedActionLabel(null)).toBe('');
-});
-
-it('maps appeal statuses to Polish labels', () => {
-  const labels = (['PENDING', 'APPROVED', 'REJECTED'] as const).map((status) => getAppealStatusBadge(status).label);
-  expect(labels).toEqual(['Oczekujące', 'Zatwierdzone', 'Odrzucone']);
+  expect(['KEEP', 'DOWNSCOPE', 'REVOKE'].map(getRecommendationLabel)).toEqual(['Bez zmian', 'Zdeeskaluj', 'Odbierz']);
+  const appealLabels = (['PENDING', 'APPROVED', 'REJECTED'] as const).map((status) => getAppealStatusBadge(status).label);
+  expect(appealLabels).toEqual(['Oczekujące', 'Zatwierdzone', 'Odrzucone']);
 });
 ```
 
-- [ ] **Krok 7: Zaimplementuj `lib/statusBadges.ts`, uruchom testy i potwierdź PASS.**
+- [ ] **Krok 6: Zaimplementuj `lib/statusBadges.ts`, uruchom testy i potwierdź PASS.**
 
 Run: `cd frontend && npm test -- --run src/lib/statusBadges.test.ts && npm run build`
-Oczekiwane: PASS, build bez błędów.
+Oczekiwane: PASS, build bez błędów (importy typów z `@/types/api` kompilują się).
 
-- [ ] **Krok 8: Commit.**
+- [ ] **Krok 7: Commit.**
 
 ```bash
-git add frontend/src/types frontend/src/lib
-git commit -m "feat(frontend): add API contract types and single sources of truth for time and badges"
+git add frontend/src/lib
+git commit -m "feat(frontend): add single sources of truth for date formatting and badges"
 ```
 
 ---
@@ -265,19 +255,19 @@ git commit -m "feat(frontend): add API contract types and single sources of trut
 ### Zadanie 3 (PR 5.3): Fixture'y, tabela dzierżaw i strona Dzierżawy
 
 **Pliki:**
-- Utwórz: `frontend/src/api/config.ts`, `frontend/src/api/fixtures/{leases.json,clock.json,index.ts}`
-- Utwórz: `frontend/src/api/leases.ts`, `frontend/src/api/simulation.ts`, `frontend/src/hooks/useLeases.ts`, `frontend/src/hooks/useSimulatedClock.ts`
+- Utwórz: `frontend/src/api/config.ts`, `frontend/src/api/fixtures/{leases.json,index.ts}`
+- Utwórz: `frontend/src/api/leases.ts`, `frontend/src/hooks/useLeases.ts`
 - Utwórz: `frontend/src/components/leases/LeaseTable.tsx`, `frontend/src/components/leases/LeaseStatusBadge.tsx`
 - Zmień: `frontend/src/pages/LeasesPage.tsx`
 - Test: `frontend/src/pages/LeasesPage.test.tsx`
 
 **Interfejsy:**
-- Produkuje: `shouldUseFixtures(): boolean` (`api/config.ts`, czyta `VITE_USE_FIXTURES` przy każdym wywołaniu); `fetchLeases(): Promise<LeaseListResponse>`; `fetchClock(): Promise<SimulatedClock>`; `useLeases(): UseQueryResult<LeaseListResponse>`; `useSimulatedClock(): UseQueryResult<SimulatedClock>`; `LeaseTable({ leases, simulatedNow }: LeaseTableProps): React.JSX.Element`; `LeaseStatusBadge({ status }: { status: LeaseStatus }): React.JSX.Element`; typowany re-export fixture'ów `leasesFixture`, `clockFixture` z `api/fixtures/index.ts`.
-- Konsumuje: `leaseStatus`, `daysRemaining`, `formatDaysRemaining`, `formatDateTimePl` (zadanie 2), `getStatusBadge`, `getRoleLabel`, `getRecommendedActionLabel` (zadanie 2).
+- Produkuje: `shouldUseFixtures(): boolean` (`api/config.ts`, czyta `VITE_USE_FIXTURES` przy każdym wywołaniu); `fetchLeases(): Promise<LeaseOverview[]>`; `useLeases(): UseQueryResult<LeaseOverview[]>`; `LeaseTable({ leases }: { leases: LeaseOverview[] }): React.JSX.Element`; `LeaseStatusBadge({ status }: { status: LeaseStatus }): React.JSX.Element`; typowany re-export `leasesFixture: LeaseOverview[]` z `api/fixtures/index.ts`.
+- Konsumuje: `formatDaysRemaining`, `formatDateTimePl` (zadanie 2), `getStatusBadge`, `getRoleLabel`, `getRecommendationLabel` (zadanie 2). Status, `days_remaining` i `recommendation` **przychodzą z API** — tabela ich nie liczy, więc nie potrzebuje zegara.
 
 - [ ] **Krok 1: Utwórz fixture'y zgodne z kontraktem.**
 
-`clock.json`: `{"simulated_now": "2026-10-03T12:00:00Z", "offset_days": 0}`. `leases.json` — cztery dzierżawy o stabilnych identyfikatorach, na których opierają się kolejne zadania i test integracyjny: `id: 1` kamil/DEV/`write`/2026-11-02 (`ACTIVE`), `id: 2` marta/QA/`read`/2026-10-08 (`WARNING`, 5 dni), `id: 3` piotr/DEV/`write`/2026-09-30 (`EXPIRED`), `id: 4` tomasz-admin/DEV/`admin`/2027-01-01 z `recommended_action: "downscope"`. `last_activity` wypełnione dla trzech, `null` dla jednej. `index.ts` re-eksportuje je z typem: `export const leasesFixture: LeaseListResponse = leasesJson;`.
+`backend/app/core/time_provider.py` kotwiczy seed na `2026-10-03T00:00:00Z`, więc fixture'y używają tej samej daty bazowej. `leases.json` — cztery `LeaseOverview` o stabilnych identyfikatorach, na których opierają się kolejne zadania i test integracyjny: `id: 1` kamil/DEV/`write`/`expires_at: 2026-11-02…`/`status: "ACTIVE"`/`days_remaining: 30`/`recommendation: "KEEP"`, `id: 2` marta/QA/`read`/`2026-10-08…`/`"WARNING"`/`5`/`"KEEP"`, `id: 3` piotr/DEV/`write`/`2026-09-30…`/`"EXPIRED"`/`-3`/`"REVOKE"`, `id: 4` tomasz-admin/DEV/`admin`/`expires_at: null`/`days_remaining: null`/`status: "ACTIVE"`/`recommendation: "DOWNSCOPE"`. `last_activity_at` wypełnione dla trzech, `null` dla jednej. `index.ts` re-eksportuje je z typem: `export const leasesFixture: LeaseOverview[] = leasesJson;`.
 
 - [ ] **Krok 2: Napisz failing test `renders_lease_rows_sorted_by_urgency`.**
 
@@ -295,7 +285,7 @@ expect(within(rows[4]).getByText('Aktywna')).toBeInTheDocument();
 - [ ] **Krok 3: Napisz failing test stanu pustego `renders_empty_state_where_there_are_no_leases`.**
 
 ```tsx
-renderWithProviders(<LeaseTable leases={[]} simulatedNow={clockFixture.simulated_now} />);
+renderWithProviders(<LeaseTable leases={[]} />);
 expect(screen.getByText('Brak dzierżaw do wyświetlenia')).toBeInTheDocument();
 ```
 Stan pusty na poziomie całej strony jest sprawdzany w zadaniu 4, gdy odczyty przechodzą już przez MSW.
@@ -307,11 +297,11 @@ Oczekiwane: FAIL — brak strony, tabeli i hooków.
 
 - [ ] **Krok 5: Zaimplementuj `config.ts`, fixture'y, `api/leases.ts`, `api/simulation.ts` i hooki.**
 
-`api/config.ts`: `export function shouldUseFixtures(): boolean { return import.meta.env.VITE_USE_FIXTURES === 'true'; }` — funkcja, nie stała, żeby `vi.stubEnv` działało w testach. W tym zadaniu `fetchLeases` i `fetchClock` zwracają fixture'y bezwarunkowo (podpięcie na żywo w zadaniu 4). Hooki: `useQuery({ queryKey: ['leases'], queryFn: fetchLeases })` i `queryKey: ['clock']`.
+`api/config.ts`: `export function shouldUseFixtures(): boolean { return import.meta.env.VITE_USE_FIXTURES === 'true'; }` — funkcja, nie stała, żeby `vi.stubEnv` działało w testach. W tym zadaniu `fetchLeases` zwraca fixture bezwarunkowo (podpięcie na żywo w zadaniu 4). Hook: `useQuery({ queryKey: ['leases'], queryFn: fetchLeases })`.
 
 - [ ] **Krok 6: Zaimplementuj `LeaseStatusBadge` i `LeaseTable`.**
 
-Kolumny: Użytkownik, Zespół, Repozytorium, Poziom (`getRoleLabel`), Ostatnia aktywność (`formatDateTimePl` albo `—`), Pozostało (`formatDaysRemaining`), Status (`LeaseStatusBadge`). Sortowanie: ranga statusu `EXPIRED → WARNING → ACTIVE`, potem rosnąco po `daysRemaining`. Kolumny tekstowe mają `max-w-*` i `break-words`, żeby długie loginy i nazwy repozytoriów nie rozsadzały tabeli. Kolumna akcji pojawi się w zadaniu 7 — wtedy `LeaseTable` dostanie prop `onDecide`.
+Kolumny: Użytkownik (`user.name` + `user.login`), Zespół (`user.team?.name ?? '—'`), Repozytorium (`repository.owner/name`), Poziom (`getRoleLabel(current_role)`), Ostatnia aktywność (`formatDateTimePl(last_activity_at)` albo `—`), Pozostało (`formatDaysRemaining(days_remaining)`), Status (`LeaseStatusBadge(status)`), Rekomendacja (`getRecommendationLabel(recommendation)`). Sortowanie: ranga `EXPIRED → WARNING → ACTIVE`, w grupie rosnąco po `days_remaining`, dzierżawy z `days_remaining === null` (rola `admin`) na końcu. Kolumny tekstowe mają `max-w-*` i `break-words`, żeby długie loginy i nazwy repozytoriów nie rozsadzały tabeli. Kolumna akcji pojawi się w zadaniu 7 — wtedy `LeaseTable` dostanie prop `onDecide`.
 
 - [ ] **Krok 7: Zaimplementuj `LeasesPage`** (nagłówek `<h1>Dzierżawy</h1>`, stany: Skeleton podczas ładowania, komunikat błędu z przyciskiem „Odśwież" wywołującym `refetch`, pusty stan).
 
@@ -334,22 +324,24 @@ git commit -m "feat(frontend): render lease inventory from contract fixtures"
 **Pliki:**
 - Utwórz: `frontend/src/api/client.ts`
 - Utwórz: `frontend/src/test/msw/state.ts`
-- Zmień: `frontend/src/api/leases.ts`, `frontend/src/api/simulation.ts`, `frontend/src/test/msw/handlers.ts`, `frontend/src/test/setup.ts`
+- Zmień: `frontend/src/api/leases.ts`, `frontend/src/test/msw/handlers.ts`, `frontend/src/test/setup.ts`
 - Test: `frontend/src/api/client.test.ts`, `frontend/src/pages/LeasesPage.test.tsx` (rozszerzenie)
 
 **Interfejsy:**
-- Produkuje: `class ApiError extends Error { status: number }`; `getJson<T>(path: string): Promise<T>`; `postJson<TResponse, TBody>(path: string, body: TBody): Promise<TResponse>`; `resetMswState(): void`; `getSimulatedNow(): string`; `setSimulatedNow(iso: string): void` z `test/msw/state.ts`.
-- Konsumuje: istniejące `fetchLeases` / `fetchClock` (podmieniane ciałem, bez zmian sygnatur).
+- Produkuje: `class ApiError extends Error { status: number }`; `getJson<T>(path: string): Promise<T>`; `postJson<TResponse, TBody>(path: string, body: TBody): Promise<TResponse>`; w `test/msw/state.ts`: `resetMswState()`, `getSimulatedNow()`, `setSimulatedNow(iso)`, `getSimulatedOffsetDays()`, `getLastTimeTravelRequest()`, `getDemoResetCount()`, `getLastDecisionRequest()` oraz `withComputedFields(lease: LeaseOverview, now: string): LeaseOverview` (testowa emulacja `LeaseService`).
+- Konsumuje: istniejące `fetchLeases` (podmieniane ciałem, bez zmiany sygnatury).
 
 - [ ] **Krok 1: Utwórz `test/msw/state.ts` i handlery dla dzierżaw oraz zegara.**
 
 ```ts
-let simulatedNow = '2026-10-03T12:00:00Z';
+let simulatedNow = '2026-10-03T00:00:00Z';
+let offsetDays = 0;
 export function getSimulatedNow(): string { return simulatedNow; }
 export function setSimulatedNow(iso: string): void { simulatedNow = iso; }
-export function resetMswState(): void { simulatedNow = '2026-10-03T12:00:00Z'; }
+export function getSimulatedOffsetDays(): number { return offsetDays; }
+export function resetMswState(): void { /* zeruje zegar, offset i zapisane żądania */ }
 ```
-`handlers.ts` eksportuje `handlers: HttpHandler[]` z `http.get('/api/v1/leases', () => HttpResponse.json(leasesFixture))` i `http.get('/api/v1/simulation/clock', () => HttpResponse.json({ simulated_now: getSimulatedNow(), offset_days: 0 }))`. W `test/setup.ts` dodaj `resetMswState()` w `beforeEach`.
+`handlers.ts` eksportuje `handlers: HttpHandler[]` z `http.get('/api/v1/leases', () => HttpResponse.json(leasesFixture.map((lease) => withComputedFields(lease, getSimulatedNow()))))` oraz `http.get('/api/v1/simulation/clock', () => HttpResponse.json({ now: getSimulatedNow(), offset_days: getSimulatedOffsetDays() }))` (kształt `ClockRead`). `withComputedFields` liczy `status`, `days_remaining` i `recommendation` z `expires_at` i przekazanego `now` (`expires_at === null` → `days_remaining: null`, `status: 'ACTIVE'`) — **wyłącznie w `test/msw/state.ts`**, jako emulacja backendu; kod aplikacji tych wartości nie liczy. W `test/setup.ts` dodaj `resetMswState()` w `beforeEach`.
 
 - [ ] **Krok 2: Napisz failing testy `client`.**
 
@@ -417,18 +409,18 @@ git commit -m "feat(frontend): add typed API client with fixture fallback flag"
 ### Zadanie 5 (PR 5.4b): Zegar symulowany i pasek czasu
 
 **Pliki:**
-- Zmień: `frontend/src/api/simulation.ts` (dodaj `postTimeTravel`), `frontend/src/test/msw/handlers.ts`, `frontend/src/test/msw/state.ts`
-- Utwórz: `frontend/src/hooks/useTimeTravel.ts`, `frontend/src/components/layout/TimeTravelBar.tsx`
+- Utwórz: `frontend/src/api/simulation.ts` (`fetchClock`, `postTimeTravel`, `postDemoReset`), `frontend/src/hooks/useSimulatedClock.ts`, `frontend/src/hooks/useTimeTravel.ts`, `frontend/src/hooks/useDemoReset.ts`, `frontend/src/components/layout/TimeTravelBar.tsx`
+- Zmień: `frontend/src/test/msw/handlers.ts`, `frontend/src/test/msw/state.ts`
 - Zmień: `frontend/src/components/layout/TopBar.tsx` (montuje `TimeTravelBar`)
 - Test: `frontend/src/components/layout/TimeTravelBar.test.tsx`
 
 **Interfejsy:**
-- Produkuje: `postTimeTravel(request: TimeTravelRequest): Promise<SimulatedClock>`; `useTimeTravel(): UseMutationResult<SimulatedClock, Error, TimeTravelRequest>`; `getLastTimeTravelRequest(): TimeTravelRequest | null`; `TimeTravelBar(): React.JSX.Element`.
-- Konsumuje: `useSimulatedClock`, `formatDateTimePl`, `formatOffsetDays` (zadania 2–3), `resetMswState`/`setSimulatedNow` (zadanie 4).
+- Produkuje: `fetchClock(): Promise<ClockRead>`; `postTimeTravel(request: TimeTravelRequest): Promise<ClockRead>`; `postDemoReset(): Promise<DemoResetResult>`; `useSimulatedClock(): UseQueryResult<ClockRead>`; `useTimeTravel(): UseMutationResult<ClockRead, Error, TimeTravelRequest>`; `useDemoReset(): UseMutationResult<DemoResetResult, Error, void>`; `getLastTimeTravelRequest(): TimeTravelRequest | null`; `getDemoResetCount(): number`; `TimeTravelBar(): React.JSX.Element`.
+- Konsumuje: `formatDateTimePl`, `formatOffsetDays` (zadanie 2), `setSimulatedNow` (zadanie 4).
 
 - [ ] **Krok 1: Rozszerz stan i handlery MSW o podróż w czasie.**
 
-`state.ts` przechowuje `lastTimeTravelRequest`. Handler `http.post('/api/v1/simulation/time-travel', async ({ request }) => { const body = await request.json(); ... })`: dla `{ reset: true }` ustawia `2026-10-03T12:00:00Z` i `offset_days: 0`; dla `{ days }` przesuwa `simulatedNow` o `days` dni i zwraca `{ simulated_now, offset_days }`.
+`state.ts` przechowuje `lastTimeTravelRequest` i `demoResetCount`. Handler `http.post('/api/v1/simulation/time-travel', ...)` przyjmuje `{ days }` (zakres 1…365), przesuwa `simulatedNow` o `days` dni, zwiększa `offsetDays` i zwraca `{ now, offset_days }` (kształt `ClockRead`). Osobny handler `http.post('/api/v1/demo/reset', ...)` zwiększa `demoResetCount`, zeruje zegar i offset oraz zwraca `DemoResetResult { now, offset_days, counts }`.
 
 - [ ] **Krok 2: Napisz failing testy paska czasu.**
 
@@ -444,7 +436,7 @@ it('shows the simulated clock and advances it by 15 days', async () => {
   expect(await screen.findByText(/18 października 2026/)).toBeInTheDocument();
 });
 
-it('accepts a custom number of days and resets the clock', async () => {
+it('accepts a custom number of days and resets the scenario', async () => {
   const user = userEvent.setup();
   renderWithProviders(<TimeTravelBar />);
   await user.type(screen.getByLabelText('Własna liczba dni'), '25');
@@ -452,7 +444,19 @@ it('accepts a custom number of days and resets the clock', async () => {
   await waitFor(() => expect(getLastTimeTravelRequest()).toEqual({ days: 25 }));
 
   await user.click(screen.getByRole('button', { name: 'Reset' }));
-  await waitFor(() => expect(getLastTimeTravelRequest()).toEqual({ reset: true }));
+  await user.click(screen.getByRole('button', { name: 'Potwierdzam reset' }));
+  await waitFor(() => expect(getDemoResetCount()).toBe(1));
+  expect(await screen.findByText(/3 października 2026/)).toBeInTheDocument();
+});
+
+it('rejects a custom value above the API limit', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<TimeTravelBar />);
+  await user.type(screen.getByLabelText('Własna liczba dni'), '400');
+  await user.click(screen.getByRole('button', { name: 'Przesuń' }));
+
+  expect(await screen.findByText('Podaj liczbę dni z zakresu 1–365')).toBeInTheDocument();
+  expect(getLastTimeTravelRequest()).toBeNull();
 });
 
 it.each(['0', '-5', 'abc'])('rejects invalid custom input %s', async (value) => {
@@ -473,7 +477,7 @@ Oczekiwane: FAIL — brak komponentu, brak handlera.
 
 - [ ] **Krok 4: Zaimplementuj `postTimeTravel`, `useTimeTravel` i `TimeTravelBar`.**
 
-`useTimeTravel` w `onSuccess` wywołuje `queryClient.invalidateQueries()` (cały cache) i pokazuje toast `Zmieniono czas symulowany`. `TimeTravelBar` pokazuje `formatDateTimePl(simulated_now)` i `Przesunięcie: {formatOffsetDays(offset_days)}`, przyciski `+15 dni`, `+30 dni`, `+60 dni`, pole `Własna liczba dni` (walidacja: liczba całkowita > 0; komunikat `Podaj dodatnią liczbę dni`), przycisk `Przesuń` i `Reset`. Wszystkie przyciski `disabled` gdy mutacja jest w toku; po sukcesie pole własnej liczby dni jest czyszczone (test integracyjny wykonuje dwa skoki pod rząd).
+`useTimeTravel` w `onSuccess` wywołuje `queryClient.invalidateQueries()` (cały cache) i pokazuje toast `Zmieniono czas symulowany`; `useDemoReset` robi to samo z toastem `Przywrócono scenariusz demo`. `TimeTravelBar` pokazuje `formatDateTimePl(now)` oraz `Przesunięcie: {formatOffsetDays(offset_days)}`, przyciski `+15 dni`, `+30 dni`, `+60 dni`, pole `Własna liczba dni` (walidacja: liczba całkowita z zakresu 1…365, komunikaty `Podaj dodatnią liczbę dni` i `Podaj liczbę dni z zakresu 1–365`), przycisk `Przesuń` oraz `Reset` otwierający potwierdzenie (`Potwierdzam reset` — reset kasuje bazę i przywraca seed). Wszystkie przyciski `disabled` gdy mutacja jest w toku; po sukcesie pole własnej liczby dni jest czyszczone (test integracyjny wykonuje dwa skoki pod rząd).
 
 - [ ] **Krok 5: Zamontuj `TimeTravelBar` w `TopBar` i uruchom testy.**
 
@@ -497,20 +501,21 @@ git commit -m "feat(frontend): add simulated clock bar with time travel controls
 - Test: `frontend/src/api/leases.test.ts`
 
 **Interfejsy:**
-- Produkuje: `postLeaseDecision(lease_id: number, request: LeaseDecisionRequest): Promise<Lease>`; `useLeaseDecision(): UseMutationResult<Lease, Error, { lease_id: number; request: LeaseDecisionRequest }>`; `getLastDecisionRequest(): { lease_id: number; request: LeaseDecisionRequest } | null`.
+- Produkuje: `postLeaseDecision(lease_id: number, request: DecisionRequest): Promise<LeaseOverview>`; `useLeaseDecision(): UseMutationResult<LeaseOverview, Error, { lease_id: number; request: DecisionRequest }>`; `getLastDecisionRequest(): { lease_id: number; request: DecisionRequest } | null`.
 - Konsumuje: `postJson`, `ApiError` (zadanie 4).
 
 - [ ] **Krok 1: Napisz failing testy payloadów decyzji.**
 
 ```ts
 it.each([
-  [{ action: 'extend', days: 30 }, 'preset'],
-  [{ action: 'extend', multiplier: 2 }, 'multiplier'],
-  [{ action: 'extend', date: '2026-12-01' }, 'date'],
-  [{ action: 'revoke' }, 'revoke'],
-  [{ action: 'downscope' }, 'downscope'],
+  [{ action: 'EXTEND', extension: { preset_days: 30 } }, 'preset'],
+  [{ action: 'EXTEND', extension: { multiplier: 2 } }, 'multiplier'],
+  [{ action: 'EXTEND', extension: { until_date: '2026-12-01' } }, 'date'],
+  [{ action: 'EXTEND', extension: { custom_days: 45 } }, 'custom'],
+  [{ action: 'REVOKE' }, 'revoke'],
+  [{ action: 'DOWNSCOPE' }, 'downscope'],
 ])('posts %o decision', async (request) => {
-  await postLeaseDecision(3, request as LeaseDecisionRequest);
+  await postLeaseDecision(3, request as DecisionRequest);
   expect(getLastDecisionRequest()).toMatchObject({ lease_id: 3, request });
 });
 ```
@@ -519,7 +524,7 @@ it.each([
 
 ```ts
 it('surfaces the last-admin 403 as ApiError', async () => {
-  const error = await postLeaseDecision(4, { action: 'revoke' }).catch((e) => e);
+  const error = await postLeaseDecision(4, { action: 'REVOKE' }).catch((e) => e);
   expect(error).toBeInstanceOf(ApiError);
   expect(error.status).toBe(403);
 });
@@ -532,7 +537,7 @@ Oczekiwane: FAIL — brak `postLeaseDecision` i handlera.
 
 - [ ] **Krok 4: Zaimplementuj handler decyzji w MSW (z przypadkiem 403 dla dzierżawy `admin`) oraz `postLeaseDecision`.**
 
-Handler zapisuje żądanie w stanie, aktualizuje kopię fixture'ów (dla `extend` przesuwa `expires_at`), dla `lease_id` z rolą `admin` i akcji `revoke` zwraca `403` z ciałem `{ message: 'Cannot remove the last administrator of the repository/organization', documentation_url: '...' }`.
+Handler zapisuje żądanie w stanie, aktualizuje kopię fixture'ów (`EXTEND` przesuwa `expires_at`, `DOWNSCOPE`/`REVOKE` zmieniają `current_role`), a dla dzierżawy z `current_role === 'admin'` przy akcji `REVOKE` zwraca `403` z ciałem `{ message: 'Cannot remove the last administrator of the repository/organization', documentation_url: '...' }`.
 
 - [ ] **Krok 5: Zaimplementuj `useLeaseDecision`** z inwalidacją `['leases']`, `['dashboard']`, `['audit']`, `['appeals']`, `['graph']` po sukcesie.
 
@@ -563,12 +568,12 @@ git commit -m "feat(frontend): add lease decision API with last-admin error path
 
 - [ ] **Krok 1: Napisz failing testy wyboru opcji przedłużenia.**
 
-W testach korzystaj z re-eksportów fixture'ów: `const now = clockFixture.simulated_now; const activeLease = leasesFixture.leases[0]; const adminLease = leasesFixture.leases[3];`.
+W testach korzystaj z re-eksportów fixture'ów: `const now = clockFixture.now; const activeLease = leasesFixture[0]; const adminLease = leasesFixture[3];`.
 
 ```tsx
 it.each([
-  ['+30 dni', { action: 'extend', days: 30 }],
-  ['2x', { action: 'extend', multiplier: 2 }],
+  ['+30 dni', { action: 'EXTEND', extension: { preset_days: 30 } }],
+  ['2x', { action: 'EXTEND', extension: { multiplier: 2 } }],
 ])('sends %s as %o', async (label, expected) => {
   const user = userEvent.setup();
   renderWithProviders(<DecisionModal lease={activeLease} simulatedNow={now} open onOpenChange={() => {}} />);
@@ -614,7 +619,7 @@ Oczekiwane: FAIL — brak komponentu.
 
 - [ ] **Krok 4: Zaimplementuj `DecisionModal` i podłącz akcję w tabeli.**
 
-Modal (shadcn `Dialog`) pokazuje kontekst (użytkownik, repozytorium, rola, status, „pozostało") i sekcje: **Przedłuż** (presety `+7 / +14 / +30 / +90`, mnożniki `1,5x / 2x`, pole własnej liczby dni, przycisk `Data` z kalendarzem), **Wyłącz** (przycisk `Wyłącz` → potwierdzenie `Potwierdzam wyłączenie`), **Zdeeskaluj** (widoczny tylko dla `role === 'write'` lub `'admin'`). Sukces: toast `Decyzja zapisana`, zamknięcie modala. Błąd `403`: stały komunikat `Nie można odebrać uprawnień ostatniemu administratorowi.`; inny błąd: `error.message`. W `LeaseTable` dodaj kolumnę akcji z przyciskiem `Decyzja`; `LeasesPage` trzyma `selectedLease` w stanie lokalnym.
+Modal (shadcn `Dialog`) pokazuje kontekst (użytkownik, repozytorium, rola, status, „pozostało") i sekcje: **Przedłuż** (presety `+7 / +14 / +30 / +90` → `extension.preset_days`, mnożniki `1,5x / 2x` → `extension.multiplier`, własna liczba dni → `extension.custom_days`, przycisk `Data` z kalendarzem → `extension.until_date`), **Wyłącz** (`action: 'REVOKE'`, przycisk `Wyłącz` → potwierdzenie `Potwierdzam wyłączenie`), **Zdeeskaluj** (`action: 'DOWNSCOPE'`, widoczny gdy `current_role !== 'read'`). Modal buduje dokładnie jedno pole `Extension` na żądanie. Sukces: toast `Decyzja zapisana`, zamknięcie modala. Błąd `403`: stały komunikat `Nie można odebrać uprawnień ostatniemu administratorowi.`; inny błąd: `error.message`. W `LeaseTable` dodaj kolumnę akcji z przyciskiem `Decyzja`; `LeasesPage` trzyma `selectedLease` w stanie lokalnym.
 
 - [ ] **Krok 5: Uruchom testy, build i lint.**
 
@@ -767,7 +772,7 @@ git commit -m "feat(frontend): add team baseline view with one-click onboarding"
 - Test: `frontend/src/pages/AppealsPage.test.tsx`
 
 **Interfejsy:**
-- Produkuje: `fetchAppeals(): Promise<{ appeals: Appeal[] }>`; `postAppeal(lease_id: number, justification: string): Promise<Appeal>`; `useAppeals()`, `useSubmitAppeal()`; `AppealForm({ leases, onSubmit }: AppealFormProps): React.JSX.Element`; `getLastAppealRequest(): { lease_id: number; justification: string } | null`.
+- Produkuje: `fetchAppeals(): Promise<AppealRead[]>`; `postAppeal(lease_id: number, justification: string): Promise<AppealRead>`; `useAppeals()`, `useSubmitAppeal()`; `AppealForm({ leases, onSubmit }: { leases: LeaseOverview[]; onSubmit: (lease_id: number, justification: string) => void }): React.JSX.Element`; `getLastAppealRequest(): { lease_id: number; justification: string } | null`. Ponieważ `AppealRead` ma tylko `user_id` i `lease_id`, osobę wyświetlamy, łącząc odwołanie z listą dzierżaw po `lease_id`.
 - Konsumuje: `useLeases` (zadanie 3), `postJson`/`ApiError` (zadanie 4).
 
 - [ ] **Krok 1: Napisz failing test walidacji uzasadnienia.**
@@ -845,7 +850,7 @@ git commit -m "feat(frontend): add appeal submission form with justification val
 - Test: `frontend/src/components/appeals/AppealHistory.test.tsx`
 
 **Interfejsy:**
-- Produkuje: `AppealHistory({ appeals }: { appeals: Appeal[] }): React.JSX.Element`; `ActivityStats({ stats }: { stats: LeaseActivityStats }): React.JSX.Element`; `fetchActivityStats(lease_id: number): Promise<LeaseActivityStats>`; `useActivityStats(lease_id: number): UseQueryResult<LeaseActivityStats>`; `postResolveAppeal(appeal_id: number, request: LeaseDecisionRequest): Promise<Appeal>`; `useResolveAppeal(): UseMutationResult<...>`; `DecisionModal` przyjmuje dodatkowo opcjonalny prop `appeal?: Appeal`.
+- Produkuje: `AppealHistory({ appeals }: { appeals: AppealRead[] }): React.JSX.Element`; `ActivityStats({ stats }: { stats: LeaseActivityStats }): React.JSX.Element`; `fetchActivityStats(lease_id: number): Promise<LeaseActivityStats>`; `useActivityStats(lease_id: number): UseQueryResult<LeaseActivityStats>`; `postResolveAppeal(appeal_id: number, request: DecisionRequest): Promise<AppealRead>`; `useResolveAppeal(): UseMutationResult<...>`; `DecisionModal` przyjmuje dodatkowo opcjonalny prop `appeal?: AppealRead`.
 - Konsumuje: `DecisionModal` (zadanie 7), `useAppeals` (zadanie 10).
 
 - [ ] **Krok 1: Napisz failing test historii odwołań.**
@@ -1011,7 +1016,7 @@ Oczekiwane: FAIL — brak strony i komponentów.
 
 - [ ] **Krok 3: Zaimplementuj API, fixture, hook, tabelę, filtr i stronę.**
 
-Fixture `audit.json` zawiera co najmniej wpis `lease.extend` aktora `SYSTEM` oraz wpis aktora `ADMIN`, żeby test filtra miał co odfiltrować. Kolumny: Czas (`formatDateTimePl`), Aktor (`ADMIN`/`USER`/`SYSTEM`), Akcja, Cel, Uzasadnienie (`—` gdy brak; `break-words` dla długich treści). Filtr aktora działa po stronie klienta. Widok jest samodzielny — może go przejąć Osoba 6 bez zależności od pozostałych stron.
+Fixture `audit.json` to `AuditLogRead[]`: co najmniej wpis `lease.extend` aktora `SYSTEM` oraz wpis aktora `ADMIN`, żeby test filtra miał co odfiltrować; `details` jest obiektem (np. `{ "days": 30 }`), więc kolumna pokazuje jego zwięzły podgląd, a nie surowy JSON w całości. Kolumny: Czas (`formatDateTimePl(timestamp)`), Aktor (`actor_type`, a dla `SYSTEM` zamiast `actor_id` kreska), Akcja, Cel, Uzasadnienie (`—` gdy brak; `break-words` dla długich treści). Filtr aktora działa po stronie klienta. Widok jest samodzielny — może go przejąć Osoba 6 bez zależności od pozostałych stron.
 
 - [ ] **Krok 4: Uruchom testy, build i lint.**
 
@@ -1090,7 +1095,7 @@ Oczekiwane: FAIL — brak stanowej symulacji w handlerach (statusy nie przelicza
 
 - [ ] **Krok 3: Uzupełnij stanowe handlery MSW.**
 
-Handlery mutują kopię fixture'ów (`extend` przesuwa `expires_at`, `revoke`/`downscope` zmieniają `role`), a `GET /api/v1/leases` zwraca bieżący stan. Napraw wyłącznie błędy integracji — nie duplikuj logiki czasu ani etykiet w komponentach.
+Handlery mutują kopię fixture'ów (`EXTEND` przesuwa `expires_at`, `REVOKE`/`DOWNSCOPE` zmieniają `current_role`), a `GET /api/v1/leases` zwraca bieżący stan **z przeliczonymi polami** `status`, `days_remaining` i `recommendation` — to testowa emulacja backendu (`LeaseService`), konieczna, bo frontend tych wartości nie liczy. Przeliczanie należy do `test/msw/state.ts`, nie do kodu aplikacji. Napraw wyłącznie błędy integracji — nie duplikuj logiki czasu ani etykiet w komponentach.
 
 - [ ] **Krok 4: Uruchom pełny zestaw testów, build i lint.**
 
