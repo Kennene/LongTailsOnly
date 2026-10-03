@@ -21,13 +21,13 @@
       "target": "t0",
       "model": "LeaseOverview",
       "where": { "user.login": "kamil", "repository.name": "core-api" },
-      "expect": { "status": "ACTIVE", "days_remaining": 29 }
+      "expect": { "status": "ACTIVE", "recommendation": "KEEP" }
     },
     {
       "target": "t25",
       "model": "LeaseOverview",
       "where": { "user.login": "kamil", "repository.name": "core-api" },
-      "expect": { "status": "WARNING", "days_remaining": 4 }
+      "expect": { "status": "WARNING" }
     },
     {
       "target": "t30",

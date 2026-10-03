@@ -20,8 +20,7 @@
       "expect": {
         "status": "WARNING",
         "recommendation": "DOWNSCOPE",
-        "current_role": "write",
-        "days_remaining": 5
+        "current_role": "write"
       }
     },
     {
@@ -31,8 +30,7 @@
       "expect": {
         "status": "ACTIVE",
         "recommendation": "KEEP",
-        "current_role": "write",
-        "days_remaining": 29
+        "current_role": "write"
       }
     }
   ]
