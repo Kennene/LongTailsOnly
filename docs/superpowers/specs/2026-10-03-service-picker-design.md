@@ -197,7 +197,7 @@ Eksporty: `SERVICE_REGISTRY`, `getServiceConfig(id)`, `getDefaultPath(id)`, `isR
 - `ServicesProvider` wykonuje `useServices()` (TanStack Query), rozwiązuje aktywną usługę i wystawia `ServiceContextValue { activeService, services, setActiveService, isPending, isError }`.
 - Odczyt zapisanej usługi: leniwa inicjalizacja `useState` czytająca `localStorage` (klucz `lease-governor.service`), z walidacją wobec rejestru i katalogu z backendu.
 - Zapis: `useEffect` przy zmianie aktywnej usługi. Odczyt/zapis `localStorage` w `try/catch` — prywatny tryb przeglądarki nie może wywalić panelu (`DESIGN.md:137`).
-- Wybór nieistniejącej usługi jest ignorowany, a użytkownik wraca do domyślnej (`github`).
+- Wybór nieistniejącej usługi jest ignorowany, a użytkownik wraca do domyślnej (`github`) — **dokładne reguły, z rozróżnieniem trzech stanów katalogu, opisuje §5.6.1**.
 - **Gdy katalog z backendu nie zawiera zapisanej usługi** (np. integracja wyrejestrowana), provider wybiera pierwszą dostępną i **nie** kasuje zapisu po cichu — zapis zostaje, wybór degraduje się na czas sesji.
 
 `useActiveService()` rzuca `Error`, gdy providera brakuje w drzewie — głośna porażka zamiast cichego `undefined`.
@@ -248,10 +248,32 @@ Kontrolka to **natywny `<select>`** (spójnie z `AppealForm`, `GraphFilters`, `A
 
 ### 5.6 Zachowanie przy przełączeniu
 
-1. Usługa docelowa nie istnieje w katalogu → ignoruj.
-2. Bieżąca trasa jest obsługiwana przez usługę docelową → **zostań na trasie** (np. `/audit` działa w obu).
-3. Bieżąca trasa nie jest obsługiwana → przejdź na `defaultRouteId` usługi docelowej.
-4. Pozostałe parametry zapytania są zachowywane.
+1. Bieżąca trasa jest obsługiwana przez usługę docelową → **zostań na trasie** (np. `/audit` działa w obu).
+2. Bieżąca trasa nie jest obsługiwana → przejdź na `defaultRouteId` usługi docelowej.
+3. Pozostałe parametry zapytania są zachowywane.
+
+#### 5.6.1 Kiedy wybór jest przyjmowany, a kiedy odrzucany
+
+Punkt „usługa docelowa nie istnieje w katalogu → ignoruj” **nie wystarcza**, bo katalog bywa w trzech różnych stanach naraz, a każdy znaczy co innego: *jeszcze nie wiemy* (żądanie w locie), *wiemy i nie ma tam tej usługi* (katalog osiadł), *nie dowiemy się* (żądanie padło). Zapisanie tej różnicy wprost jest konieczne — bez tego nie da się rozstrzygnąć, czy klik w trakcie ładowania ma być przyjęty, i łatwo o martwy klik na widocznej opcji.
+
+Reguła (dokładnie ta kolejność):
+
+```ts
+if (getServiceConfig(id) === undefined) {
+  return;              // poza rejestrem frontendu nie jest wybieralne nigdy
+}
+if (!isPending && !isInCatalog) {
+  return;              // osiadły katalog jest rozstrzygający, nawet gdy pomija wpis rejestru
+}
+```
+
+Trzy konsekwencje, każda pokryta testem:
+
+1. **Poza rejestrem frontendu → zawsze odrzucone.** Opcje w kontrolce pochodzą ze zbioru *katalog ∪ rejestr*, więc takiego id nie da się kliknąć; warunek jest jawnym zapisem niezmiennika, a nie zmianą zachowania. Dodatkowo chroni przed zapisaniem literówki w trakcie ładowania.
+2. **W trakcie ładowania przyjmujemy** (dla id z rejestru) i zapisujemy. Katalog jeszcze się nie wypowiedział, a kontrolka celowo renderuje wpisy rejestru już w tym oknie — inaczej klik w widoczną opcję byłby martwy. Rozstrzygnięcie i tak odrzuci nieznane id, więc nic niezweryfikowanego nie zostaje aktywne.
+3. **Po błędzie żądania przyjmujemy id z rejestru frontendu.** To realizacja §5.6.1 celu „użytkownik z nieaktualną usługą musi móc się przełączyć, gdy backend leży” — i dlatego kontrolka **zostaje widoczna** obok alertu błędu, zamiast zostać nim zastąpiona. Aktywna usługa pozostaje wtedy zastępczą, więc znów nic niezweryfikowanego nie staje się aktywne.
+
+Poza tymi przypadkami obowiązuje reguła z punktu 3.: **osiadły katalog jest rozstrzygający** — jeśli nie zawiera `github`, to wybór `github` jest odrzucany, mimo że rejestr frontendu go zna.
 
 ### 5.7 Nawigacja i branding
 
