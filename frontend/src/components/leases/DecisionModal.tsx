@@ -11,9 +11,10 @@ import {
 } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
 import { LeaseActivityPanel } from '@/components/leases/LeaseActivityPanel';
+import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import { RecommendationBadge } from '@/components/leases/RecommendationBadge';
+import { RoleBadge } from '@/components/leases/RoleBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -27,7 +28,6 @@ import { useLeaseDecision } from '@/hooks/useLeaseDecision';
 import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { type ApiErrorDescription, describeEngineError } from '@/lib/apiErrors';
 import { daysRemaining, formatDaysRemaining } from '@/lib/dateTime';
-import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import type { AppealOverview, DecisionRequest, LeaseOverview } from '@/types/api';
 
 export interface DecisionModalProps {
@@ -91,7 +91,6 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   const [failure, setFailure] = useState<ApiErrorDescription | null>(null);
 
   const now: string | null = clock.data?.now ?? null;
-  const statusBadge = getStatusBadge(lease.status);
   const isPending: boolean = decision.isPending;
   const extensionBlocked: string | null = extensionBlockedReason(lease);
 
@@ -141,7 +140,10 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   }
 
   return (
-    <DialogContent className="sm:max-w-lg">
+    // Modal jest dłuższy niż niski ekran (laptop 1366×768, telefon): bez sufitu wysokości Radix
+    // centruje go poza krawędziami i tytuł oraz akcje stają się nieosiągalne. Treść przewija się
+    // w środku, a stopka z akcjami zostaje przyklejona do dolnej krawędzi.
+    <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Decyzja o dostępie</DialogTitle>
         <DialogDescription>{`${lease.user.name} (${lease.user.login})`}</DialogDescription>
@@ -149,14 +151,14 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
 
       <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 text-sm">
         <dt className="text-muted-foreground">Repozytorium</dt>
-        <dd className="font-medium">{`${lease.repository.owner}/${lease.repository.name}`}</dd>
+        <dd className="font-mono">{`${lease.repository.owner}/${lease.repository.name}`}</dd>
         <dt className="text-muted-foreground">Rola</dt>
-        <dd className="font-medium">{getRoleLabel(lease.current_role)}</dd>
+        <dd>
+          <RoleBadge role={lease.current_role} />
+        </dd>
         <dt className="text-muted-foreground">Status</dt>
         <dd>
-          <Badge variant="outline" className={statusBadge.className}>
-            {statusBadge.label}
-          </Badge>
+          <LeaseStatusBadge status={lease.status} />
         </dd>
         <dt className="text-muted-foreground">Czas do wygaśnięcia</dt>
         <dd>{formatDaysRemaining(lease.days_remaining)}</dd>
@@ -197,7 +199,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
         </Alert>
       ) : null}
 
-      <DialogFooter>
+      <DialogFooter className="sticky bottom-0 bg-popover">
         <Button variant="outline" onClick={() => onOpenChange(false)}>
           Zamknij
         </Button>

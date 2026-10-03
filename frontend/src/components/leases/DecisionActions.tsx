@@ -58,11 +58,13 @@ export function DecisionActions({
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
+    <section className="flex flex-col gap-2 border-t border-border pt-4">
       <h3 className="text-sm font-medium">Odbierz dostęp</h3>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="decision-justification">Uzasadnienie</Label>
+        <Label htmlFor="decision-justification" className="text-muted-foreground">
+          Uzasadnienie
+        </Label>
         <Textarea
           aria-describedby={error === null ? undefined : 'decision-justification-error'}
           aria-invalid={error !== null}

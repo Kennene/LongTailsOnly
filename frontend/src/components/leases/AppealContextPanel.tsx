@@ -27,7 +27,7 @@ export function AppealContextPanel({ appeal }: AppealContextPanelProps): React.J
   const history: AppealOverview[] = appealsQuery.data ?? [];
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border p-3">
+    <section className="flex flex-col gap-3 border-t border-border pt-4">
       <h3 className="text-sm font-medium">Uzasadnienie odwołania</h3>
       <p className="max-w-prose text-sm break-words" data-testid="appeal-justification">
         {appeal.justification}

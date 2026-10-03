@@ -24,10 +24,10 @@ export function LeaseActivityPanel({ lease_id }: LeaseActivityPanelProps): React
 
   return (
     <section
-      className="flex flex-col gap-2 rounded-lg border border-border p-3"
+      className="flex flex-col gap-2 border-t border-border pt-4"
       data-testid="lease-activity"
     >
-      <h3 className="text-sm font-medium text-muted-foreground">Aktywność w dostępie</h3>
+      <h3 className="text-sm font-medium">Aktywność w dostępie</h3>
       {statsQuery.data !== undefined ? (
         <ActivityStats stats={statsQuery.data} />
       ) : statsQuery.isError ? (

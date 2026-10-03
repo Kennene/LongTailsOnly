@@ -102,7 +102,10 @@ export function DecisionModalAppeal({
   }
 
   return (
-    <DialogContent className="sm:max-w-lg">
+    // Modal jest dłuższy niż niski ekran (laptop 1366×768, telefon): bez sufitu wysokości Radix
+    // centruje go poza krawędziami i tytuł oraz akcje stają się nieosiągalne. Treść przewija się
+    // w środku, a stopka z akcjami zostaje przyklejona do dolnej krawędzi.
+    <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Rozpatrzenie odwołania</DialogTitle>
         <DialogDescription>{`${appeal.user.name} (${appeal.user.login})`}</DialogDescription>
@@ -115,7 +118,7 @@ export function DecisionModalAppeal({
         data-testid="appeal-lease-context"
       >
         <dt className="text-muted-foreground">Repozytorium</dt>
-        <dd className="font-medium">{context.repository}</dd>
+        <dd className="font-mono">{context.repository}</dd>
         <dt className="text-muted-foreground">Wnioskowana rola</dt>
         <dd className="font-medium">{context.requested_role}</dd>
         <dt className="text-muted-foreground">Rola w dostępie</dt>
@@ -128,7 +131,7 @@ export function DecisionModalAppeal({
         <dd className="font-mono tabular-nums">{context.previous_appeals}</dd>
       </dl>
 
-      <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
+      <section className="flex flex-col gap-2 border-t border-border pt-4">
         <h3 className="text-sm font-medium">Odrzuć odwołanie</h3>
         <Label htmlFor="appeal-rejection-justification">{REJECTION_LABEL}</Label>
         <Textarea
@@ -182,7 +185,7 @@ export function DecisionModalAppeal({
         }}
       />
 
-      <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
+      <section className="flex flex-col gap-2 border-t border-border pt-4">
         <h3 className="text-sm font-medium">Zatwierdzenie odwołania</h3>
         <p className="text-sm text-muted-foreground" id="appeal-approve-unavailable">
           {APPROVE_UNAVAILABLE}
@@ -199,7 +202,7 @@ export function DecisionModalAppeal({
         </Button>
       </section>
 
-      <DialogFooter>
+      <DialogFooter className="sticky bottom-0 bg-popover">
         <Button variant="outline" onClick={() => onOpenChange(false)}>
           Zamknij
         </Button>

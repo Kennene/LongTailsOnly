@@ -55,7 +55,7 @@ export function ExtensionControls({
 
   if (disabledReason !== null) {
     return (
-      <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
+      <section className="flex flex-col gap-2 border-t border-border pt-4">
         <h3 className="text-sm font-medium">Przedłuż</h3>
         <p className="text-xs text-muted-foreground">{disabledReason}</p>
       </section>
@@ -63,7 +63,7 @@ export function ExtensionControls({
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
+    <section className="flex flex-col gap-2 border-t border-border pt-4">
       <h3 className="text-sm font-medium">Przedłuż</h3>
       <div className="flex flex-wrap gap-1.5">
         {PRESET_DAYS.map((days: PresetDays) => (
