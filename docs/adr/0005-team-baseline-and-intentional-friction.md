@@ -11,11 +11,11 @@ Ręczne konfigurowanie dostępów dla każdego nowego członka zespołu jest uci
    - Proponowany poziom dostępu to najniższy wystarczający poziom zarejestrowany dla większości zespołu (`write` lub `read`).
    - Uprawnienie `admin` **nigdy** nie wchodzi do standardu zespołu automatycznie.
 2. **Elastyczny wachlarz opcji decyzyjnych dla Administratora**:
-   - Podczas review wniosku (lub proaktywnego zarządzania dzierżawą) administrator ma pełną swobodę wyboru nowego czasu trwania dostępu:
-     - **Mnożnik bieżącego okresu**: np. `1.5x` lub `2x` dotychczasowego TTL dzierżawy.
+   - Podczas review wniosku (lub proaktywnego zarządzania dostępem) administrator ma pełną swobodę wyboru nowego czasu trwania dostępu:
+     - **Mnożnik bieżącego okresu**: np. `1.5x` lub `2x` dotychczasowego TTL dostępu.
      - **Presety czasowe**: `+7 dni`, `+14 dni`, `+30 dni`, `+90 dni`.
      - **Czas niestandardowy (Custom)**: wpisanie dowolnej liczby dni lub wybór konkretnej daty w kalendarzu.
-   - **Wielokrotność przedłużeń**: Administrator może wydłużać dzierżawę wielokrotnie przy kolejnych przeglądach (brak sztucznego limitu „jednorazowości”).
+   - **Wielokrotność przedłużeń**: Administrator może wydłużać dostęp wielokrotnie przy kolejnych przeglądach (brak sztucznego limitu „jednorazowości”).
 3. **Celowe tarcie procesowe przy odwołaniach (Intentional Friction)**:
    - Każde odwołanie użytkownika o przedłużenie wygasającego dostępu wymaga podania nowego, unikalnego uzasadnienia biznesowego.
    - System nie dopuszcza automatycznego odnawiania bez wiedzy i akceptacji administratora.

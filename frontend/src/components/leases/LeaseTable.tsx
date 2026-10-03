@@ -82,7 +82,7 @@ const ACTION_COLUMN = 'sticky right-0 border-l bg-background text-right';
 
 export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Element {
   if (leases.length === 0) {
-    return <p className="text-sm text-muted-foreground">Brak dzierżaw do wyświetlenia</p>;
+    return <p className="text-sm text-muted-foreground">Brak dostępów do wyświetlenia</p>;
   }
 
   const rows: LeaseOverview[] = leases.toSorted(compareLeases);
@@ -171,7 +171,7 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
 
 /**
  * Sortowanie z kontraktu: ranga statusu, w grupie rosnąco po `days_remaining`,
- * a dzierżawy bez terminu (`days_remaining: null`, czyli rola `admin`) na końcu.
+ * a dostępy bez terminu (`days_remaining: null`, czyli rola `admin`) na końcu.
  */
 function compareLeases(left: LeaseOverview, right: LeaseOverview): number {
   const rank: number = STATUS_RANK[left.status] - STATUS_RANK[right.status];

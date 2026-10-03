@@ -5,7 +5,7 @@ Zakres: PRODUKT.md M7 / UC-4 / UC-5, ADR 0002–0004, 0006–0010 (po scaleniu z
 
 ## 1. Po co to jest
 
-Silnik dzierżaw (Lease Engine) i panel admina rozmawiają z GitHubem wyłącznie przez interfejs zgodny z oficjalnym REST API v3.
+Silnik dostępów (Lease Engine) i panel admina rozmawiają z GitHubem wyłącznie przez interfejs zgodny z oficjalnym REST API v3.
 Mock udaje GitHuba: te same ścieżki `/api/v3/...`, kody HTTP, formaty JSON, nagłówki i format błędów. Dzięki temu w przyszłości
 adapter mockowy można podmienić na prawdziwego klienta GitHub Enterprise bez zmian w rdzeniu.
 
@@ -58,10 +58,10 @@ Nagłówki na każdej odpowiedzi: `X-GitHub-Media-Type: github.v3; format=json`,
 **Format błędów** (jak GitHub): `{"message": "...", "documentation_url": "..."}`; dla `422` dodatkowo `"errors": [{"resource","field","code"}]`.
 Błędy walidacji pod `/api/v3` też mają ten format (`"message": "Validation Failed"`); poza `/api/v3` zostaje domyślny format FastAPI.
 
-### Zapis dostępu a dzierżawa
+### Wiersz `Lease` a kolaborator GitHuba
 
 Collaborator = **aktywny** `Lease` (`is_active=True`). `PUT` ustawia `granted_at = teraz` (czas symulowany) i `expires_at = teraz + default_lease_duration_days repozytorium` (domyślnie 30).
-Dla `admin` `expires_at = NULL` (stała rola break-glass). `PUT` tym samym poziomem nic nie zmienia (nie przedłuża dzierżawy). `DELETE` nie kasuje wiersza (ADR 0007), tylko wyłącza dzierżawę; kolejny `PUT` reaktywuje ten sam wiersz i zwraca `201`. Mock **nie zapisuje `AuditLog`**; audyt należy do serwisów, które go wywołują.
+Dla `admin` `expires_at = NULL` (stała rola break-glass). `PUT` tym samym poziomem nic nie zmienia (nie przedłuża dostępu). `DELETE` nie kasuje wiersza (ADR 0007), tylko wyłącza dostęp; kolejny `PUT` reaktywuje ten sam wiersz i zwraca `201`. Mock **nie zapisuje `AuditLog`**; audyt należy do serwisów, które go wywołują.
 
 ### Mapowanie poziomów GitHuba na model projektu (ADR 0002)
 
@@ -92,7 +92,7 @@ Cała logika czasu idzie przez `get_time_provider()` / `ClockPort.get_current_ti
 
 `GET /repos/{owner}/{repo}/events` zwraca zdarzenia w kształcie GitHub Events API, **najnowsze pierwsze**, z oknem **90 dni** i limitem **300** (jak GitHub), liczonymi od czasu symulowanego. Zdarzenia „z przyszłości” nie są zwracane, więc po skoku `+60` starsze wpisy znikają z feedu.
 
-| Zdarzenie (krok 2.4) | `type` | `required_permission` | Odnawia dzierżawę? |
+| Zdarzenie (krok 2.4) | `type` | `required_permission` | Odnawia dostęp? |
 | --- | --- | --- | --- |
 | push | `PushEvent` | write | **tak** (write i read) |
 | review | `PullRequestReviewEvent` | read | **tak** (tylko read) |
@@ -102,7 +102,7 @@ Cała logika czasu idzie przez `get_time_provider()` / `ClockPort.get_current_ti
 | zmiana ustawień | `PublicEvent` (repo upublicznione) | admin | nie |
 
 * GitHub Events API **nie ma** typu „zmiana ustawień repo” (`RepositoryEvent` to tylko webhook), dlatego użyto `PublicEvent`.
-* Źródło prawdy o tym, co odnawia dzierżawę: `app/domain/roles.py` → **`RENEWING_ACTIONS`** / `is_renewing()` (3 typy z ADR 0002), poziomy w `required_permission_for` (typy merge/label/settings dodaje ADR 0010). **Silnik dzierżaw i baseline mają filtrować po `RENEWING_ACTIONS`**, a nie traktować każde zdarzenie o wystarczającym poziomie jako odnowienie.
+* Źródło prawdy o tym, co odnawia dostęp: `app/domain/roles.py` → **`RENEWING_ACTIONS`** / `is_renewing()` (3 typy z ADR 0002), poziomy w `required_permission_for` (typy merge/label/settings dodaje ADR 0010). **Silnik dostępów i baseline mają filtrować po `RENEWING_ACTIONS`**, a nie traktować każde zdarzenie o wystarczającym poziomie jako odnowienie.
 * W bazie trzymane są tylko `(user, repo, timestamp, action_type, required_permission)`. Szczegóły payloadu (sha commitów, numery PR, stan review) są **wyliczane deterministycznie z `id` zdarzenia** (`build_event_payload`), więc nie wymagają zmian schematu i są stabilne między wywołaniami.
 * `id` zdarzenia w JSON to string (`"10000000073"`), jak w GitHubie.
 
@@ -122,7 +122,7 @@ Generator (stałe ziarno `SEED`, godziny z zegara, wynik identyczny po resecie):
 | `PublicEvent` (zmiana ustawień) | `tomasz-admin` w `core-api`, 40 dni temu, 09:00 | nie |
 
 Przy standardowym seedzie: 67 zdarzeń (24 push, 13 review, 9 komentarzy + 16 merge, 4 label, 1 zmiana ustawień). `legacy-reports` (scenariusz C) zostaje bez zdarzeń; zdarzenia z przyszłości nie powstają.
-Ponieważ dokładane typy nie odnawiają dzierżaw, statusy i baseline z seedu się nie zmieniają (dowodzi tego `tests/integration`).
+Ponieważ dokładane typy nie odnawiają dostępów, statusy i baseline z seedu się nie zmieniają (dowodzi tego `tests/integration`).
 
 Statusy w czasie liczone z reguł ADR 0002 (zdarzenia seeda są o 10:00, „teraz” w testach 12:00, więc każdy wiek = dni + 2 h):
 
@@ -166,7 +166,7 @@ curl -s -X POST $B/api/v1/simulation/time-travel -H 'content-type: application/j
 curl -s -X DELETE $B/api/v1/simulation/time-travel                                      # powrót do czasu rzeczywistego
 ```
 
-Pokaz „starzenia się” danych: po `{"days": 60}` `GET .../events` w repo `payment-service` traci najstarsze wpisy (te sprzed >90 dni), a `.../collaborators/kamil/permission` nadal zwraca `write` (mock niczego nie wygasza sam; wygaszanie to zadanie silnika dzierżaw).
+Pokaz „starzenia się” danych: po `{"days": 60}` `GET .../events` w repo `payment-service` traci najstarsze wpisy (te sprzed >90 dni), a `.../collaborators/kamil/permission` nadal zwraca `write` (mock niczego nie wygasza sam; wygaszanie to zadanie silnika dostępów).
 
 ## 8. Jak z tego korzystać w pozostałych modułach
 
@@ -179,7 +179,7 @@ Pokaz „starzenia się” danych: po `{"days": 60}` `GET .../events` w repo `pa
 2. **Czas:** `get_current_time()` przez `ClockPort`/`get_time_provider` (ADR 0008), nie `now()` z ADR 0003.
 3. **`/permission` dla istniejącego użytkownika bez dostępu** zwraca `200` z `permission:"none"` (jak GitHub), a nie `404`.
 4. **Role:** `Role` = `read | write | admin` (ADR 0006); `triage`/`maintain` tylko na granicy mocka (stratne mapowanie).
-5. **Typy aktywności** merge/label/settings są mock-only i nie odnawiają dzierżaw (ADR 0010).
+5. **Typy aktywności** merge/label/settings są mock-only i nie odnawiają dostępów (ADR 0010).
 6. **Time-travel:** kontrakt z `main` (`days` → `ClockRead`); dodano `GET` i `DELETE` (reset samego zegara). Wcześniejszy wariant `{"reset": true}` i `offset_seconds` został usunięty.
 7. **Bez uwierzytelniania i bez prawdziwego rate-limitu** (nagłówki są stałe).
 8. **Zespoły:** `/orgs/{org}/teams` zwraca tabelę `teams` (`dev`, `qa`); admin nie należy do zespołu.

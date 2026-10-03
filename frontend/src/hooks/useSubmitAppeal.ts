@@ -8,7 +8,7 @@ import type { AppealCreate, AppealOverview } from '@/types/api';
  * nowego wniosku (z osobą i repozytorium), więc lista nie musi dopytywać o nic więcej.
  *
  * Inwalidujemy trzy rzeczy: listę odwołań, licznik `pending_appeals` dashboardu i dziennik
- * audytu (backend dopisuje tam `APPEAL_SUBMITTED`). Dzierżawy **nie** ruszamy — złożenie
+ * audytu (backend dopisuje tam `APPEAL_SUBMITTED`). Dostępy **nie** ruszamy — złożenie
  * wniosku nic w niej nie zmienia.
  */
 export function useSubmitAppeal(): UseMutationResult<AppealOverview, Error, AppealCreate> {

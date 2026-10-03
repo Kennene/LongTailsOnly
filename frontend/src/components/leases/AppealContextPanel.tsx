@@ -11,9 +11,9 @@ export interface AppealContextPanelProps {
 
 /**
  * Kontekst odwołania w modalu decyzji (UC-3): uzasadnienie wniosku, historia odwołań tej
- * dzierżawy i statystyki jej użycia. Renderowany wyłącznie w trybie odwołania, więc zapytania
+ * dostępu i statystyki jego użycia. Renderowany wyłącznie w trybie odwołania, więc zapytania
  * o historię i statystyki startują dopiero, gdy administrator kliknie „Rozpatrz” — zwykła
- * decyzja o dzierżawie nie płaci za te żądania.
+ * decyzja o dostępie nie płaci za te żądania.
  *
  * Historia bierze filtr `lease_id` wprost z `GET /api/v1/appeals` (backend filtruje po stronie
  * bazy), a statystyki z `GET /api/v1/leases/{lease_id}/activity-stats`.
@@ -45,7 +45,7 @@ export function AppealContextPanel({ appeal }: AppealContextPanelProps): React.J
         </div>
       )}
 
-      <h4 className="text-sm font-medium text-muted-foreground">Aktywność w dzierżawie</h4>
+      <h4 className="text-sm font-medium text-muted-foreground">Aktywność w dostępie</h4>
       <div data-testid="appeal-activity">
         {statsQuery.data === undefined ? (
           <div className="grid grid-cols-3 gap-2" role="status">

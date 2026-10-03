@@ -15,7 +15,7 @@ import type {
 
 /**
  * Warstwa danych grafu: backend **nie serwuje** `GET /api/v1/graph` (krok 4.6B), więc
- * `fetchGraph()` składa `PermissionGraph` z listy dzierżaw (`GET /api/v1/leases`), odwzorowując
+ * `fetchGraph()` składa `PermissionGraph` z listy dostępów (`GET /api/v1/leases`), odwzorowując
  * `app/domain/insights.py::build_graph_layout`.
  *
  * Testujemy tutaj, bo widok pokazuje wyłącznie liczniki węzłów i krawędzi — identyfikatory,
@@ -32,7 +32,7 @@ function forbidRoute(path: string, calls: string[]): HttpHandler {
   });
 }
 
-/** Dzierżawy, które widzi API — graf pomija nieaktywne (odebrany dostęp), tak jak backend. */
+/** Dostępy, które widzi API — graf pomija nieaktywne (odebrany dostęp), tak jak backend. */
 function activeLeases(): LeaseOverview[] {
   return getLeases().filter((lease: LeaseOverview): boolean => lease.is_active);
 }
@@ -52,7 +52,7 @@ afterEach(() => {
 });
 
 describe('fetchGraph', () => {
-  it('składa węzły osób i repozytoriów oraz krawędź na każdą czynną dzierżawę', async () => {
+  it('składa węzły osób i repozytoriów oraz krawędź na każdy czynny dostęp', async () => {
     const leases: LeaseOverview[] = activeLeases();
     const graph: PermissionGraph = await fetchGraph();
 
@@ -68,7 +68,7 @@ describe('fetchGraph', () => {
     );
   });
 
-  it('nie tworzy węzłów zespołów ani krawędzi członkostwa, bo lista dzierżaw nie niesie składu zespołów', async () => {
+  it('nie tworzy węzłów zespołów ani krawędzi członkostwa, bo lista dostępów nie niesie składu zespołów', async () => {
     const graph: PermissionGraph = await fetchGraph();
 
     expect(graph.nodes.filter((node: GraphNode): boolean => node.type === 'team')).toEqual([]);
@@ -85,7 +85,7 @@ describe('fetchGraph', () => {
     ).toEqual(new Set(activeLeases().map((lease) => lease.user.team?.slug ?? null)));
   });
 
-  it('niesie rolę, status i rekomendację dzierżawy oraz zapala animated tylko dla ryzyka', async () => {
+  it('niesie rolę, status i rekomendację dostępu oraz zapala animated tylko dla ryzyka', async () => {
     const leases: LeaseOverview[] = activeLeases();
     const graph: PermissionGraph = await fetchGraph();
 

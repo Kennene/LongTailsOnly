@@ -7,7 +7,7 @@
 
 ADR 0009 ustanowił Pydantic jako źródło prawdy: schematy w `app/schemas/` są eksportowane do `backend/contract/schema.json`, a z niego generowane są typy TS w `frontend/src/types/api.ts`. Test `tests/schemas/test_contract_is_fresh.py` pilnuje świeżości.
 
-Mimo tego Osoba 5 nie może zbudować tabeli dzierżaw (5.3), bo w `app/api/v1/` istnieje wyłącznie `demo.py` — endpointy pod widoki (3.6, 4.x) jeszcze nie powstały, więc nie wiadomo, jak wyglądają odpowiedzi. Bez zamrożonych danych frontend zgaduje kształt i przepisuje tabelę dwukrotnie.
+Mimo tego Osoba 5 nie może zbudować tabeli dostępów (5.3), bo w `app/api/v1/` istnieje wyłącznie `demo.py` — endpointy pod widoki (3.6, 4.x) jeszcze nie powstały, więc nie wiadomo, jak wyglądają odpowiedzi. Bez zamrożonych danych frontend zgaduje kształt i przepisuje tabelę dwukrotnie.
 
 Pierwsza próba podejścia do 6.1 (gałąź `osoba-6-scenariusze-testy-prelint`, wycofana) zakładała ręcznie pisany `api.schema.json` w `shared/fixtures/contract/`, nazwy w camelCase i `recommendation: "NONE"`. Okazało się to sprzeczne z realnym kontraktem: pola są w `snake_case`, a `Recommendation` to `KEEP | DOWNSCOPE | REVOKE`. Całość wyrzucono.
 

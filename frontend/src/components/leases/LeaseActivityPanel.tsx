@@ -10,11 +10,11 @@ const STATS_ERROR_MESSAGE = 'Nie udało się pobrać statystyk użycia.';
 const SKELETON_PLACEHOLDERS: number[] = [0, 1, 2];
 
 /**
- * Dowód użycia dzierżawy w modalu decyzji (UC-3, `DESIGN.md` §4) — push, review i komentarze
+ * Dowód użycia dostępu w modalu decyzji (UC-3, `DESIGN.md` §4) — push, review i komentarze
  * z `GET /api/v1/leases/{lease_id}/activity-stats`.
  *
  * Panel należy wyłącznie do trybu zwykłej decyzji: tryb odwołania renderuje te same liczniki
- * wewnątrz `AppealContextPanel`, więc montowanie obu dałoby dwa zapytania o jedną dzierżawę.
+ * wewnątrz `AppealContextPanel`, więc montowanie obu dałoby dwa zapytania o jeden dostęp.
  * Dlatego `DecisionModal` sięga po ten komponent tylko przy `appeal === null`.
  *
  * Liczby są danymi, nie statusem — `ActivityStats` trzyma je na tokenach neutralnych.
@@ -27,7 +27,7 @@ export function LeaseActivityPanel({ lease_id }: LeaseActivityPanelProps): React
       className="flex flex-col gap-2 rounded-lg border border-border p-3"
       data-testid="lease-activity"
     >
-      <h3 className="text-sm font-medium text-muted-foreground">Aktywność w dzierżawie</h3>
+      <h3 className="text-sm font-medium text-muted-foreground">Aktywność w dostępie</h3>
       {statsQuery.data !== undefined ? (
         <ActivityStats stats={statsQuery.data} />
       ) : statsQuery.isError ? (

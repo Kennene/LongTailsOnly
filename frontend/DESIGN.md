@@ -8,14 +8,14 @@
 
 ## 1. Kolory stanu — jedno źródło prawdy
 
-| Rodzina tokenów    | Znaczenie                                                                         | Domyślnie (dark)   | Fallback (light)   |
-| ------------------ | --------------------------------------------------------------------------------- | ------------------ | ------------------ |
-| `status-active`    | dzierżawa `ACTIVE` — „Aktywna”; odwołanie `APPROVED`                              | `#5dda99`          | `#007044`          |
-| `status-warning`   | dzierżawa `WARNING` — „Wygasa wkrótce”; odwołanie `PENDING`                       | `#f1ba4b`          | `#8a5600`          |
-| `status-expired`   | dzierżawa `EXPIRED` — „Wygasła”; odwołanie `REJECTED`; akcja `REVOKE` („Odbierz”) | `#ff7d7d`          | `#b71824`          |
-| `status-downscope` | rekomendacja `DOWNSCOPE` — „Zdeeskaluj”: decyzja doradcza, nie awaria             | `#a9a6f7`          | `#584cad`          |
-| `status-revoke`    | alias rodziny krytycznej dla akcji `REVOKE`                                       | `= status-expired` | `= status-expired` |
-| `muted`            | rekomendacja `KEEP` — „Bez zmian”: brak koloru jest sygnałem                      | `#23262b`          | `#f2f3f6`          |
+| Rodzina tokenów    | Znaczenie                                                                     | Domyślnie (dark)   | Fallback (light)   |
+| ------------------ | ----------------------------------------------------------------------------- | ------------------ | ------------------ |
+| `status-active`    | dostęp `ACTIVE` — „Aktywny”; odwołanie `APPROVED`                             | `#5dda99`          | `#007044`          |
+| `status-warning`   | dostęp `WARNING` — „Wygasa wkrótce”; odwołanie `PENDING`                      | `#f1ba4b`          | `#8a5600`          |
+| `status-expired`   | dostęp `EXPIRED` — „Wygasł”; odwołanie `REJECTED`; akcja `REVOKE` („Odbierz”) | `#ff7d7d`          | `#b71824`          |
+| `status-downscope` | rekomendacja `DOWNSCOPE` — „Zdeeskaluj”: decyzja doradcza, nie awaria         | `#a9a6f7`          | `#584cad`          |
+| `status-revoke`    | alias rodziny krytycznej dla akcji `REVOKE`                                   | `= status-expired` | `= status-expired` |
+| `muted`            | rekomendacja `KEEP` — „Bez zmian”: brak koloru jest sygnałem                  | `#23262b`          | `#f2f3f6`          |
 
 Każda rodzina ma cztery zmienne (`--status-<nazwa>`, `-foreground`, `-subtle`, `-border`) wystawione w `@theme inline` jako `--color-status-*`. To **jedyny** sposób wyrażania koloru stanu:
 
@@ -49,7 +49,7 @@ Statusy odwołań nie mają własnych tokenów — `lib/statusBadges.ts` mapuje 
 - light — odpowiednio **4,96 / 5,05 / 5,25 / 5,57** oraz **7,16 / 7,10 / 6,98 / 7,49**
 - neutralne — `--muted-foreground` na `--card` **7,09** (dark) i **6,00** (light); `--primary` na `--background` **10,79** / **5,51**; `--foreground` na `--background` **17,41** / **17,69**
 
-Neutralne warstwy budują głębię: sidebar `#080a0e` < background `#0c0e12` < card `#15171b` < popover `#1b1e23` (dark). Akcent `--primary` (`#4dd4d7` dark, `#007274` light) jest zarezerwowany dla akcji głównej, zaznaczenia i fokusu — nigdy dla stanu dzierżawy.
+Neutralne warstwy budują głębię: sidebar `#080a0e` < background `#0c0e12` < card `#15171b` < popover `#1b1e23` (dark). Akcent `--primary` (`#4dd4d7` dark, `#007274` light) jest zarezerwowany dla akcji głównej, zaznaczenia i fokusu — nigdy dla stanu dostępu.
 
 ## 2. Typografia
 
@@ -69,7 +69,7 @@ Jedna rodzina tekstowa: **Geist Variable** (`--font-sans`, `--font-heading`). Sk
 
 **Dolna granica skali:** `text-xs` (12 px) to najmniejszy rozmiar **treści** — tabel, formularzy, komunikatów i etykiet stanu. Poniżej wolno zejść wyłącznie w chrome, które nie niesie informacji krytycznej: pasek czasu symulowanego (`text-[0.7rem]` ≈ 11,2 px) i legenda grafu (`text-[0.65rem]` ≈ 10,4 px). Arbitralne `text-[…]` poza tymi dwoma miejscami są błędem — gdy brakuje rozmiaru, dodajemy token, a nie wartość w locie.
 
-**Mono (`--font-mono`) tylko dla danych, nigdy dla dekoracji:** loginy (`kamil-dev`), nazwy repozytoriów (`payment-gw`), identyfikatory i numery dzierżaw, daty i godziny, liczby w kartach KPI. Nie używamy mono w nagłówkach, przyciskach ani etykietach stanu — wyjątkiem są identyfikatory wewnątrz zdania.
+**Mono (`--font-mono`) tylko dla danych, nigdy dla dekoracji:** loginy (`kamil-dev`), nazwy repozytoriów (`payment-gw`), identyfikatory i numery dostępów, daty i godziny, liczby w kartach KPI. Nie używamy mono w nagłówkach, przyciskach ani etykietach stanu — wyjątkiem są identyfikatory wewnątrz zdania.
 
 Liczby w tabelach są tabularne globalnie (`table { font-variant-numeric: tabular-nums }`), więc kolumny „Pozostało dni” i daty nie falują. Tekst prozatorski (uzasadnienie odwołania) trzymamy w 65–75 znakach na linię; tabele mogą być gęste.
 
@@ -87,13 +87,13 @@ Liczby w tabelach są tabularne globalnie (`table { font-variant-numeric: tabula
 
 **Jedno mapowanie, nie dwa.** Warianty `status-*` w `components/ui/badge.tsx` to druga mapa status → kolor i muszą zniknąć: `badge.tsx` wraca do sześciu wariantów shadcn (`default`, `secondary`, `destructive`, `outline`, `ghost`, `link`), a stany wyraża wyłącznie `className` z `statusBadges.ts`. Do czasu usunięcia wariantów **nic ich nie używa**; `grep -rn 'variant="status-' src` musi być pusty.
 
-**Karty KPI** — cztery liczniki dashboardu używają rodzin stanów, nie `--chart-*`: Aktywne (`active`), Ostrzeżenia (`warning`), Wygaśnięte (`expired`), Rekomendacje deeskalacji (`downscope`). Zaimplementowane jako `KpiCard` z `tone: LeaseStatus | 'DOWNSCOPE'`: dla statusów klasy pochodzą z `getStatusBadge(tone).className`, a ton doradczy `DOWNSCOPE` to jedyne miejsce poza `lib/statusBadges.ts`, które nazywa klasy `status-downscope-*` (w `getToneClassName`), bo mapa opisuje statusy dzierżaw, a nie rekomendacje. Docelowo ta tonacja przenosi się do `statusBadges.ts` jako helper rekomendacji, żeby żaden komponent nie nazywał klas stanu. Tło `bg-status-*-subtle`, obramowanie `border-status-*-border`, liczba `font-mono text-2xl`, etykieta `text-xs text-current`. `--chart-1…5` to rampa kategoryczna dla grafu i wykresów, nie dla stanów.
+**Karty KPI** — cztery liczniki dashboardu używają rodzin stanów, nie `--chart-*`: Aktywne (`active`), Ostrzeżenia (`warning`), Wygaśnięte (`expired`), Rekomendacje deeskalacji (`downscope`). Zaimplementowane jako `KpiCard` z `tone: LeaseStatus | 'DOWNSCOPE'`: dla statusów klasy pochodzą z `getStatusBadge(tone).className`, a ton doradczy `DOWNSCOPE` to jedyne miejsce poza `lib/statusBadges.ts`, które nazywa klasy `status-downscope-*` (w `getToneClassName`), bo mapa opisuje statusy dostępów, a nie rekomendacje. Docelowo ta tonacja przenosi się do `statusBadges.ts` jako helper rekomendacji, żeby żaden komponent nie nazywał klas stanu. Tło `bg-status-*-subtle`, obramowanie `border-status-*-border`, liczba `font-mono text-2xl`, etykieta `text-xs text-current`. `--chart-1…5` to rampa kategoryczna dla grafu i wykresów, nie dla stanów.
 
 **Ikona w badge'u.** Status, rekomendacja i poziom niosą ikonę z `lucide-react` **obok** polskiej etykiety (nigdy zamiast niej). Ikona jest częścią mapy, nie komponentu: `BadgeStyle` z `lib/statusBadges.ts` trzyma `icon: LucideIcon` **i** `slug` (nazwę, którą lucide wypisuje w `class` jak `lucide-clock`), więc `LeaseStatusBadge`, `RecommendationBadge` i `RoleBadge` tylko składają. Slug jest w mapie, bo `icon.name` bywa zminifikowane, a `displayName` zależy od builda pakietu — kontrakt z DOM-em musi być stabilny.
 
-Dobór ikon jest znaczący, nie dekoracyjny: `CircleCheck` (aktywna), `Clock` (termin ucieka), `CircleX` (wygasła), `Shield`/`ShieldOff` (para break-glass). Rekomendacje biorą czasowniki: `CheckCircle2` (bez zmian), `ArrowDownCircle` (zdeeskaluj), `Ban` (odbierz — jedyna akcja nieodwracalna). Status mówi, czym dzierżawa _jest_; rekomendacja, co _zrobić_ — dlatego `Clock` i `ArrowDownCircle` są różne, choć obie dotyczą czasu. Poziom: `Eye` czyta, `Pencil` pisze, `Shield` chroni `admin`.
+Dobór ikon jest znaczący, nie dekoracyjny: `CircleCheck` (aktywna), `Clock` (termin ucieka), `CircleX` (wygasła), `Shield`/`ShieldOff` (para break-glass). Rekomendacje biorą czasowniki: `CheckCircle2` (bez zmian), `ArrowDownCircle` (zdeeskaluj), `Ban` (odbierz — jedyna akcja nieodwracalna). Status mówi, czym dostęp _jest_; rekomendacja, co _zrobić_ — dlatego `Clock` i `ArrowDownCircle` są różne, choć obie dotyczą czasu. Poziom: `Eye` czyta, `Pencil` pisze, `Shield` chroni `admin`.
 
-**Awatar** — `UserAvatar` to krąg `size-6` z **generowaną ilustracją** z `lib/avatarUrl.ts` (DiceBear, seed = login) i inicjałami z `lib/userInitials.ts` jako podkładem. Krąg jest malowany wyłącznie `bg-muted` + `border-border` + `text-muted-foreground` — **taki sam dla wszystkich**, bo w tej konsoli kolor niesie stan dzierżawy, a nie osobę; osobę rozróżnia sam obraz.
+**Awatar** — `UserAvatar` to krąg `size-6` z **generowaną ilustracją** z `lib/avatarUrl.ts` (DiceBear, seed = login) i inicjałami z `lib/userInitials.ts` jako podkładem. Krąg jest malowany wyłącznie `bg-muted` + `border-border` + `text-muted-foreground` — **taki sam dla wszystkich**, bo w tej konsoli kolor niesie stan dostępu, a nie osobę; osobę rozróżnia sam obraz.
 
 **Dlaczego nie `github.com/<login>.png`.** Loginy demo są fikcyjne, ale `kamil`, `marta` i `ania` **kolidują z prawdziwymi kontami GitHuba** (`kamil-dev` → uid 42606532, `marta` → 29160773). Taki adres wstawiłby do konsoli twarze obcych, realnych osób pod wymyślonymi personami bezpieczeństwa — to nie jest kwestia estetyki. Generowana ilustracja nie przedstawia nikogo i jest deterministyczna dla loginu, więc demo wygląda tak samo po resecie.
 
@@ -101,25 +101,25 @@ Dobór ikon jest znaczący, nie dekoracyjny: `CircleCheck` (aktywna), `Clock` (t
 
 **Trzy warstwy odporności**, bo to zewnętrzne zapytanie sieciowe na każdy wiersz: inicjały leżą **pod** obrazem (komórka nigdy nie jest pusta), `onError` gasi obraz i zostawia inicjały (brak sieci psuje obraz, nie tabelę), a `onLoad` usuwa inicjały, żeby nie przeświecały przez ilustrację. Awatar stoi **na końcu** komórki tożsamości (nazwa, login, awatar), bo nazwa jest sygnałem, a obraz tylko go potwierdza. Rozmiar jest wymierzony: komórka `p-2` + `leading-5` to bazowe 36 px, `size-7` rozdymał wiersz do 45 px, czyli poza pasmo §3 — `size-6` daje 40 px.
 
-**Chip zespołu** — `TeamChip` to jeden kształt w dwóch rolach: w kolumnie `Zespół` **stwierdza** przynależność (sam `Badge`, nie kontrolka), a nad tabelą **filtruje** (`Badge asChild` + `<button aria-pressed>`). Rozróżnia je zachowanie, nie wygląd. Stan zaznaczenia jedzie w `aria-pressed` i wzmacnia go rodzina `status-active`, więc wybrany filtr nie jest niesiony samym kolorem (§6). Lista chipów powstaje z **danych**, nie z zamkniętej listy — nowy zespół w backendzie pojawia się sam, a `null` dostaje chip „Bez zespołu”. Dlatego filtr nigdy nie opróżnia tabeli: każdy chip pochodzi z wierszy, które filtruje, i nie ma tu osobnego stanu pustego „brak dzierżaw w tym zespole”.
+**Chip zespołu** — `TeamChip` to jeden kształt w dwóch rolach: w kolumnie `Zespół` **stwierdza** przynależność (sam `Badge`, nie kontrolka), a nad tabelą **filtruje** (`Badge asChild` + `<button aria-pressed>`). Rozróżnia je zachowanie, nie wygląd. Stan zaznaczenia jedzie w `aria-pressed` i wzmacnia go rodzina `status-active`, więc wybrany filtr nie jest niesiony samym kolorem (§6). Lista chipów powstaje z **danych**, nie z zamkniętej listy — nowy zespół w backendzie pojawia się sam, a `null` dostaje chip „Bez zespołu”. Dlatego filtr nigdy nie opróżnia tabeli: każdy chip pochodzi z wierszy, które filtruje, i nie ma tu osobnego stanu pustego „brak dostępów w tym zespole”.
 
 **Tabela** — nagłówki `text-muted-foreground font-medium`, sortowanie `EXPIRED → WARNING → ACTIVE`, wiersze oddzielone `border-b`, hover `bg-muted/50`. Kolumny: Użytkownik i Repozytorium w `font-mono`; Status, Rekomendacja i Poziom jako badge z ikoną; Zespół jako chip; akcja wiersza to jeden przycisk `outline` „Decyzja”, nie trzy ikony. Status nigdy nie jest sortowany po kolorze — kolejność wynika z `days_remaining`. Grupowanie po zespole jest **filtrem nad tabelą**, a nie drugą osią sortowania: tabela zostaje płaska i posortowana po pilności.
 
-**Modal decyzji** — jedyne miejsce, w którym modal jest uzasadniony (chroniony fokus, sekwencja nieodwracalna). Zawiera kontekst dzierżawy, statystyki użycia i trzy ścieżki: Przedłuż (`default`), Zdeeskaluj (`outline`), Odbierz (`destructive`, z potwierdzeniem). Akcje destrukcyjne nie są domyślnie sfokusowane. Błąd `403` (Last Admin Protection) pokazujemy w miejscu akcji, stałym tekstem: „Nie można odebrać uprawnień ostatniemu administratorowi.”
+**Modal decyzji** — jedyne miejsce, w którym modal jest uzasadniony (chroniony fokus, sekwencja nieodwracalna). Zawiera kontekst dostępu, statystyki użycia i trzy ścieżki: Przedłuż (`default`), Zdeeskaluj (`outline`), Odbierz (`destructive`, z potwierdzeniem). Akcje destrukcyjne nie są domyślnie sfokusowane. Błąd `403` (Last Admin Protection) pokazujemy w miejscu akcji, stałym tekstem: „Nie można odebrać uprawnień ostatniemu administratorowi.”
 
-**Tarcie procesowe w modalu (reguły silnika).** `Zdeeskaluj` i `Odbierz` niosą **wymagane** uzasadnienie (przycięte; puste → `aria-invalid`, `role="alert"` i żadnego żądania), bo silnik dzierżaw odrzuca je bez niego kodem `422` (`decision_service._required`) — audyt ma nieść powód, nie tylko fakt (ADR 0005). `Przedłuż` uzasadnienia nie wymaga. Dzierżawa administratora (`current_role: admin`) **nie pokazuje kontrolek przedłużania**, tylko zdanie „Dzierżawa administratora nie wygasa — nie można jej przedłużyć.”, bo `extend_lease` odrzuca `Role.ADMIN` właśnie takim kodem; strażnik opiera się na **roli**, nie na statusie, więc dzierżawa bez terminu i bez roli `admin` nadal da się przedłużyć. Odebrana dzierżawa read/write zachowuje kontrolki, bo przedłużenie **przywraca** ją przez port dostawcy (`is_active = True`, podstawa = teraz).
+**Tarcie procesowe w modalu (reguły silnika).** `Zdeeskaluj` i `Odbierz` niosą **wymagane** uzasadnienie (przycięte; puste → `aria-invalid`, `role="alert"` i żadnego żądania), bo silnik dostępów odrzuca je bez niego kodem `422` (`decision_service._required`) — audyt ma nieść powód, nie tylko fakt (ADR 0005). `Przedłuż` uzasadnienia nie wymaga. Dostęp administratora (`current_role: admin`) **nie pokazuje kontrolek przedłużania**, tylko zdanie „Dostęp administratora nie wygasa — nie można go przedłużyć.”, bo `extend_lease` odrzuca `Role.ADMIN` właśnie takim kodem; strażnik opiera się na **roli**, nie na statusie, więc dostęp bez terminu i bez roli `admin` nadal da się przedłużyć. Odebrany dostęp read/write zachowuje kontrolki, bo przedłużenie **przywraca** go przez port dostawcy (`is_active = True`, podstawa = teraz).
 
 **Stany** — każdy widok obsługuje trzy stany w tej samej formie, zaimplementowane i potwierdzone w kodzie:
 
 - **ładowanie** — `Skeleton` w układzie docelowym, nigdy spinner w środku treści: wrapper `<div role="status" className="flex flex-col gap-2">`, w nim `<span className="sr-only">Wczytywanie …</span>` i wiersze `Skeleton aria-hidden` o wysokościach docelowego układu (`h-10` nagłówek, `h-9` wiersz).
-- **błąd** — `Alert variant="destructive"` z `AlertTitle` („Nie udało się pobrać dzierżaw”), `AlertDescription` („Serwer nie odpowiedział. Spróbuj ponownie.”) i `AlertAction` z `<Button variant="outline" size="sm">Odśwież</Button>`; akcja ponawia dokładnie to samo zapytanie.
-- **pustka** — jedno zdanie `text-sm text-muted-foreground`, które uczy interfejs: „Brak dzierżaw do wyświetlenia” w tabeli, „Brak dzierżaw w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.” w odwołaniach. Nigdy gołe „Brak danych”.
+- **błąd** — `Alert variant="destructive"` z `AlertTitle` („Nie udało się pobrać dostępów”), `AlertDescription` („Serwer nie odpowiedział. Spróbuj ponownie.”) i `AlertAction` z `<Button variant="outline" size="sm">Odśwież</Button>`; akcja ponawia dokładnie to samo zapytanie.
+- **pustka** — jedno zdanie `text-sm text-muted-foreground`, które uczy interfejs: „Brak dostępów do wyświetlenia” w tabeli, „Brak dostępów w oknie ostrzegawczym — użyj podróży w czasie, aby je wywołać.” w odwołaniach. Nigdy gołe „Brak danych”.
 
 **Formularze** — `Label` nad polem, `Input`/`Textarea` z widocznym fokusem (`ring-ring/50`), błąd walidacji pod polem (`aria-invalid` + `text-status-expired-foreground`), uzasadnienie odwołania jest wymagane (intentional friction) i ma `min-h-24`.
 
 **Toast** — `sonner` z `richColors`; kolory typów pochodzą z rodzin stanów (`success → active`, `warning → warning`, `error → expired`, `info → neutralne`). Toast potwierdza decyzję, nie zastępuje odświeżenia danych.
 
-**Graf** — węzły użytkowników/zespołów/repozytoriów: krawędź i wypełnienie z rodziny stanu dzierżawy, nigdy pełne nasycenie na dużych powierzchniach.
+**Graf** — węzły użytkowników/zespołów/repozytoriów: krawędź i wypełnienie z rodziny stanu dostępu, nigdy pełne nasycenie na dużych powierzchniach.
 
 ## 5. Ruch
 

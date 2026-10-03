@@ -26,8 +26,8 @@
 4. **Persony w seedzie:**
    - `tomasz-admin` — admin IT, `is_admin = True`, `admin` we wszystkich repo (stały, chroniony Last Admin Protection).
    - `kamil` (DEV) — `write` w 2 repo z codziennymi `PushEvent`; `write` w 8 innych repo bez pushy (część tylko z review/komentarzami → kandydat do down-scope, część bez zdarzeń → kandydat do revoke). Tym zastępujemy „zapomnianego admina” z `PRODUKT.md` przy zachowaniu ADR 0002.
-   - `marta` (QA) — `read` w repo QA z `IssueCommentEvent`/`PullRequestReviewEvent`; jedna dzierżawa wygasa za 3 dni (scenariusz B, okno ostrzegawcze).
-   - Scenariusze A–D z `PLAN.md` są pokryte przez Kamila (A), Martę (B), repo `legacy-reports` bez zdarzeń (C) i `nowy-dev` bez dzierżaw (D).
+   - `marta` (QA) — `read` w repo QA z `IssueCommentEvent`/`PullRequestReviewEvent`; jeden dostęp wygasa za 3 dni (scenariusz B, okno ostrzegawcze).
+   - Scenariusze A–D z `PLAN.md` są pokryte przez Kamila (A), Martę (B), repo `legacy-reports` bez zdarzeń (C) i `nowy-dev` bez dostępów (D).
 5. **Reset demo:** `POST /api/v1/demo/reset` usuwa i tworzy schemat, zeruje offset zegara i uruchamia seed; zwraca liczności tabel i aktualny czas. Endpoint działa tylko przy `ENABLE_DEMO_RESET=true` (domyślnie `true`), inaczej zwraca 404.
 
 ## Konsekwencje

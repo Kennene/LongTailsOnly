@@ -6,7 +6,7 @@
 ## Kontekst
 
 Dokumenty są sprzeczne:
-- ADR 0002 i `GLOSSARY.md`: dzierżawie podlegają **dwa poziomy** `write` > `read`; `admin` jest stały (break-glass), wyłączony z wygasania. Pięciostopniowa hierarchia została w ADR 0002 **jawnie odrzucona** dla MVP.
+- ADR 0002 i `GLOSSARY.md`: wygasaniu podlegają **dwa poziomy** `write` > `read`; `admin` jest stały (break-glass), wyłączony z wygasania. Pięciostopniowa hierarchia została w ADR 0002 **jawnie odrzucona** dla MVP.
 - Plan zespołu (Zadanie 5): enum `Role` z pięcioma poziomami `admin > maintain > push > triage > pull`, a Zadanie 8 zawiera test `test_admin_activity_renews_admin_lease`, który zakłada, że `admin` wygasa.
 
 Oba stwierdzenia są oznaczone w Prelint jako zaakceptowane. Schematy (zadanie 1.2) i modele (zadanie 1.3) muszą wybrać jedną wersję.
@@ -14,8 +14,8 @@ Oba stwierdzenia są oznaczone w Prelint jako zaakceptowane. Schematy (zadanie 1
 ## Decyzja
 
 1. **Domena używa trzech wartości `Role`: `read`, `write`, `admin`** (porządek `read < write < admin`).
-   - Dzierżawione (wygasające): `read`, `write`.
-   - `admin`: stały. Dzierżawa `admin` ma `expires_at = NULL` i nigdy nie przechodzi w `WARNING`/`EXPIRED`.
+   - Objęte wygasaniem (wygasające): `read`, `write`.
+   - `admin`: stały. Dostęp `admin` ma `expires_at = NULL` i nigdy nie przechodzi w `WARNING`/`EXPIRED`.
 2. **Nazwy GitHuba żyją tylko na granicy mocka** (`/api/v3/...`) jako `GitHubPermission`: `pull`, `triage`, `push`, `maintain`, `admin`. Mapowanie:
 
    | GitHub → domena | domena → GitHub |
@@ -27,7 +27,7 @@ Oba stwierdzenia są oznaczone w Prelint jako zaakceptowane. Schematy (zadanie 1
 3. **Typ zdarzenia wyznacza wymagany poziom** (`ActivityEvent.required_permission` zapisywane przy tworzeniu zdarzenia):
    - `PushEvent` → `write`
    - `PullRequestReviewEvent`, `IssueCommentEvent` → `read`
-4. **Reguła odnowienia** pozostaje asymetryczna (ADR 0002): zdarzenie odnawia dzierżawę, gdy `required_permission >= current_role`; dotyczy to tylko `read`/`write`.
+4. **Reguła odnowienia** pozostaje asymetryczna (ADR 0002): zdarzenie odnawia dostęp, gdy `required_permission >= current_role`; dotyczy to tylko `read`/`write`.
 5. Test `test_admin_activity_renews_admin_lease` z Zadania 8 planu zespołu zastępujemy testem `test_admin_lease_never_expires`.
 
 ## Konsekwencje

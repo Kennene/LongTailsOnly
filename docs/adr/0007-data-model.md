@@ -5,7 +5,7 @@
 
 ## Kontekst
 
-`PLAN.md` i plan zespołu podają różne nazwy pól (`event_type` vs `action_type`, `required_level` vs `required_permission`) i trzymają zespół jako tekst w `User.team`. Podział pracy zakłada model `Team` (graf uprawnień i baseline operują na zespołach). SQLite nie przechowuje strefy czasowej, a cała logika dzierżaw porównuje daty.
+`PLAN.md` i plan zespołu podają różne nazwy pól (`event_type` vs `action_type`, `required_level` vs `required_permission`) i trzymają zespół jako tekst w `User.team`. Podział pracy zakłada model `Team` (graf uprawnień i baseline operują na zespołach). SQLite nie przechowuje strefy czasowej, a cała logika dostępów porównuje daty.
 
 ## Decyzja
 
@@ -23,7 +23,7 @@
    | `appeals` | `id`, `lease_id`, `user_id`, `repo_id`, `requested_role`, `justification`, `status`, `created_at`, `resolved_at` (nullable) |
    | `audit_logs` | `id`, `timestamp`, `actor_type`, `actor_id` (nullable dla `SYSTEM`), `action`, `target`, `details` (JSON), `justification` (nullable) |
 
-4. **Jedna dzierżawa na parę użytkownik–repozytorium.** Down-scope zmienia `current_role`, revoke ustawia `is_active = False` (wiersz zostaje dla historii i grafu).
+4. **Jeden dostęp na parę użytkownik–repozytorium.** Down-scope zmienia `current_role`, revoke ustawia `is_active = False` (wiersz zostaje dla historii i grafu).
 5. **`activity_events` i `audit_logs` są tylko do dopisywania** (append-only) — żaden kod nie robi na nich `UPDATE`/`DELETE` (poza resetem demo, ADR 0008).
 6. **Czas zawsze w UTC ze strefą.** Kolumny dat używają typu `UTCDateTime` (`TypeDecorator` w `app/db/types.py`), który przy zapisie odrzuca daty bez strefy, a przy odczycie dokleja `UTC`. Dzięki temu porównania `expires_at < now` nie wybuchają błędem „naive vs aware”.
 7. **Organizacja nie ma osobnej tabeli** — w MVP jest dokładnie jedna (`PRODUKT.md`, M7). Jej login to ustawienie `GITHUB_ORG` (domyślnie `longtails`) i trafia do `repositories.owner`; admini organizacji to `users.is_admin = True`.

@@ -69,7 +69,7 @@ Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; n
 | `POST /api/v1/appeals` · `POST /api/v1/appeals/{id}/reject` | złożenie odwołania (wymagane nowe uzasadnienie) i odrzucenie |
 | `GET /api/v1/appeals?login=&lease_id=&status=` | historia odwołań z gotowymi liczbami |
 | `GET /api/v1/audit?actor_type=&action=&actor_login=&target=&since=&until=&limit=` | dziennik audytu (tylko do dopisywania) |
-| `POST /api/v1/appeals/{id}/decision` | decyzja na odwołaniu (przedłuż / zdeeskaluj / odbierz) silnikiem dzierżaw |
+| `POST /api/v1/appeals/{id}/decision` | decyzja na odwołaniu (przedłuż / zdeeskaluj / odbierz) silnikiem dostępów |
 | `GET /api/v1/dashboard/stats` | gotowe liczniki KPI dashboardu |
 | `GET /api/v1/graph?team=` | graf uprawnień w formacie React Flow (węzły z pozycjami, krawędzie ze statusem) |
 | `POST /api/v1/demo/reset` | reset bazy i zegara do stanu demo |

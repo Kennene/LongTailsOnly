@@ -31,7 +31,7 @@ const RISK_STATUSES: readonly LeaseStatus[] = ['WARNING', 'EXPIRED'];
 /** Legenda kolorów — te same rodziny stanów, których używa `getStatusBadge`. */
 const LEGEND_STATUSES: readonly LeaseStatus[] = ['ACTIVE', 'WARNING', 'EXPIRED'];
 
-/** Od najgroźniejszego: kolor węzła bierze najgorszy status z jego dzierżaw. */
+/** Od najgroźniejszego: kolor węzła bierze najgorszy status z jego dostępów. */
 const SEVERITY: readonly LeaseStatus[] = ['EXPIRED', 'WARNING', 'ACTIVE'];
 
 /**
@@ -44,7 +44,7 @@ const PANE_CLASSES = 'h-[38rem] overflow-hidden rounded-xl border border-border 
 
 /**
  * Dane węzła dla React Flow. Kontrakt (`GraphNodeData`) nie ma statusu — wisi on wyłącznie na
- * krawędziach dzierżaw, więc widok wylicza go z krawędzi i dokłada tutaj, żeby kolor węzła
+ * krawędziach dostępów, więc widok wylicza go z krawędzi i dokłada tutaj, żeby kolor węzła
  * nadal niósł stan uprawnień.
  */
 type GraphDisplayData = {
@@ -74,7 +74,7 @@ function collectRiskNodeIds(edges: GraphEdge[]): Set<string> {
   return ids;
 }
 
-/** Najgorszy status węzła, wyliczony z jego krawędzi dzierżaw (bez krawędzi = brak statusu). */
+/** Najgorszy status węzła, wyliczony z jego krawędzi dostępów (bez krawędzi = brak statusu). */
 function collectStatusByNode(edges: GraphEdge[]): Map<string, LeaseStatus> {
   const statuses = new Map<string, LeaseStatus>();
 
