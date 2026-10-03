@@ -23,6 +23,11 @@ TEAM_MEMBERS: dict[str, list[tuple[str, str]]] = {
     "qa": [("marta", "Marta"), *REGULAR_QA],
 }
 
+# Demo "refresh" (POST /api/v1/demo/refresh): the person its first call brings in, and the personas that
+# never get random activity there, so the leases scripted for UC-2..UC-5 keep lapsing as rehearsed.
+REFRESH_USER: tuple[str, str, str] = ("zofia", "Zofia", "dev")  # login, name, team slug
+REFRESH_IDLE_LOGINS: frozenset[str] = frozenset({"kamil", "marta"})
+
 REPOSITORIES: list[str] = [
     "core-api", "auth-service", "payment-service", "frontend-app", "infra-terraform",
     "notifications", "mobile-app", "data-pipeline", "qa-automation", "legacy-reports",

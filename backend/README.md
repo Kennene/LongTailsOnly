@@ -22,6 +22,7 @@ pytest
 - Dokumentacja API: http://localhost:8000/docs (API produktu), mock GitHuba: http://localhost:8000/mocks/github/docs, mock Jiry: http://localhost:8000/mocks/jira/docs
 - Przy pierwszym starcie serwer sam tworzy bazę (migracje) i wgrywa dane demo (19 osób, 10 repo, persony Kamil i Marta).
 - `POST /api/v1/demo/reset` → przywraca bazę i zegar do stanu startowego demo (wyłączenie: `ENABLE_DEMO_RESET=false`).
+- `POST /api/v1/demo/refresh` → przycisk „Odśwież dane” z live demo: pierwsze wywołanie dodaje osobę spoza seeda (`zofia`, zespół DEV, bez dostępów), każde kolejne zapisuje losową aktywność GitHuba (push / review / komentarz) osób z aktywnym dostępem — przez `record_activity`, więc odnawia dostępy jak prawdziwa aktywność. Kamil i Marta nigdy nie działają, a z pozostałych zawsze ktoś zostaje bez akcji. Reset cofa wszystko; ten sam wyłącznik `ENABLE_DEMO_RESET=false` (404).
 - Mock GitHuba (`/api/v3/...`), zdarzenia aktywności i `/api/v1/simulation/time-travel`: patrz `docs/github-mock.md` (ADR 0010).
 - Mock Jiry (`/rest/api/3/...`): patrz `docs/jira-mock.md` (ADR 0016).
 - Baza: SQLite przez aiosqlite, adres w `DATABASE_URL` (patrz `.env.example`).
@@ -74,6 +75,7 @@ Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; n
 | `GET /api/v1/dashboard/stats` | gotowe liczniki KPI dashboardu |
 | `GET /api/v1/graph?team=` | graf uprawnień w formacie React Flow (węzły z pozycjami, krawędzie ze statusem) |
 | `POST /api/v1/demo/reset` | reset bazy i zegara do stanu demo |
+| `POST /api/v1/demo/refresh` | odświeżenie demo: za pierwszym razem nowa osoba, potem losowa aktywność użytkowników |
 
 Audyt zapisuje się **wyłącznie** przez `write_audit_event` (`app/services/audit_service.py`); migracja `0002` blokuje w bazie `UPDATE`/`DELETE` na `audit_logs`. Wspólne fabryki testowe: `tests/factories.py`.
 

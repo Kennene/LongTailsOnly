@@ -1,4 +1,10 @@
-import type { ClockRead, DemoResetResult, SimulationClock, TimeTravelRequest } from '@/types/api';
+import type {
+  ClockRead,
+  DemoRefreshResult,
+  DemoResetResult,
+  SimulationClock,
+  TimeTravelRequest,
+} from '@/types/api';
 
 import { getJson, postJson } from './client';
 import { shouldUseFixtures } from './config';
@@ -27,4 +33,12 @@ export async function postTimeTravel(request: TimeTravelRequest): Promise<ClockR
 /** Reset scenariusza demo: zeruje zegar i przywraca seed bazy. */
 export async function postDemoReset(): Promise<DemoResetResult> {
   return postJson<DemoResetResult, Record<string, never>>('/api/v1/demo/reset', {});
+}
+
+/**
+ * Odświeżenie na potrzeby live demo: pierwsze wywołanie „pobiera” jedną nową osobę, każde kolejne
+ * losową aktywność użytkowników. Jak pozostałe mutacje — zawsze do API, także w trybie fixture'ów.
+ */
+export async function postDemoRefresh(): Promise<DemoRefreshResult> {
+  return postJson<DemoRefreshResult, Record<string, never>>('/api/v1/demo/refresh', {});
 }

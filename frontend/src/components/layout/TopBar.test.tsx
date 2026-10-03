@@ -28,6 +28,18 @@ describe('TopBar', () => {
     expect(within(rightGroup).getByLabelText('Usługa')).toBeInTheDocument();
   });
 
+  it('keeps the demo refresh button inside the right-hand group', async () => {
+    renderWithProviders(<TopBar />);
+
+    const header = await screen.findByRole('banner');
+    // Ten sam strażnik układu co wyżej: przycisk demo nie może zostać trzecim dzieckiem nagłówka.
+    // eslint-disable-next-line testing-library/no-node-access
+    const blocks = Array.from(header.children) as HTMLElement[];
+
+    expect(blocks).toHaveLength(2);
+    expect(within(blocks[1]).getByRole('button', { name: 'Odśwież dane' })).toBeInTheDocument();
+  });
+
   it('names the product rather than the integration', async () => {
     renderWithProviders(<TopBar />);
 

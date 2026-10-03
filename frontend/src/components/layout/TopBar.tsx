@@ -1,3 +1,4 @@
+import { DemoRefreshButton } from '@/components/layout/DemoRefreshButton';
 import { ServicePicker } from '@/components/layout/ServicePicker';
 
 export function TopBar(): React.JSX.Element {
@@ -15,9 +16,11 @@ export function TopBar(): React.JSX.Element {
 
       {/* Prawa strona jest **jednym** dzieckiem `justify-between` (spec §5.5): kontrolka usługi
           i slot paska czasu symulowanego (zadanie 5.4b) stoją w jednej grupie, żeby trzecie
-          dziecko nie konkurowało o miejsce z lewym blokiem. */}
+          dziecko nie konkurowało o miejsce z lewym blokiem. Przycisk odświeżenia demo stoi tu,
+          a nie w widoku „Mocki”, bo na scenie ma być pod ręką na każdym ekranie. */}
       <div className="flex shrink-0 items-center justify-end gap-4">
         <ServicePicker />
+        <DemoRefreshButton />
       </div>
     </header>
   );

@@ -35,6 +35,7 @@ uv run uvicorn app.main:app --reload      # http://127.0.0.1:8000
 * Swagger: `http://127.0.0.1:8000/docs` (API produktu) oraz osobne strony mocków: `http://127.0.0.1:8000/mocks/github/docs` (GitHub) i `http://127.0.0.1:8000/mocks/jira/docs` (Jira), pogrupowane tematycznie (`app/api/mock_docs.py`).
 * Przy starcie serwer wykonuje migracje, wgrywa seed demo (ADR 0008) i **dokłada aktywność mocka** (`seed_activity_extras`, sekcja 6).
 * **Reset demo:** `POST /api/v1/demo/reset` (czyści bazę, zeruje zegar, ładuje seed + aktywność od nowa).
+* **Odświeżenie demo:** `POST /api/v1/demo/refresh` (pierwsze wywołanie dodaje osobę `zofia`, kolejne dopisują losowe zdarzenia `PushEvent` / `PullRequestReviewEvent` / `IssueCommentEvent` w chwili zegara symulowanego; nigdy dla `kamil` i `marta`).
 * Zegar symulacji jest w pamięci: restart serwera = powrót do czasu rzeczywistego.
 
 ## 3. Endpointy GitHuba (`/api/v3`)
