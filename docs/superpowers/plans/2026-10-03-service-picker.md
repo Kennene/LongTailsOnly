@@ -44,11 +44,22 @@ Inputs and conditions the spec implies but no task's tests naturally exercise. E
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `ServiceKind` (str enum: `VCS`, `ISSUE_TRACKER`, `CLOUD_IAM`); `ServiceDescriptor` (frozen dataclass: `id: str`, `name: str`, `kind: ServiceKind`, `capabilities: tuple[str, ...]`, `is_available: bool`); `register(descriptor: ServiceDescriptor) -> None`; `all_services() -> tuple[ServiceDescriptor, ...]`; `reset_registry() -> None` (test-only helper).
+- Produces: `ServiceKind` (str enum: `VCS`, `ISSUE_TRACKER`, `CLOUD_IAM`); `ServiceDescriptor` (frozen dataclass: `id: str`, `name: str`, `kind: ServiceKind`, `capabilities: tuple[str, ...]`, `is_available: bool`); `register(descriptor: ServiceDescriptor) -> None`; `all_services() -> tuple[ServiceDescriptor, ...]`. **No test-only helper is exported:** the production surface is exactly these two functions.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `backend/tests/ports/test_service_registry.py`. Use an autouse pytest fixture that calls `reset_registry()` **after** each test, so `_EXTRA` never leaks between tests while `_BUILTIN` stays intact.
+Create `backend/tests/ports/test_service_registry.py`. Use an autouse pytest fixture that clears the registry module's `_EXTRA` list **before and after** each test, so `_EXTRA` never leaks between tests while `_BUILTIN` stays intact:
+
+```python
+@pytest.fixture(autouse=True)
+def _isolated_extras() -> Iterator[None]:
+    """`_EXTRA` is module-global; clear it around every test so registrations cannot leak."""
+    service_registry._EXTRA.clear()
+    yield
+    service_registry._EXTRA.clear()
+```
+
+**Do not export a `reset_registry()` helper from production code for this.** The registry's public surface is `register` and `all_services` only; a test-only mutator in a production module is a surface production code can call by mistake, and it is unnecessary when the test module can reset the list directly.
 
 ```python
 def test_register_then_all_services_returns_descriptor() -> None:
@@ -63,8 +74,9 @@ def test_register_then_all_services_returns_descriptor() -> None:
 def test_all_services_is_sorted_by_id() -> None:
     register(ServiceDescriptor("zeta", "Z", ServiceKind.VCS, (), True))
     register(ServiceDescriptor("alpha", "A", ServiceKind.VCS, (), True))
-    ids = [service.id for service in all_services()]
-    assert ids == sorted(ids)
+    assert [service.id for service in all_services()] == [
+        "alpha", "demo-tracker", "github", "zeta",
+    ]
 
 
 def test_reregistering_an_identical_descriptor_is_a_noop() -> None:
@@ -74,19 +86,38 @@ def test_reregistering_an_identical_descriptor_is_a_noop() -> None:
     assert [service.id for service in all_services()].count("same") == 1
 
 
+def test_reregistering_a_builtin_identical_descriptor_is_a_noop() -> None:
+    """Task 2's adapters re-register these exact descriptors at import time.
+
+    The idempotency guard must consult the merged catalog, not just `_EXTRA`, or
+    importing an adapter raises `ValueError` and the whole app fails to start.
+    """
+    builtin = next(service for service in all_services() if service.id == "github")
+    register(builtin)
+    assert [service.id for service in all_services()].count("github") == 1
+
+
+def test_conflicting_descriptor_for_a_builtin_id_raises() -> None:
+    conflicting = ServiceDescriptor("github", "Not GitHub", ServiceKind.CLOUD_IAM, (), False)
+    with pytest.raises(ValueError, match="github"):
+        register(conflicting)
+
+
 def test_conflicting_descriptor_for_a_known_id_raises() -> None:
     register(ServiceDescriptor("dup", "One", ServiceKind.VCS, (), True))
     with pytest.raises(ValueError, match="dup"):
         register(ServiceDescriptor("dup", "Two", ServiceKind.VCS, (), True))
 
 
-def test_builtin_descriptors_survive_a_reset() -> None:
+def test_extra_registrations_survive_until_the_test_fixture_clears_them() -> None:
     register(ServiceDescriptor("temp", "Temp", ServiceKind.VCS, (), True))
-    reset_registry()
+    service_registry._EXTRA.clear()
     ids = {service.id for service in all_services()}
     assert "temp" not in ids
     assert {"github", "demo-tracker"} <= ids
 ```
+
+Note `test_extra_registrations_survive_until_the_test_fixture_clears_them` deliberately reaches into `_EXTRA`: the point of that test is that the built-ins outlive a clear and the extras do not, which is the durability boundary the module docstring must state honestly.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -95,12 +126,14 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'app.ports.service_regi
 
 - [ ] **Step 3: Implement `backend/app/ports/service_registry.py`**
 
-**Two tiers, and idempotent registration.** `_BUILTIN` is a module-level tuple holding the canonical descriptors for `github` and `demo-tracker`. `register()` adds to a separate module-level `_EXTRA` list. `all_services()` returns `_BUILTIN` merged with `_EXTRA`, de-duplicated by `id` and sorted by `id`. `reset_registry()` clears **only** `_EXTRA`.
+**Two tiers, and idempotent registration.** `_BUILTIN` is a module-level tuple holding the canonical descriptors for `github` and `demo-tracker`. `register()` appends to a separate module-level `_EXTRA` list. `all_services()` returns `_BUILTIN` merged with `_EXTRA`, de-duplicated by `id` and sorted by `id`. When the same `id` appears in both tiers, **`_EXTRA` wins** (`all_services()` iterates `_BUILTIN` first and lets the later entry overwrite in its de-dup dict) — document that precedence in the docstring. `register()` makes that path unreachable today, so it is a documented invariant rather than live behaviour.
+
+**There is no `reset_registry()`.** Test isolation belongs in the test module, which clears `_EXTRA` directly around each test.
 
 Two consequences you must implement deliberately:
 
 1. **`register()` is idempotent for an identical descriptor.** If the `id` is already known and the descriptor compares equal, it is a silent no-op. If the `id` is known but the descriptor differs, raise `ValueError` naming the `id`. Without this, Task 2's adapter modules — which also call `register(...)` at import time for the very same two services — would raise at import.
-2. **Re-registration after a reset must work.** Task 1's tests will call `reset_registry()`, which clears `_EXTRA` but never `_BUILTIN`. Because Python imports a module only once, anything that existed solely in `_EXTRA` would be gone for the rest of the session — which is exactly why the two canonical descriptors live in `_BUILTIN` and why `all_services()` never depends on import order or test order.
+2. **Re-registration after a test clears `_EXTRA` must work.** Task 1's test fixture clears `_EXTRA` around every test. Because Python imports a module only once, anything that existed solely in `_EXTRA` would be gone for the rest of the session — which is exactly why the two canonical descriptors live in `_BUILTIN` and why `all_services()` never depends on import order or test order. State that durability boundary honestly in the docstring: the guarantee covers the **built-in** ids, not services that some future adapter registers only into `_EXTRA`.
 
 Use `enum.StrEnum` and `dataclasses.dataclass(frozen=True, slots=True)`.
 
