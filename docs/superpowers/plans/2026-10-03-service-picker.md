@@ -755,12 +755,20 @@ git commit -m "feat(frontend): service picker in the top bar with per-service na
 
 **Files:**
 - Modify: `frontend/src/hooks/useLeases.ts`, `useDashboard.ts`, `useGraph.ts`, `useAuditLog.ts`, `useAppeals.ts`, `useActivityStats.ts`, `useTeamBaseline.ts`, `useOnboarding.ts`
-- Modify: `frontend/src/hooks/useLeaseDecision.ts:22-26`
+- Modify: `frontend/src/hooks/useLeaseDecision.ts`, `useApplyOnboarding.ts`, `useRejectAppeal.ts`, `useSubmitAppeal.ts`
 - Test: `frontend/src/hooks/useServiceScopedKeys.test.tsx` (create)
 
 **Interfaces:**
 - Consumes: `useActiveService` (Task 6).
-- Produces: service-scoped query keys of the form `[<resource>, <serviceId>, ...]`, and invalidations that carry the same prefix. `['clock']` stays global.
+- Produces: service-scoped query keys of the form `[<resource>, <serviceId>, ...]`, and invalidations that carry the same prefix. `['clock']` stays global; `useDemoReset`'s bare `invalidateQueries()` stays global and correct.
+
+**Scope correction — do not treat the file list above as complete.** It was written before this branch was rebased onto `frontend-integration`, which added three mutating hooks that invalidate query keys: `useApplyOnboarding.ts`, `useRejectAppeal.ts` and `useSubmitAppeal.ts`. A bare-key invalidation left behind does not error — it silently stops refreshing the cache, so a mutation appears to succeed while the view keeps stale data. **Enumerate every key and every invalidation yourself and make the set complete:**
+
+```bash
+grep -rn "queryKey\|invalidateQueries" frontend/src/hooks/ frontend/src/components/
+```
+
+Do not rely on memory or on this brief for key shapes — read each file, then apply the prefix consistently. The three added hooks are the likeliest to be missed precisely because they are absent from the list above.
 
 - [ ] **Step 1: Write the failing test**
 
