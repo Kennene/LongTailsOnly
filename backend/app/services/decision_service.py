@@ -30,7 +30,7 @@ async def decide_lease(session: AsyncSession, vcs: VCSProvider, *, lease_id: int
 
 async def apply_lease_decision(session: AsyncSession, vcs: VCSProvider, *, lease: Lease, decision: DecisionRequest,
                                now: datetime, actor_id: int | None) -> Lease:
-    """EXTEND / DOWNSCOPE / REVOKE on a lease (ADR 0011 §6); `actor_id=None` means the system (auto mode)."""
+    """EXTEND / DOWNSCOPE / REVOKE on a lease (ADR 0014 §6); `actor_id=None` means the system (auto mode)."""
     match decision.action:
         case DecisionAction.EXTEND:
             return await extend_lease(session, vcs, lease=lease, decision=decision, now=now, actor_id=actor_id)

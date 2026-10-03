@@ -1,4 +1,4 @@
-"""Lease time window shared by Persons 3 and 4 (ADR 0002, ADR 0011 §2): one source of truth for the 7 days."""
+"""Lease time window shared by Persons 3 and 4 (ADR 0002, ADR 0014 §2): one source of truth for the 7 days."""
 
 from datetime import datetime, timedelta
 from math import ceil

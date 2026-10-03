@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite+aiosqlite:///./longtails.db"
     github_org: str = "longtails"
-    admin_login: str = ADMIN_LOGIN  # acting admin: the MVP has no login (ADR 0011 §2)
+    admin_login: str = ADMIN_LOGIN  # acting admin: the MVP has no login (ADR 0014 §2)
     enable_demo_reset: bool = True
 
 

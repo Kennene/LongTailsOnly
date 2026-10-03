@@ -73,7 +73,7 @@
       "type": "object"
     },
     "AppealOverview": {
-      "description": "Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0011 \u00a74).",
+      "description": "Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0014 \u00a74).",
       "properties": {
         "created_at": {
           "format": "date-time",
@@ -250,7 +250,7 @@
       "type": "string"
     },
     "AuditEntry": {
-      "description": "Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0011 \u00a74).",
+      "description": "Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0014 \u00a74).",
       "properties": {
         "action": {
           "type": "string"
@@ -977,7 +977,7 @@
       "type": "string"
     },
     "OnboardingProposal": {
-      "description": "Team baseline split for one person: what approval would grant and what they already have (ADR 0011 \u00a74).",
+      "description": "Team baseline split for one person: what approval would grant and what they already have (ADR 0014 \u00a74).",
       "properties": {
         "already_granted": {
           "items": {
@@ -1076,7 +1076,7 @@
       "type": "string"
     },
     "SimulationClock": {
-      "description": "Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0011 \u00a74).",
+      "description": "Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0014 \u00a74).",
       "properties": {
         "offset_days": {
           "type": "integer"

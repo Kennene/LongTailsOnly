@@ -19,7 +19,7 @@ def _state(clock: TimeProvider) -> ClockRead:
 
 @router.get("/clock", response_model=SimulationClock)
 async def simulation_clock(clock: ClockDep) -> SimulationClock:
-    """Which demo day the panel is on (ADR 0011 §4): {"simulated_now", "offset_days"}."""
+    """Which demo day the panel is on (ADR 0014 §4): {"simulated_now", "offset_days"}."""
     return SimulationClock(simulated_now=clock.get_current_time(), offset_days=clock.offset_days)
 
 

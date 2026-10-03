@@ -1,4 +1,4 @@
-"""Appeals with intentional friction (ADR 0005, ADR 0011 §5.3-5.6)."""
+"""Appeals with intentional friction (ADR 0005, ADR 0014 §5.3-5.6)."""
 
 from collections.abc import Sequence
 from datetime import datetime, timedelta
@@ -8,14 +8,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.appeal_rules import JustificationError, ensure_new_justification, is_appealable
-from app.domain.enums import ActorType, AppealStatus, AuditAction
+from app.domain.enums import ActorType, AppealStatus, AuditAction, DecisionAction
 from app.domain.lease_window import days_remaining
 from app.domain.roles import RENEWING_ACTIONS
 from app.models import ActivityEvent, Appeal, Lease, User
+from app.ports.vcs_provider import VCSProvider
 from app.schemas.appeal import AppealOverview, AppealRead
+from app.schemas.decision import DecisionRequest
 from app.schemas.people import UserRead
 from app.schemas.repository import RepositoryRead
 from app.services.audit_service import lease_target, write_audit_event
+from app.services.decision_service import apply_lease_decision
 from app.services.errors import ServiceError
 
 
@@ -67,6 +70,17 @@ async def reject_appeal(session: AsyncSession, *, appeal_id: int, now: datetime,
     await write_audit_event(session, now=now, actor_type=ActorType.ADMIN, actor_id=actor_id,
                             action=AuditAction.APPEAL_REJECTED, target=appeal_target(appeal.lease),
                             details={"appeal_id": appeal.id}, justification=justification)
+    return appeal
+
+
+async def decide_appeal(session: AsyncSession, vcs: VCSProvider, *, appeal_id: int, decision: DecisionRequest,
+                        now: datetime, actor_id: int) -> Appeal:
+    """Run the admin's lease decision (Person 3) and close the appeal (ADR 0014 §5.5)."""
+    appeal = await pending_appeal(session, appeal_id)
+    await apply_lease_decision(session, vcs, lease=appeal.lease, decision=decision, now=now, actor_id=actor_id)
+    appeal.status = AppealStatus.APPROVED if decision.action is DecisionAction.EXTEND else AppealStatus.REJECTED
+    appeal.resolved_at = now
+    await session.flush()
     return appeal
 
 

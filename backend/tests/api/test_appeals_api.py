@@ -117,3 +117,32 @@ async def test_history_endpoint_errors(client: AsyncClient, session: AsyncSessio
 
     assert (unknown.status_code, unknown.json()) == (404, {"detail": "User ghost not found"})
     assert bad_status.status_code == 422
+
+
+async def test_decide_appeal_extends_lease_and_approves(client: AsyncClient, session: AsyncSession) -> None:
+    ids = await appeal_world(session)
+    appeal = await submit(client, ids["warning"])
+
+    decided = await client.post(f"/api/v1/appeals/{appeal['id']}/decision",
+                                json={"action": "EXTEND", "extension": {"preset_days": 14},
+                                      "justification": "Release v2.1"})
+    again = await client.post(f"/api/v1/appeals/{appeal['id']}/decision", json={"action": "REVOKE"})
+
+    assert decided.status_code == 200
+    assert decided.json()["status"] == "APPROVED"
+    assert decided.json()["days_remaining"] > 3
+    assert again.status_code == 409
+
+
+async def test_lease_decision_is_routed_through_pending_appeal(client: AsyncClient, session: AsyncSession) -> None:
+    ids = await appeal_world(session)
+    appeal = await submit(client, ids["warning"])
+
+    blocked = await client.post(f"/api/v1/leases/{ids['warning']}/decision",
+                                json={"action": "EXTEND", "extension": {"preset_days": 7}})
+    via_appeal = await client.post(f"/api/v1/appeals/{appeal['id']}/decision",
+                                   json={"action": "REVOKE", "justification": "Not needed any more"})
+
+    assert blocked.status_code == 409
+    assert (via_appeal.status_code, via_appeal.json()["status"], via_appeal.json()["lease_is_active"]) == (
+        200, "REJECTED", False)

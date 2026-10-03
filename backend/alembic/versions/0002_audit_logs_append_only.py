@@ -1,4 +1,4 @@
-"""audit_logs is append-only (ADR 0011 §5.7)
+"""audit_logs is append-only (ADR 0014 §5.7)
 
 Revision ID: 0002
 Revises: 0001

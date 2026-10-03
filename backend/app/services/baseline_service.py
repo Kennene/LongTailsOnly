@@ -1,4 +1,4 @@
-"""Team baseline and onboarding (ADR 0011 §5.1-5.2)."""
+"""Team baseline and onboarding (ADR 0014 §5.1-5.2)."""
 
 from datetime import datetime, timedelta
 

@@ -1,4 +1,4 @@
-# ADR 0010: Frontend SPA — nawigacja, warstwa danych i praca na generowanym kontrakcie
+# ADR 0015: Frontend SPA — nawigacja, warstwa danych i praca na generowanym kontrakcie
 
 ## Kontekst
 

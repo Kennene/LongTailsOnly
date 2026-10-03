@@ -68,7 +68,7 @@ export interface AppealCreate {
   lease_id: number;
 }
 /**
- * Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0011 §4).
+ * Appeal with everything the admin needs to decide, computed by the backend (UC-3, ADR 0014 §4).
  *
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "AppealOverview".
@@ -146,7 +146,7 @@ export interface AppealRejectRequest {
   justification: string;
 }
 /**
- * Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0011 §4).
+ * Audit row with the actor's login resolved, so the UI does not join users itself (ADR 0014 §4).
  *
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "AuditEntry".
@@ -359,7 +359,7 @@ export interface LeaseRead {
   user: UserRead;
 }
 /**
- * Team baseline split for one person: what approval would grant and what they already have (ADR 0011 §4).
+ * Team baseline split for one person: what approval would grant and what they already have (ADR 0014 §4).
  *
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "OnboardingProposal".
@@ -379,7 +379,7 @@ export interface PermissionGraph {
   nodes: GraphNode[];
 }
 /**
- * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0011 §4).
+ * Which demo day the panel is on: simulated UTC time and how many days we travelled (ADR 0003, ADR 0014 §4).
  *
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "SimulationClock".
