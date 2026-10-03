@@ -34,6 +34,15 @@
   --color-status-revoke-foreground: var(--status-revoke-foreground);
   --color-status-revoke-subtle: var(--status-revoke-subtle);
   --color-status-revoke-border: var(--status-revoke-border);
+  --color-role-read: var(--role-read);
+  --color-role-read-subtle: var(--role-read-subtle);
+  --color-role-read-border: var(--role-read-border);
+  --color-role-write: var(--role-write);
+  --color-role-write-subtle: var(--role-write-subtle);
+  --color-role-write-border: var(--role-write-border);
+  --color-role-admin: var(--role-admin);
+  --color-role-admin-subtle: var(--role-admin-subtle);
+  --color-role-admin-border: var(--role-admin-border);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -133,6 +142,16 @@
   --status-downscope-foreground: oklch(0.41 0.13 285);
   --status-downscope-subtle: oklch(0.48 0.15 285 / 11%);
   --status-downscope-border: oklch(0.48 0.15 285 / 30%);
+  /* Poziom dostępu (DESIGN.md §1): odczyt niebieski, zapis różowy, admin pomarańczowy — poza barwami stanów i --primary. */
+  --role-read: oklch(0.5 0.13 245);
+  --role-read-subtle: oklch(0.5 0.13 245 / 11%);
+  --role-read-border: oklch(0.5 0.13 245 / 30%);
+  --role-write: oklch(0.5 0.13 345);
+  --role-write-subtle: oklch(0.5 0.13 345 / 11%);
+  --role-write-border: oklch(0.5 0.13 345 / 30%);
+  --role-admin: oklch(0.5 0.13 50);
+  --role-admin-subtle: oklch(0.5 0.13 50 / 11%);
+  --role-admin-border: oklch(0.5 0.13 50 / 30%);
   --status-revoke: var(--status-expired);
   --status-revoke-foreground: var(--status-expired-foreground);
   --status-revoke-subtle: var(--status-expired-subtle);
@@ -191,6 +210,16 @@
   --status-downscope-foreground: oklch(0.84 0.085 285);
   --status-downscope-subtle: oklch(0.76 0.115 285 / 14%);
   --status-downscope-border: oklch(0.76 0.115 285 / 34%);
+  /* Poziom dostępu — te same barwy co w jasnym motywie, jaśniejsze pod ciemne tło. */
+  --role-read: oklch(0.78 0.12 245);
+  --role-read-subtle: oklch(0.78 0.12 245 / 14%);
+  --role-read-border: oklch(0.78 0.12 245 / 34%);
+  --role-write: oklch(0.78 0.12 345);
+  --role-write-subtle: oklch(0.78 0.12 345 / 14%);
+  --role-write-border: oklch(0.78 0.12 345 / 34%);
+  --role-admin: oklch(0.78 0.12 50);
+  --role-admin-subtle: oklch(0.78 0.12 50 / 14%);
+  --role-admin-border: oklch(0.78 0.12 50 / 34%);
   --status-revoke: var(--status-expired);
   --status-revoke-foreground: var(--status-expired-foreground);
   --status-revoke-subtle: var(--status-expired-subtle);

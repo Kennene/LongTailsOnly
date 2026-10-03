@@ -74,15 +74,29 @@ const STATUS_META: Record<LeaseStatus, BadgeMeta> = {
   },
 };
 
+/**
+ * Poziom ma własne rodziny `role-*`, a nie `status-*`: to cecha dostępu, nie jego stan, więc
+ * barwy (odczyt niebieski, zapis różowy, admin pomarańczowy) omijają kolory stanów i `--primary`.
+ */
 const ROLE_META: Record<Role, BadgeMeta> = {
   admin: {
     label: 'Administrator',
-    colour: 'text-muted-foreground',
+    colour: 'border-role-admin-border bg-role-admin-subtle text-role-admin',
     icon: Shield,
     slug: 'shield',
   },
-  write: { label: 'Zapis (write)', colour: 'text-muted-foreground', icon: Pencil, slug: 'pencil' },
-  read: { label: 'Odczyt (read)', colour: 'text-muted-foreground', icon: Eye, slug: 'eye' },
+  write: {
+    label: 'Zapis (write)',
+    colour: 'border-role-write-border bg-role-write-subtle text-role-write',
+    icon: Pencil,
+    slug: 'pencil',
+  },
+  read: {
+    label: 'Odczyt (read)',
+    colour: 'border-role-read-border bg-role-read-subtle text-role-read',
+    icon: Eye,
+    slug: 'eye',
+  },
 };
 
 const RECOMMENDATION_META: Record<Recommendation, BadgeMeta> = {
