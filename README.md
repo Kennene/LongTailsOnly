@@ -52,6 +52,14 @@ docker run --rm -it -p 5173:5173 -p 8000:8000 longtails [--reset] [--fixtures]
 
 Panel: http://localhost:5173, API: http://localhost:8000/docs. Baza demo powstaje w kontenerze przy każdym starcie (`--rm`).
 
+Na serwerze wygodniej przez Docker Compose (`docker-compose.yml`, opcje `run.sh` w polu `command`):
+
+```bash
+docker compose up -d --build
+docker compose logs -f
+docker compose down
+```
+
 ## Struktura repo
 
 ```
