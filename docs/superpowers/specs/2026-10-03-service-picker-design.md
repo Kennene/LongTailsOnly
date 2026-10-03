@@ -69,7 +69,9 @@ Rejestrujemy **jedną realną usługę (GitHub)** oraz **jedną jawnie oznaczon�
 1. **Wybierana jest usługa, nie organizacja.** Jedna aktywna usługa naraz; przełączenie zmienia zbiór dostępnych widoków. Osadza się to na istniejącym porcie `VCSProvider`.
 2. **Trasy zostają płaskie.** `/`, `/leases`, `/appeals`, `/baseline`, `/graph`, `/audit` bez prefiksu usługi. Gating polega na tym, że usługa **deklaruje obsługiwane trasy**; nieobsługiwana trasa przekierowuje na trasę domyślną tej usługi.
 3. **Stan wybranej usługi jest kliencki i trwały między odświeżeniami** — `localStorage` pod kluczem `lease-governor.service`. **Nie używamy parametru zapytania ani segmentu ścieżki**, żeby nie zmienić kształtu istniejących adresów (205 testów i scenariusze demo polegają na `/leases` itd.).
-4. **Klucze zapytań zyskują prefiks usługi:** `['leases']` → `['leases', serviceId]`. Inwalidacja bez klucza (podróż w czasie, reset demo — `useTimeTravel.ts:12`, `useDemoReset.ts:13`) pozostaje poprawna, bo unieważnia cały cache. `['clock']` zostaje globalny — zegar nie należy do usługi.
+4. **Klucze zapytań zyskują prefiks usługi:** `['leases']` → `['leases', serviceId]`. Inwalidacja bez klucza (podróż w czasie, reset demo — `useTimeTravel.ts:12`, `useDemoReset.ts:13`) pozostaje poprawna, bo unieważnia cały cache. `['clock']` zostaje globalny — zegar nie należy do usługi, a `['services']` globalny, bo to właśnie to zapytanie ustala wartość, od której zależałby prefiks.
+   **Bramka odczytu (dopisane po zadaniu 8, Ruling 28a/30/31):** osiem czytników ma `enabled: !isPending && activeService.id !== ''`. Bez niej, dopóki katalog jest w drodze, `activeService.id` to `''`, więc każdy czytnik otwierał zapytanie w przestrzeni „brak usługi”, malował treść, a po dotarciu katalogu przełączenie klucza **zastępowało** tę treść — jedno zmarnowane żądanie i widoczny błysk treści na każdy zasób przy każdym zimnym starcie. Bramka nie jest `!isError`: gdy katalog zawiedzie, użytkownik może wybrać usługę z rejestru (Ruling 25) i wtedy **ma** zostać pobrana jej treść — `!isError` blokowałoby też prawdziwy identyfikator. Warunkiem jest więc „czy mamy usługę, której można przypisać te dane”, a nie „czy katalog odpowiedział”.
+   **Cena, nazwana wprost:** przy zimnym starcie z zapisanym wyborem pierwsze żądanie **czeka na katalog**. `main.tsx` nie ustawia limitu czasu zapytania, więc katalog, który **wisi** (a nie zawiódł), zostawia te widoki na szkieletach — tam, gdzie dosłowne przełączenie klucza pokazałoby dane. Uznajemy to za właściwy kompromis: katalog może jeszcze zdegradować identyfikator, a pobieranie pod identyfikatorem, który zaraz zostanie unieważniony, to dokładnie ten błysk, który bramka usuwa. Granica, której bramka **nie** obejmuje: identyfikator odtworzony z rejestru w trakcie oczekiwania nie pobiera danych, bo `!isPending` jest fałszem.
 5. **Backend dostarcza tożsamość i metadane; frontend dostarcza prezentację.** Backend nie zna ikon ani komponentów React. `GET /api/v1/services` zwraca `id`, `name`, `kind`, `capabilities`, `is_available`. Ikona, trasa i etykiety nawigacji żyją w rejestrze frontendu.
 6. **Rejestr frontendu jest pojedynczym źródłem prawdy dla UI.** Zamiast dwóch niezależnych list (nawigacja + trasy) powstaje jedna lista `SERVICE_CONFIG[id].routes` z polami `path`, `label`, `icon`. `Sidebar` i strażnik tras czytają z niej.
 7. **Nie dodajemy zależności.** Ikony: `lucide-react` (obowiązkowy zestaw, `DESIGN.md:117`) plus dwa małe własne SVG dla znaków firmowych, bo lucide **usunął** ikony marek (`Github` i `Gitlab` nie istnieją w zainstalowanej wersji 1.51 — sprawdzone).
@@ -310,7 +312,19 @@ Zgodnie z TDD: test przed kodem, w każdym kroku planu.
 - `Sidebar.test.tsx` (nowy): dla `github` sześć pozycji; dla `demo-tracker` dwie (`Pulpit`, `Audyt`).
 
 ### 7.4 Zgodność rejestrów (test krzyżowy)
-- `api/services.test.ts`: **zbiór identyfikatorów tras w rejestrze frontendu musi być podzbiorem identyfikatorów, które backend przypisuje `github`** — rozjazd nazw jest błędem kompilacji/testu, nie pustą pozycją na demo.
+
+**Zaimplementowane w `api/services.test.ts`.** Test **wylicza** oczekiwany zbiór z `servicesFixture` — wspólnego, walidowanego modelem Pydantic pliku `shared/fixtures/services.json` — a nie z drugiego literału:
+
+```ts
+const github = servicesFixture.find((s) => s.id === 'github');
+expect(new Set(github.capabilities)).toEqual(
+  new Set(SERVICE_REGISTRY.github.routes.map((r) => r.id)),
+);
+```
+
+Dzięki temu rejestr frontendu i dane, na których pracuje backend, mają **jedno współdzielone źródło** zamiast dwóch ręcznie utrzymywanych list. Rozjazd nazw jest błędem testu, nie pustą pozycją na demo.
+
+**Granica tej gwarancji, nazwana wprost:** test porównuje rejestr frontendu z *fixture'em*, a nie z żywym backendem — fixture jest zapisem ręcznym, walidowanym co do **kształtu** (`tests/contract/test_fixtures_match_contract.py`) i co do **wartości** tylko przez `backend/tests/api/test_services.py`, które przypina literał sześciu capabilities. Łańcuch jest więc: backend pinuje wartości → fixture je odzwierciedla → rejestr frontendu jest z nimi porównywany. Pełne porównanie z żywym API wymagałoby uruchomionego backendu w testach frontendu, co jest poza zakresem (YAGNI).
 
 ### 7.5 Backend
 - `tests/ports/test_service_registry.py`: rejestracja i odczyt; sortowanie po `id`; duplikat `id` podnosi `ValueError`; `all_services()` zwraca `github` i `demo-tracker`.
@@ -358,7 +372,7 @@ Zgodnie z TDD: test przed kodem, w każdym kroku planu.
 | Brak handlera MSW → kaskada błędów (`onUnhandledRequest: 'error'`) | Handler `services` powstaje **w tym samym kroku** co provider, przed włączeniem providera do drzewa testów |
 | Prefiks usługi w kluczach zapytań rozjeżdża inwalidacje | Inwalidacje nazwane dostają prefiks; inwalidacje bez klucza (czas, reset) pozostają poprawne i obejmują wszystkie usługi |
 | Układ TopBar psuje się przez trzecie dziecko | Kontrolka i pasek czasu są w jednej prawej grupie; test regresyjny pilnuje, że `justify-between` ma dwoje dzieci |
-| Rozjazd nazw tras frontend/backend | Test krzyżowy (§7.4) + identyfikatory tras jako `capabilities` |
+| Rozjazd nazw tras frontend/backend | Test krzyżowy (§7.4) porównujący rejestr frontendu ze wspólnym fixture'em + identyfikatory tras jako `capabilities`; granica gwarancji opisana w §7.4 |
 | `localStorage` niedostępny (tryb prywatny) | Odczyt i zapis w `try/catch`; brak zapisu nie blokuje działania |
 | Pozorny „wybór” przy jednej realnej usłudze | Druga usługa jest jawnie oznaczona jako demonstracyjna w `name` i w docstringu; spec mówi o tym wprost w §1 |
 | Dwa wcześniejsze błędy `test_docs_integrity` zagłuszają sygnał z bramki backendu | Kryterium brzmi „dokładnie 2 failed, żaden nowy”, a nie „zero failed” (§2.1); przy weryfikacji porównujemy liczbę i nazwy testów, nie sam kod wyjścia |
