@@ -40,6 +40,18 @@ uv run pytest
 
 Przy pierwszym starcie serwer sam buduje bazę i wgrywa dane demo (19 osób, 10 repo, persony Kamil i Marta). Reset demo: `POST /api/v1/demo/reset`.
 
+### Docker
+
+Obraz demo zawiera Pythona 3.14, `uv`, Node 24 i `npm`. Buduje aplikację przez `./build.sh`, a uruchamia przez `./run.sh` (backend i panel w jednym kontenerze).
+
+```bash
+docker build -t longtails .                          # build bez testów
+docker build -t longtails --build-arg RUN_TESTS=1 .  # build z ./build.sh --test
+docker run --rm -it -p 5173:5173 -p 8000:8000 longtails [--reset] [--fixtures]
+```
+
+Panel: http://localhost:5173, API: http://localhost:8000/docs. Baza demo powstaje w kontenerze przy każdym starcie (`--rm`).
+
 ## Struktura repo
 
 ```
