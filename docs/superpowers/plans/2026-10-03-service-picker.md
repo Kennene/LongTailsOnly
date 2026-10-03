@@ -142,7 +142,7 @@ The module docstring is **English**, matching its neighbours in `backend/app/por
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest tests/ports/test_service_registry.py -q`
-Expected: PASS (5 passed)
+Expected: PASS. The count is 8 once all the tests below exist — do not treat a passing count that differs from a number written here as a failure; what matters is that every test in this file passes.
 
 - [ ] **Step 5: Prove the reset does not poison a later test module**
 
