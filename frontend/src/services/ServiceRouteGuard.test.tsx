@@ -6,8 +6,20 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { ServiceRouteGuard } from '@/services/ServiceRouteGuard';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import type { ServiceRead } from '@/types/api';
 
 const STORAGE_KEY = 'lease-governor.service';
+
+/** Katalog bez `github` — integracja wyrejestrowana, a w `localStorage` został stary zapis. */
+const DEMO_TRACKER_ONLY: ServiceRead[] = [
+  {
+    id: 'demo-tracker',
+    name: 'Demo Tracker (integracja demonstracyjna)',
+    kind: 'issue_tracker',
+    capabilities: ['dashboard', 'audit'],
+    is_available: false,
+  },
+];
 
 /**
  * Lokalny fixture tras: znaczniki pozwalają poznać, który widok wyrenderował strażnik.
@@ -57,6 +69,21 @@ describe('ServiceRouteGuard', () => {
 
   it('lands on the dashboard instead of looping when the catalog is empty', async () => {
     server.use(http.get('/api/v1/services', () => HttpResponse.json([])));
+    renderWithProviders(<GuardedRoutes />, { route: '/leases' });
+
+    expect(await screen.findByTestId('dashboard-marker')).toBeInTheDocument();
+  });
+
+  it('degrades a deep link to the dashboard when the catalog request fails', async () => {
+    server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
+    renderWithProviders(<GuardedRoutes />, { route: '/leases' });
+
+    expect(await screen.findByTestId('dashboard-marker')).toBeInTheDocument();
+  });
+
+  it('degrades a stale github deep link when the catalog omits github', async () => {
+    window.localStorage.setItem(STORAGE_KEY, 'github');
+    server.use(http.get('/api/v1/services', () => HttpResponse.json(DEMO_TRACKER_ONLY)));
     renderWithProviders(<GuardedRoutes />, { route: '/leases' });
 
     expect(await screen.findByTestId('dashboard-marker')).toBeInTheDocument();

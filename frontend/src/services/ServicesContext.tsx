@@ -14,11 +14,14 @@ import type { ServiceRead } from '@/types/api';
 const STORAGE_KEY = 'lease-governor.service';
 
 /**
- * Placeholder, gdy nie da się wybrać żadnej usługi: pusty katalog, błąd zapytania albo brak
- * providera. Identyfikator jest pusty (`getServiceConfig('')` → `undefined`), więc
- * `getDefaultPath('')` prowadzi na pulpit, a `isRouteSupported('', '/')` jest `true` — strażnik
- * nie odrzuca własnego celu przekierowania i powłoka nigdy nie zostaje pusta. `kind` jest
- * dowolny; żaden widok go nie renderuje, a `name` niesie polski komunikat dla kontrolki.
+ * Placeholder, gdy nie da się wybrać żadnej usługi: pusty katalog albo błąd zapytania.
+ * Identyfikator jest pusty (`getServiceConfig('')` → `undefined`), więc `getDefaultPath('')`
+ * prowadzi na pulpit, a `isRouteSupported('', '/')` jest `true` — strażnik nie odrzuca własnego
+ * celu przekierowania i powłoka nigdy nie zostaje pusta. `kind: 'vcs'` jest **bez znaczenia,
+ * dopóki nikt nie czyta `ServiceRead.kind`** (dziś nic w `src/` tego nie robi); gdyby ikona albo
+ * plakietka zaczęła zależeć od `kind`, ta wartość stałaby się nieprawdziwym twierdzeniem.
+ * Sygnał „nic nie jest dostępne” niosą `is_available: false` i `capabilities: []`, a `name` —
+ * polski komunikat dla kontrolki.
  */
 const NO_SERVICE: ServiceRead = {
   id: '',
@@ -37,15 +40,6 @@ export interface ServiceContextValue {
 }
 
 const ServicesContext = createContext<ServiceContextValue | null>(null);
-
-/** Wartość czytana poza providerem: puste usługi zamiast wyjątku (inaczej niż `useActiveService`). */
-const FALLBACK_CONTEXT: ServiceContextValue = {
-  activeService: NO_SERVICE,
-  services: [],
-  setActiveService: (): void => undefined,
-  isPending: false,
-  isError: false,
-};
 
 function readStoredServiceId(): string | null {
   try {
@@ -92,11 +86,14 @@ export function ServicesProvider({ children }: { children: ReactNode }): React.J
   const activeService = resolveActiveService(services, storedId);
 
   function selectService(id: string): void {
-    // Wybór spoza katalogu jest ignorowany (spec §5.6), a zapis zostaje nietknięty — inaczej
-    // nieznany identyfikator w `localStorage` zostałby po cichu nadpisany przez fallback.
+    // Wybór ignorujemy tylko wtedy, gdy katalog **już się wypowiedział** i tego identyfikatora w nim
+    // nie ma (spec §5.6). Dopóki `/api/v1/services` jest w drodze, katalog milczy, a nie przeczy —
+    // a picker renderuje wtedy wpisy z rejestru frontendu, więc odrzucenie wyboru byłoby martwym
+    // kliknięciem. Zapis zostaje przy tym nietknięty: nieznany identyfikator w `localStorage` nie
+    // może zostać po cichu nadpisany przez fallback.
     const isKnown = services.some((service: ServiceRead): boolean => service.id === id);
 
-    if (!isKnown) {
+    if (!isPending && !isKnown) {
       return;
     }
 
@@ -115,8 +112,20 @@ export function ServicesProvider({ children }: { children: ReactNode }): React.J
   return <ServicesContext value={value}>{children}</ServicesContext>;
 }
 
+/**
+ * Rzuca poza providerem, tak samo jak `useActiveService` — brak providera nie może być cichy.
+ * Milczący fallback udawałby rozstrzygnięty, pusty katalog (`isPending: false`, `isError: false`),
+ * więc konsument nie odróżniłby „brak providera” od „katalog pusty”, a `setActiveService` byłby
+ * martwym no-opem. Osobny komunikat wskazuje winowajcę w drzewie.
+ */
 export function useServicesContext(): ServiceContextValue {
-  return useContext(ServicesContext) ?? FALLBACK_CONTEXT;
+  const context = useContext(ServicesContext);
+
+  if (context === null) {
+    throw new Error('useServicesContext must be used within ServicesProvider');
+  }
+
+  return context;
 }
 
 export function useActiveService(): ServiceContextValue {

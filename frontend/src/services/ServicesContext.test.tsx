@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { servicesFixture } from '@/api/fixtures/services';
 import { useActiveService, useServicesContext } from '@/services/ServicesContext';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -60,15 +61,25 @@ function ServiceSwitcherProbe(): React.JSX.Element {
   );
 }
 
-function ServicesContextProbe(): React.JSX.Element {
-  const { activeService, services } = useServicesContext();
+/** Sonda do wyboru w oknie, w którym katalog jeszcze nie dotarł (opcje z rejestru frontendu). */
+function PendingSwitcherProbe(): React.JSX.Element {
+  const { activeService, isPending, isError, setActiveService } = useActiveService();
 
   return (
     <div>
-      <span data-testid="context-active-service">{activeService.id}</span>
-      <span data-testid="context-services-count">{services.length}</span>
+      <span data-testid="active-service">{activeService.id}</span>
+      <span data-testid="catalog-state">{catalogStateLabel(isPending, isError)}</span>
+      <button type="button" onClick={() => setActiveService('demo-tracker')}>
+        Przełącz na demo-tracker
+      </button>
     </div>
   );
+}
+
+function ServicesContextProbe(): React.JSX.Element {
+  const { activeService } = useServicesContext();
+
+  return <span data-testid="context-active-service">{activeService.id}</span>;
 }
 
 /**
@@ -147,6 +158,40 @@ describe('ServicesProvider', () => {
     expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
   });
 
+  it('falls back to github when localStorage.getItem throws', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation((): never => {
+      throw new Error('SecurityError');
+    });
+    renderWithProviders(<ActiveServiceProbe />);
+
+    await waitForCatalog();
+
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^github$/);
+  });
+
+  it('accepts a selection made before the catalog arrives', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/v1/services', async () => {
+        await delay(300);
+
+        return HttpResponse.json(servicesFixture);
+      }),
+    );
+    renderWithProviders(<PendingSwitcherProbe />);
+
+    // Warunek wstępny: klikamy, gdy katalog jeszcze nie dotarł — inaczej test nie bada tego okna.
+    expect(screen.getByTestId('catalog-state')).toHaveTextContent('wczytywanie');
+
+    await user.click(screen.getByRole('button', { name: 'Przełącz na demo-tracker' }));
+
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe('demo-tracker');
+
+    await waitForCatalog();
+
+    expect(screen.getByTestId('active-service')).toHaveTextContent(/^demo-tracker$/);
+  });
+
   it('ignores a selection that is not in the catalog', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ServiceSwitcherProbe />);
@@ -208,10 +253,11 @@ describe('useServicesContext', () => {
     });
   });
 
-  it('returns an empty catalog instead of throwing without a provider', () => {
-    render(<ServicesContextProbe />);
+  it('throws when useServicesContext is called outside the provider', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    expect(screen.getByTestId('context-active-service')).toBeEmptyDOMElement();
-    expect(screen.getByTestId('context-services-count')).toHaveTextContent('0');
+    expect(() => render(<ServicesContextProbe />)).toThrow(
+      'useServicesContext must be used within ServicesProvider',
+    );
   });
 });
