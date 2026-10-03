@@ -207,9 +207,15 @@ describe('service-scoped read gates', () => {
     async (reader: GatedReader) => {
       window.localStorage.setItem(STORAGE_KEY, GITHUB);
       const requests: string[] = recordRequests();
+      // Bramka zamiast opóźnienia: katalog **nie może** się rozstrzygnąć przed asercją, więc okno
+      // `isPending` jest deterministyczne, a nie zależne od tego, jak szybko maszyna zdąży z timerem.
+      let releaseCatalog: () => void = (): void => undefined;
+      const catalogGate = new Promise<void>((resolve: () => void): void => {
+        releaseCatalog = resolve;
+      });
       server.use(
         http.get('/api/v1/services', async () => {
-          await delay(200);
+          await catalogGate;
           return HttpResponse.json(servicesFixture);
         }),
       );
@@ -220,13 +226,17 @@ describe('service-scoped read gates', () => {
       // w trakcie oczekiwania na katalog (spec §5.2). Tę połowę bramki pinował dotąd żaden test:
       // wszystkie okna `isPending` montowały się z pustym `localStorage`, więc żądanie blokowała
       // druga połowa (`id !== ''`). Bez `!isPending` czytnik strzela przed potwierdzeniem katalogu —
-      // dokładnie ten zmarnowany request i mignięcie treści, które usunął Ruling 28a.
+      // dokładnie ten zmarnowany request i mignięcie treści, które usunął Ruling 28a. Makrozadanie
+      // daje ewentualnemu żądaniu czas dotrzeć do MSW, który emituje `request:start` już
+      // w momencie wywołania `fetch`.
       await new Promise((resolve: (value: undefined) => void) => {
-        setTimeout((): void => resolve(undefined), 25);
+        setTimeout((): void => resolve(undefined), 0);
       });
 
       expect(cached(queryClient, keyOf(reader, GITHUB))?.state.fetchStatus).toBe('idle');
       expect(countRequests(requests, reader.path)).toBe(0);
+
+      releaseCatalog();
 
       await waitFor(() => {
         expect(cached(queryClient, keyOf(reader, GITHUB))?.state.status).toBe('success');
