@@ -1,7 +1,7 @@
 import type { Query, QueryClient, QueryKey } from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react';
 import { delay, http, HttpResponse } from 'msw';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { servicesFixture } from '@/api/fixtures/services';
 import { useActivityStats } from '@/hooks/useActivityStats';
@@ -35,6 +35,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
  * objętych regułą `max-lines` (`skipBlankLines`/`skipComments`).
  */
 
+const STORAGE_KEY = 'lease-governor.service';
 const GITHUB = 'github';
 const LEASE_ID = 1;
 const TEAM_SLUG = 'dev';
@@ -165,6 +166,10 @@ function keyOf(reader: GatedReader, serviceId: string): QueryKey {
   return [reader.resource, serviceId, ...reader.tail];
 }
 
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
 afterEach(() => {
   for (const stop of stopRecording) {
     stop();
@@ -193,6 +198,40 @@ describe('service-scoped read gates', () => {
       });
       // Dokładnie jedno żądanie — wyłącznie w namespace rozstrzygniętej usługi. Bez bramki
       // byłyby dwa: jedno pod `''` (od razu), jedno pod `github` (po katalogu).
+      expect(countRequests(requests, reader.path)).toBe(1);
+    },
+  );
+
+  it.each<GatedReader>(GATED_READERS)(
+    'stays idle until the catalog settles when a service is already stored ($resource)',
+    async (reader: GatedReader) => {
+      window.localStorage.setItem(STORAGE_KEY, GITHUB);
+      const requests: string[] = recordRequests();
+      server.use(
+        http.get('/api/v1/services', async () => {
+          await delay(200);
+          return HttpResponse.json(servicesFixture);
+        }),
+      );
+
+      const { queryClient } = renderWithProviders(<reader.Probe />);
+
+      // Zapisany `github` zna rejestr frontendu, więc `activeService.id` jest **niepuste** już
+      // w trakcie oczekiwania na katalog (spec §5.2). Tę połowę bramki pinował dotąd żaden test:
+      // wszystkie okna `isPending` montowały się z pustym `localStorage`, więc żądanie blokowała
+      // druga połowa (`id !== ''`). Bez `!isPending` czytnik strzela przed potwierdzeniem katalogu —
+      // dokładnie ten zmarnowany request i mignięcie treści, które usunął Ruling 28a.
+      await new Promise((resolve: (value: undefined) => void) => {
+        setTimeout((): void => resolve(undefined), 25);
+      });
+
+      expect(cached(queryClient, keyOf(reader, GITHUB))?.state.fetchStatus).toBe('idle');
+      expect(countRequests(requests, reader.path)).toBe(0);
+
+      await waitFor(() => {
+        expect(cached(queryClient, keyOf(reader, GITHUB))?.state.status).toBe('success');
+      });
+      // Dokładnie jedno żądanie, dopiero po rozstrzygnięciu katalogu.
       expect(countRequests(requests, reader.path)).toBe(1);
     },
   );
