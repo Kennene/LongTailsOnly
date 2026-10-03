@@ -67,6 +67,38 @@ Rekomendacje są w pełni deterministyczne i oparte na regułach. Można je prze
 
 ---
 
+## Stan prac
+
+| Osoba | Zakres |
+| --- | --- |
+| 1 | ✅ Kroki 1.1–1.6 w `main` (PR #5) |
+| 2 | ✅ Mock GitHuba, aktywność i time-travel w `main` (PR #4, ADR 0010) |
+| 3 | ✅ 3.1–3.6 na gałęzi `guziol/silnik-dzierzawy` (3.4 osobno: `guziol/ochrona-ostatniego-admina`), jeszcze nie w `main`. Odblokowuje 4.3C i 4.6B. Szczegóły: [`docs/3-silnik-dzierzawy/DOCUMENTATION.md`](docs/3-silnik-dzierzawy/DOCUMENTATION.md) |
+| 4 | ✅ 4.1, 4.2, 4.3 (złożenie i odrzucenie), 4.4, 4.5, 4.6 (logika i typy), zegar symulacji, poprawki po audycie kodu; ⏳ 4.3C i 4.6B czekają na Osobę 3. Szczegóły: [`docs/osoba-4.md`](docs/osoba-4.md) |
+| 5 | ✅ Wybór usługi (picker w pasku górnym), rejestr dostawców i endpoint katalogu usług (ADR 0014) |
+| 6 | ⏳ Scenariusze, testy E2E, Prelint i slajdy nie zaczęte w repo |
+
+---
+
+## API — katalog usług
+
+Panel nie jest już konsolą jednej integracji: w pasku górnym stoi kontrolka wyboru usługi, a trasy pozostają płaskie (`/leases`, nie `/github/leases`) — usługa deklaruje, które z nich obsługuje (ADR 0014).
+
+```
+GET /api/v1/services → 200
+
+[
+  {"id": "demo-tracker", "name": "Demo Tracker (integracja demonstracyjna)", "kind": "issue_tracker",
+   "capabilities": ["dashboard", "audit"], "is_available": false},
+  {"id": "github", "name": "GitHub", "kind": "vcs", "is_available": true,
+   "capabilities": ["dashboard", "leases", "appeals", "baseline", "graph", "audit"]}
+]
+```
+
+Odpowiedź to **goła tablica** `ServiceRead` (bez koperty), posortowana po `id`. `capabilities` to identyfikatory tras, **posortowane** razem z wpisem — `ServiceRead.from_descriptor` normalizuje kolejność, więc przestawienie krotki w rejestrze nie zmienia payloadu po cichu. `is_available: false` znaczy „zarejestrowana, ale nieużywalna” (kontrolka dopisuje wtedy `(niedostępna)`), a nie „usługa wyłączona”.
+
+## Uruchomienie
+
 ## Funkcje panelu
 
 | Widok | Do czego służy |
@@ -175,6 +207,15 @@ Inne warianty:
 ```bash
 ./run.sh --fixtures   # sam panel na statycznych danych, bez backendu
 ./build.sh --test     # testy backendu i scenariuszy, lint i testy frontendu, build produkcyjny
+```
+
+```
+backend/            FastAPI + SQLAlchemy + Alembic (app/, tests/, contract/schema.json)
+frontend/src/types/ typy TS generowane z kontraktu backendu (ADR 0009) — nie edytować ręcznie
+docs/adr/           decyzje architektoniczne (ADR 0001–0017)
+docs/superpowers/   plany zadań (plans/) i specyfikacje (specs/)
+docs/osoba-4.md     stan i kontrakty Osoby 4
+docs/jira-mock.md   dokumentacja mocka Jiry
 ```
 
 `run.sh` przy każdym starcie dociąga zależności: synchronizuje backend (`uv sync`), a `npm ci` uruchamia, gdy zmienił się `frontend/package-lock.json` — po pullu z nową paczką nie trzeba ręcznie odpalać `./build.sh`.

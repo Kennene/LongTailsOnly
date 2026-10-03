@@ -63,6 +63,7 @@ Wszystkie endpointy domenowe są pod `/api/v1` (router `app/api/v1/router.py`; n
 
 | Endpoint | Co zwraca |
 | --- | --- |
+| `GET /api/v1/services` | katalog usług (ADR 0014): `id`, `name`, `kind`, `capabilities`, `is_available`; posortowany po `id`, `capabilities` w kolejności deklaracji rejestru (nie posortowane, bez gwarancji w kontrakcie — traktuj jak zbiór) |
 | `GET /api/v1/simulation/clock` | który dzień demo: `{"simulated_now", "offset_days"}` |
 | `GET /api/v1/teams/{slug}/baseline` | standard zespołu (`dev`, `qa`) |
 | `GET /api/v1/onboarding/{login}` · `POST …/apply` | propozycja dostępu dla nowej osoby i zatwierdzenie jednym kliknięciem |

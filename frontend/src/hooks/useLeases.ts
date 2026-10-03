@@ -13,8 +13,13 @@ import type { LeaseOverview } from '@/types/api';
  * usługi”, raz we właściwy — a pierwsza odpowiedź zdążyłaby namalować tabelę, którą zmiana klucza
  * zaraz zastępuje. Gdy katalog **padnie** i żadnego identyfikatora nie ma, jest tak samo: nie ma
  * usługi, której można by przypisać dane (Ruling 28). Gdy identyfikator jest — potwierdzony
- * katalogiem, odtworzony z rejestru po zapisanym wyborze albo wybrany w oknie błędu (Ruling 25) —
- * pytamy, bo wiemy, o którą usługę chodzi.
+ * katalogiem albo wybrany w oknie błędu (Ruling 25) — pytamy, bo wiemy, o którą usługę chodzi.
+ *
+ * **Wyjątek od tego zdania (Ruling 31):** identyfikator odtworzony z rejestru **w trakcie
+ * oczekiwania** na katalog jest prawdziwy, ale jeszcze nie pobiera danych, bo `!isPending` jest
+ * fałszem. Żądanie rusza, gdy katalog się rozstrzygnie **albo padnie** — do tego czasu czekamy
+ * świadomie: katalog może ten identyfikator jeszcze zdegradować, a pobieranie pod nim to dokładnie
+ * ten zmarnowany request i mignięcie treści, które ta bramka usuwa.
  */
 export function useLeases(): UseQueryResult<LeaseOverview[]> {
   const { activeService, isPending } = useActiveService();

@@ -35,6 +35,23 @@ Zapytania do `/api/*` są proxowane przez Vite na `http://localhost:8000` (konfi
 
 Hook `pre-commit` (husky + lint-staged) formatuje i naprawia lintem pliki ze stage'a.
 
+## Wybór usługi (`src/services/`)
+
+Panel nie jest konsolą jednej integracji: kontrolka w pasku górnym przełącza **usługę (dostawcę)**, a nie organizację (ADR 0014). Trasy pozostają płaskie (`/leases`, nie `/github/leases`) — usługa deklaruje, które z nich obsługuje.
+
+| Plik                    | Rola                                                                                                                                                                                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `serviceRegistry.ts`    | **jedyne źródło prawdy dla UI**: trasa, etykieta nawigacji i ikona per usługa (`SERVICE_REGISTRY`, `getServiceConfig`, `getDefaultPath`, `isRouteSupported`, `fallbackIcon`). `Sidebar` i strażnik tras czytają z niej, więc nie ma drugiej listy. |
+| `brandIcons.tsx`        | Dwa własne znaki firmowe (`GitHubIcon`, `GitLabIcon`) — lucide usunął ikony marek. `GitLabIcon` czeka na przyszły adapter i **celowo** nie jest przypisany do `demo-tracker`.                                                                      |
+| `ServicesContext.tsx`   | `ServicesProvider` (`useServices()` → katalog), `useActiveService()` i `useServicesContext()` — oba hooki **rzucają** poza providerem. Rozstrzyga aktywną usługę i pilnuje bramki wyboru (spec §5.6.1).                                            |
+| `ServiceRouteGuard.tsx` | Bramka tras wewnątrz `AppShell`: nieobsługiwana trasa → deklaratywne `<Navigate>` na trasę domyślną usługi.                                                                                                                                        |
+
+Dane katalogu: `GET /api/v1/services` przez `src/api/services.ts` i `useServices()` (klucz `['services']` **globalny** — katalog wyznacza usługę, więc nie może zależeć od niej samej). Bez backendu fixture `src/api/fixtures/services.ts` re-eksportuje `shared/fixtures/services.json`. Uwaga: `capabilities` jadą w kolejności deklaracji rejestru, nie posortowane — traktuj tę wartość jako zbiór.
+
+**Klucz `localStorage`: `lease-governor.service`.** Wartością jest **goły identyfikator** usługi (`github`, `demo-tracker`) — bez `JSON.parse` i bez koperty. Odczyt jest leniwy (inicjalizator `useState`), zapis siedzi w setterze `setActiveService`, a oba są w `try/catch`: prywatny tryb przeglądarki nie może wywalić panelu, a brak zapisu nie blokuje działania. Zapis **nie jest kasowany**, gdy katalog go nie potwierdzi — wybór degraduje się tylko na czas sesji. Wybór jest przyjmowany w trzech stanach katalogu (znany / w drodze / padnięty), a nieprzyjęty nie nadpisuje zapisu.
+
+**Co czytać przy zmianie:** trasy i ikony zmienia się w `serviceRegistry.ts`, nie w `Sidebar.tsx` ani `App.tsx`; `App.tsx` nadal deklaruje sześć tras, a strażnik tylko je bramkuje. Bramki czytników danych (`enabled: !isPending && activeService.id !== ''`) i ich uzasadnienie opisuje kanoniczny komentarz w `src/hooks/useLeases.ts` — na niego wskazuje siedem pozostałych hooków.
+
 ## Kontrakt API
 
 `src/types/api.ts` jest **generowany** z backendu (ADR 0009) i nie wolno go edytować ręcznie. Po zmianie schematów Pydantic:
