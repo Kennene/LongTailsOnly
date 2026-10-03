@@ -38,7 +38,49 @@
 
 - Kontrakty backendu 2.5 / 3.6 / 4.2–4.6 — frontend używa fixture'ów w docelowych kształtach; każdy moduł `api/*.ts` ma komentarz „do potwierdzenia", a podmiana dotknie jednego pliku na kontrakt.
 - Test gałęzi `VITE_USE_FIXTURES` (zadanie 4) i `api/leases.test.ts` (zadanie 6): payloady decyzji są pokryte na poziomie UI, ale nie na poziomie klienta API.
-- `docs/github-mock.md` i `AGENTS.md` z `main` opisują mock po stronie backendu — frontend nie został jeszcze zmergowany z `origin/main` (gałąź jest lokalna).
+- `docs/github-mock.md` i `AGENTS.md` z `main` opisują mock po stronie backendu — frontend jest już zmergowany z `origin/main` (PR #10), a różnice ścieżek opisuje sekcja „Wiring do istniejącego backendu" wyżej.
+
+## Wiring do istniejącego backendu
+
+Frontend powstawał, gdy endpointów widokowych jeszcze nie było. Po merge'u `main` → `frontend`
+został podłączony do tego, co **realnie działa**; tam, gdzie API jeszcze nie ma, świadomie
+zostaje na `shared/fixtures/` (dane zgodne z kontraktem, ADR 0011).
+
+| Domena                  | Wywołanie                                                                       | Stan                                                  |
+| ----------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Zegar                   | `GET /api/v1/simulation/clock` → `SimulationClock {simulated_now, offset_days}`  | ✅ mapowane na wewnętrzne `ClockRead`                  |
+| Podróż w czasie         | `GET/POST/DELETE /api/v1/simulation/time-travel` → `ClockRead`                   | ✅                                                    |
+| Reset demo              | `POST /api/v1/demo/reset`                                                        | ✅                                                    |
+| Odwołania — lista       | `GET /api/v1/appeals` → **goła** `list[AppealOverview]` (filtry `login`, `lease_id`) | ✅                                                 |
+| Odwołania — złożenie    | `POST /api/v1/appeals` (`AppealCreate`) → 201 `AppealOverview`                   | ✅                                                    |
+| Odwołania — odrzucenie  | `POST /api/v1/appeals/{id}/reject` (`AppealRejectRequest {justification}`)       | ✅                                                    |
+| Audyt                   | `GET /api/v1/audit` → **goła** `list[AuditEntry]` (niesie `actor_login`)         | ✅                                                    |
+| Standard zespołu        | `GET /api/v1/teams/{slug}/baseline` → **goła** `list[BaselineEntry]`             | ✅                                                    |
+| Onboarding              | `GET /api/v1/onboarding/{login}` + `POST /api/v1/onboarding/{login}/apply`       | ✅                                                    |
+| Dzierżawy (lista)       | `GET /api/v1/leases` → `list[LeaseOverview]`                                     | ✅ (silnik 3.6)                                        |
+| Decyzja o dzierżawie    | `POST /api/v1/leases/{id}/decision` → `LeaseOverview`                            | ✅ (3.6) — `REVOKE`/`DOWNSCOPE` bez uzasadnienia to 422, admina nie da się przedłużyć (422) |
+| Liczniki KPI            | `GET /api/v1/dashboard/stats` (plan 4.6B)                                        | ⏳ brak — liczone z realnej listy dzierżaw, zegara i odwołań (`countDashboard`) |
+| Graf                    | `GET /api/v1/graph` (plan 4.6B)                                                  | ⏳ brak — budowany z realnych dzierżaw; bez węzłów zespołów, bo lista ich nie niesie |
+| Aktywność               | `GET /api/v1/leases/{id}/activity-stats` → `LeaseActivityStats`                  | ✅ (3.6) — okno `window_days`/`window_start`/`window_end`/`last_activity_at` z kontraktu |
+| Decyzja o odwołaniu     | `POST /api/v1/appeals/{id}/decision` (plan 4.3C)                                 | ⏳ brak — odrzucenie idzie realnym `/reject`; backend sam wskazuje tę ścieżkę w komunikacie 409 |
+| Tryb egzekwowania       | `GET/PUT /api/v1/enforcement/mode` (`disabled`/`warning`/`auto`, krok 3.5)       | ⏳ brak UI — do decyzji produktowej                     |
+
+**Scenariusze a backend.** `shared/scenarios/*.json` wołają częściowo endpointy planowane, ale
+nieistniejące: `GET /api/v1/baseline/1` (realnie `/api/v1/teams/{slug}/baseline`),
+`GET /api/v1/leases` (3.6) oraz `POST /api/v1/appeals/{id}/decision` (4.3C). Testy scenariuszy
+(`backend/tests/scenarios/`) walidują dziś wyłącznie strukturę danych i wprost odkładają wykonanie
+HTTP „gdy powstaną endpointy widokowe" — rozjazd nie jest więc czerwony, ale skrypt demo (6.6)
+musi użyć ścieżek realnych: `/reject`, `/teams/{slug}/baseline`.
+
+**Znane rozjazdy w danych współdzielonych (do decyzji właścicieli plików).**
+
+Wiring odsłonił rozjazdy w `shared/`, których frontend nie naprawia po cichu:
+
+1. **Status dzierżaw admina** — `shared/fixtures/leases.json` trzymał `ACTIVE` dla trzech dzierżaw `admin`, a silnik liczy `PERMANENT` (`lease_rules.lease_status`; dowód: `backend/tests/api/test_leases_api.py:47`, `backend/tests/services/test_lease_overviews.py:72`). **Naprawione w tym commicie** (`ACTIVE` → `PERMANENT`, `days_remaining: null`); frontend normalizował to u siebie od merge'u, więc zmiana jest idempotentna.
+2. **Liczba dni przy kotwicy** — dla `kamil@core-api` trzy źródła podają trzy wartości: `uc-04` oczekuje **29**, wspólny fixture ma **28**, a silnik liczący `ceil(expires_at − now)` przy kotwicy `2026-10-03T00:00:00Z` daje **30**. `uc-04` jest wewnętrznie spójny (29 → po +25 dniach 4), więc uzgodnienia wymaga fixture i kotwica, nie scenariusz. Offline frontend pokazuje wartości zamrożone z fixture'u, live — z silnika; **przed demo trzeba to uzgodnić**, inaczej krok „+25 dni” pokaże 3 zamiast 4.
+3. **`uc-03` wskazuje nieistniejącą ścieżkę** — `POST /api/v1/appeals/{id}/decision` (plan 4.3C) z oczekiwaniem `APPROVED`, gdy backend serwuje `POST /api/v1/appeals/{id}/reject`. Scenariusz opisuje intencję (zatwierdzenie odwołania), więc go nie przepisuję: wymaga albo kroku 4.3C, albo świadomej zmiany narracji demo na odrzucenie.
+4. **`docs/osoba-4.md`** podaje baseline DEV `11/7/8`, a `shared/fixtures/baseline.json` (i `uc-01`) `10/6/7`. Frontend czyta fixture'y; która strona jest nieaktualna, rozstrzyga seed.
+5. **`shared/fixtures/manifest.json`** nie wymienia nowych konsumentów (`users.json` czyta też pulpit 5.6, `teams`/`repositories` graf 5.9) i nie ma pliku `dashboard.json`, bo `DashboardStats` jest wyliczany z dzierżaw.
 
 ## Globalne ograniczenia
 
@@ -371,7 +413,7 @@ export function setSimulatedNow(iso: string): void { simulatedNow = iso; }
 export function getSimulatedOffsetDays(): number { return offsetDays; }
 export function resetMswState(): void { /* zeruje zegar, offset i zapisane żądania */ }
 ```
-`handlers.ts` eksportuje `handlers: HttpHandler[]` z `http.get('/api/v1/leases', () => HttpResponse.json(leasesFixture.map((lease) => withComputedFields(lease, getSimulatedNow()))))` oraz `http.get('/api/v1/simulation/clock', () => HttpResponse.json({ now: getSimulatedNow(), offset_days: getSimulatedOffsetDays() }))` (kształt `ClockRead`). `withComputedFields` liczy `status`, `days_remaining` i `recommendation` z `expires_at` i przekazanego `now` (`expires_at === null` → `days_remaining: null`, `status: 'ACTIVE'`) — **wyłącznie w `test/msw/state.ts`**, jako emulacja backendu; kod aplikacji tych wartości nie liczy. W `test/setup.ts` dodaj `resetMswState()` w `beforeEach`.
+`handlers.ts` eksportuje `handlers: HttpHandler[]` z `http.get('/api/v1/leases', () => HttpResponse.json(leasesFixture.map((lease) => withComputedFields(lease, getSimulatedNow()))))` oraz `http.get('/api/v1/simulation/clock', () => HttpResponse.json({ simulated_now: getSimulatedNow(), offset_days: getSimulatedOffsetDays() }))` (kształt **`SimulationClock`**, zgodnie z realnym backendem; `POST /simulation/time-travel` odpowiada `ClockRead { now, offset_days }`). `withComputedFields` liczy `status`, `days_remaining` i `recommendation` z `expires_at` i przekazanego `now` (`expires_at === null` → `days_remaining: null`, `status: 'ACTIVE'`) — **wyłącznie w `test/msw/state.ts`**, jako emulacja backendu; kod aplikacji tych wartości nie liczy. W `test/setup.ts` dodaj `resetMswState()` w `beforeEach`.
 
 - [ ] **Krok 2: Napisz failing testy `client`.**
 
@@ -1015,7 +1057,7 @@ git commit -m "feat(frontend): add permissions graph with team and risk filters"
 - Test: `frontend/src/pages/AuditPage.test.tsx`
 
 **Interfejsy:**
-- Produkuje: `fetchAuditLog(): Promise<{ entries: AuditEntry[] }>`; `useAuditLog(): UseQueryResult<{ entries: AuditEntry[] }>`; `AuditLogTable({ entries }: { entries: AuditEntry[] }): React.JSX.Element`; `AuditFilters({ actorType, onChange }: AuditFiltersProps): React.JSX.Element`.
+- Produkuje: `fetchAuditLog(): Promise<AuditEntry[]>` (realny backend zwraca **gołą tablicę**, nie kopertę `{ entries }`); `useAuditLog(): UseQueryResult<AuditEntry[]>`; `AuditLogTable({ entries }: { entries: AuditEntry[] }): React.JSX.Element`; `AuditFilters({ actorType, onChange }: AuditFiltersProps): React.JSX.Element`.
 - Konsumuje: `formatDateTimePl` (zadanie 2), typ `AuditEntry` (zadanie 2).
 
 - [ ] **Krok 1: Napisz failing test tabeli i filtra aktora.**

@@ -6,25 +6,39 @@ import { auditFixture } from '@/api/fixtures/audit';
 import { AuditPage } from '@/pages/AuditPage';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import type { AuditEntry } from '@/types/api';
 
 const COLUMN_HEADERS: string[] = ['Czas', 'Aktor', 'Akcja', 'Cel', 'Uzasadnienie'];
 const EMPTY_STATE = 'Brak zdarzeń w dzienniku';
 const API_ERROR = 'Dziennik audytu jest niedostępny';
 
 /**
- * Najdłuższe uzasadnienie z fixture'a — dowód, że długi tekst (i polskie znaki) jest w komórce
- * przycięty do dwóch linii, a nie rozsadza tabeli (audyt: wiersz 417 px przy 1024 px).
+ * Uzasadnienie dłuższe niż dwie linie. Fixture z `shared/fixtures/audit.json` jest krótki
+ * (najdłuższe ma 84 znaki), więc długą prozę podajemy przez `server.use` — dowód na przycinanie
+ * i rezerwację szerokości nie może zależeć od doboru danych demo.
  */
-function findLongJustification(): string {
-  const entry = auditFixture.find((candidate) => (candidate.justification?.length ?? 0) > 120);
+const LONG_JUSTIFICATION =
+  'Dostęp zapisujący do legacy-reports był potrzebny wyłącznie do jednorazowej migracji danych na nowy magazyn raportów; po zakończeniu prac uprawnienie zostaje odebrane, a zespół pracuje dalej na odczycie.';
 
-  return entry?.justification ?? '';
+/** Wiersz z długim uzasadnieniem — pełny kształt `AuditEntry`, taki sam jak z API. */
+function longJustificationEntry(): AuditEntry {
+  return {
+    id: 99,
+    timestamp: '2026-10-03T00:05:00Z',
+    actor_type: 'ADMIN',
+    actor_id: 1,
+    actor_login: 'tomasz-admin',
+    action: 'LEASE_REVOKED',
+    target: 'kamil@legacy-reports',
+    details: { reason: 'migration-finished' },
+    justification: LONG_JUSTIFICATION,
+  };
 }
 
 it('renders audit entries with time, actor, action, target and a details preview', async () => {
   renderWithProviders(<AuditPage />);
 
-  expect(await screen.findByText('lease.extend')).toBeInTheDocument();
+  expect(await screen.findByText('LEASE_EXPIRED')).toBeInTheDocument();
 
   for (const header of COLUMN_HEADERS) {
     expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
@@ -32,31 +46,26 @@ it('renders audit entries with time, actor, action, target and a details preview
 
   const table = within(screen.getByRole('table'));
 
-  // Czas formatuje `formatDateTimePl` (Europe/Warsaw), a aktora bierzemy wprost z kontraktu.
-  expect(table.getByText('1 października 2026, 18:20')).toBeInTheDocument();
-  expect(table.getByText('appeal.submit')).toBeInTheDocument();
-  expect(table.getByText('days: 30')).toBeInTheDocument();
+  // Czas formatuje `formatDateTimePl` (Europe/Warsaw): 2026-09-29T11:30:00Z → 13:30.
+  const approvedRow: HTMLElement = table.getByRole('row', { name: /APPEAL_APPROVED/ });
+  expect(within(approvedRow).getByText('29 września 2026, 13:30')).toBeInTheDocument();
+  expect(within(approvedRow).getByText('kamil@payment-service')).toBeInTheDocument();
+  // Podgląd `details` to jedno zdanie z separatorem `·`, a nie surowy JSON.
+  expect(
+    within(approvedRow).getByText('lease_id: 3 · preset_days: 30 · requested_role: write'),
+  ).toBeInTheDocument();
+
+  // Dwa wpisy SYSTEM dzielą znacznik czasu — oba renderują tę samą, pełną formę daty.
+  expect(table.getAllByText('3 października 2026, 02:05')).toHaveLength(2);
   expect(table.getAllByText('SYSTEM').length).toBe(2);
-  // Kreska niesie brak: `actor_id` aktora SYSTEM i brak uzasadnienia.
+  // Kreska niesie brak: aktor SYSTEM nie ma człowieka, a wpisy SYSTEM nie mają uzasadnienia.
   expect(table.getAllByText('—').length).toBeGreaterThan(0);
-
-  const longJustification: string = findLongJustification();
-  expect(longJustification.length).toBeGreaterThan(120);
-
-  // Uzasadnienie: rezerwujemy szerokość kolumny i przycinamy prozę do dwóch linii, a pełny
-  // tekst zostaje dostępny w podpowiedzi (natywny `title`, bez dokładania JS-a).
-  const justificationCell: HTMLElement = table.getByRole('cell', { name: longJustification });
-  expect(justificationCell).toHaveClass('w-96');
-
-  const justification: HTMLElement = within(justificationCell).getByText(longJustification);
-  expect(justification).toHaveClass('line-clamp-2');
-  expect(justification).toHaveAttribute('title', longJustification);
 });
 
 it('keeps the time and actor cells on a single line', async () => {
   renderWithProviders(<AuditPage />);
 
-  expect(await screen.findByText('lease.extend')).toBeInTheDocument();
+  expect(await screen.findByText('LEASE_EXPIRED')).toBeInTheDocument();
 
   const rows: HTMLElement[] = within(screen.getByRole('table')).getAllByRole('row');
   const cells: HTMLElement[] = within(rows[1]).getAllByRole('cell');
@@ -65,31 +74,76 @@ it('keeps the time and actor cells on a single line', async () => {
   expect(timeCell).toHaveClass('whitespace-nowrap');
   expect(actorCell).toHaveClass('whitespace-nowrap');
   // Typ i identyfikator aktora dzielą jedną linię — jedno zdanie, nie dwa bloki.
-  expect(actorCell).toHaveTextContent('ADMIN #1');
+  expect(actorCell).toHaveTextContent('SYSTEM —');
+});
+
+it('shows the actor login the backend resolved instead of the numeric id', async () => {
+  renderWithProviders(<AuditPage />);
+
+  expect(await screen.findByText('APPEAL_APPROVED')).toBeInTheDocument();
+
+  const table = within(screen.getByRole('table'));
+
+  const adminCell: HTMLElement = within(
+    table.getByRole('row', { name: /APPEAL_APPROVED/ }),
+  ).getAllByRole('cell')[1];
+  expect(adminCell).toHaveTextContent('ADMIN tomasz-admin');
+  expect(adminCell).not.toHaveTextContent('#1');
+
+  const userCell: HTMLElement = within(
+    table.getByRole('row', { name: /APPEAL_SUBMITTED/ }),
+  ).getAllByRole('cell')[1];
+  expect(userCell).toHaveTextContent('USER kamil');
+  expect(userCell).not.toHaveTextContent('#2');
+
+  // SYSTEM nie ma człowieka, więc nie ma loginu — komórka pokazuje typ i kreskę, nigdy pustkę.
+  const systemCell: HTMLElement = within(
+    table.getByRole('row', { name: /LEASE_EXPIRED/ }),
+  ).getAllByRole('cell')[1];
+  expect(systemCell).toHaveTextContent('SYSTEM —');
+  expect(systemCell.textContent?.trim()).not.toBe('');
+});
+
+it('clamps a long justification to two lines and keeps the full text in the title', async () => {
+  expect(LONG_JUSTIFICATION.length).toBeGreaterThan(120);
+  server.use(http.get('/api/v1/audit', () => HttpResponse.json([longJustificationEntry()])));
+  renderWithProviders(<AuditPage />);
+
+  const table = within(await screen.findByRole('table'));
+
+  // Uzasadnienie: rezerwujemy szerokość kolumny i przycinamy prozę do dwóch linii, a pełny
+  // tekst zostaje dostępny w podpowiedzi (natywny `title`, bez dokładania JS-a).
+  const justificationCell: HTMLElement = table.getByRole('cell', { name: LONG_JUSTIFICATION });
+  expect(justificationCell).toHaveClass('w-96');
+
+  const justification: HTMLElement = within(justificationCell).getByText(LONG_JUSTIFICATION);
+  expect(justification).toHaveClass('line-clamp-2');
+  expect(justification).toHaveAttribute('title', LONG_JUSTIFICATION);
 });
 
 it('narrows the table to the selected actor type', async () => {
   const user = userEvent.setup();
   renderWithProviders(<AuditPage />);
 
-  expect(await screen.findByText('lease.extend')).toBeInTheDocument();
+  expect(await screen.findByText('LEASE_EXPIRED')).toBeInTheDocument();
 
   await user.selectOptions(screen.getByLabelText('Aktor'), 'ADMIN');
 
   const adminTable = within(screen.getByRole('table'));
   expect(adminTable.queryByText('SYSTEM')).not.toBeInTheDocument();
-  expect(adminTable.queryByText('appeal.submit')).not.toBeInTheDocument();
-  expect(adminTable.getByText('lease.grant')).toBeInTheDocument();
+  expect(adminTable.queryByText('APPEAL_SUBMITTED')).not.toBeInTheDocument();
+  expect(adminTable.getByText('APPEAL_APPROVED')).toBeInTheDocument();
 
   await user.selectOptions(screen.getByLabelText('Aktor'), 'SYSTEM');
 
   const systemTable = within(screen.getByRole('table'));
   expect(systemTable.getAllByText('SYSTEM').length).toBe(2);
-  expect(systemTable.queryByText('lease.grant')).not.toBeInTheDocument();
+  expect(systemTable.queryByText('APPEAL_APPROVED')).not.toBeInTheDocument();
 });
 
 it('renders the empty state when the log has no entries', async () => {
-  server.use(http.get('/api/v1/audit', () => HttpResponse.json({ entries: [] })));
+  // `GET /api/v1/audit` oddaje gołą tablicę — żadnej koperty `{ entries }`.
+  server.use(http.get('/api/v1/audit', () => HttpResponse.json([])));
 
   renderWithProviders(<AuditPage />);
 
@@ -103,7 +157,7 @@ it('shows the API error with a retry action that reloads the log', async () => {
     http.get('/api/v1/audit', () =>
       isFailing
         ? HttpResponse.json({ detail: API_ERROR }, { status: 500 })
-        : HttpResponse.json({ entries: auditFixture }),
+        : HttpResponse.json(auditFixture),
     ),
   );
   const user = userEvent.setup();
@@ -114,5 +168,5 @@ it('shows the API error with a retry action that reloads the log', async () => {
   isFailing = false;
   await user.click(screen.getByRole('button', { name: 'Odśwież' }));
 
-  expect(await screen.findByText('lease.extend')).toBeInTheDocument();
+  expect(await screen.findByText('LEASE_EXPIRED')).toBeInTheDocument();
 });

@@ -41,3 +41,6 @@ npm-debug.log*
 
 # Artefakty narzędzi przeglądarkowych (Playwright MCP i podobne)
 .playwright-mcp/
+
+# Worktree agentów (izolacja równoległych sesji)
+.worktrees/

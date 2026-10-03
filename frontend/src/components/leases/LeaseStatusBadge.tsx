@@ -7,14 +7,17 @@ export interface LeaseStatusBadgeProps {
 }
 
 /**
- * Status dzierżawy jako pigułka. Etykieta i klasy pochodzą wyłącznie z `lib/statusBadges.ts`
- * (jedno mapowanie status → kolor w projekcie).
+ * Status dzierżawy jako pigułka. Etykieta, klasy i ikona pochodzą wyłącznie z `lib/statusBadges.ts`
+ * (jedno mapowanie status → kształt i kolor w projekcie). Ikona jest `aria-hidden`, bo etykieta
+ * po polsku stoi obok — czytnik ekranu nie ma po co czytać nazwy glifu.
  */
 export function LeaseStatusBadge({ status }: LeaseStatusBadgeProps): React.JSX.Element {
   const badge: BadgeStyle = getStatusBadge(status);
+  const Icon: BadgeStyle['icon'] = badge.icon;
 
   return (
     <Badge variant="outline" className={badge.className}>
+      <Icon aria-hidden="true" />
       {badge.label}
     </Badge>
   );

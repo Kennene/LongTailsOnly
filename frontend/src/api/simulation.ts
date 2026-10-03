@@ -1,15 +1,22 @@
-import type { ClockRead, DemoResetResult, TimeTravelRequest } from '@/types/api';
+import type { ClockRead, DemoResetResult, SimulationClock, TimeTravelRequest } from '@/types/api';
 
 import { getJson, postJson } from './client';
 import { shouldUseFixtures } from './config';
 import { clockFixture } from './fixtures/clock';
 
+/**
+ * Bieżący czas symulowany. `GET /simulation/clock` oddaje `SimulationClock` (`simulated_now`),
+ * a mutacje `ClockRead` (`now`) — mapujemy tu, żeby pasek czasu i hooki zostały przy jednym
+ * kształcie `ClockRead`.
+ */
 export async function fetchClock(): Promise<ClockRead> {
   if (shouldUseFixtures()) {
     return clockFixture;
   }
 
-  return getJson<ClockRead>('/api/v1/simulation/clock');
+  const clock: SimulationClock = await getJson<SimulationClock>('/api/v1/simulation/clock');
+
+  return { now: clock.simulated_now, offset_days: clock.offset_days };
 }
 
 // Mutacje zawsze idą do API — tryb fixture'ów jest tylko odczytowym fallbackiem (ADR 0015).

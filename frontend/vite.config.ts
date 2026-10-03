@@ -11,9 +11,15 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
+      '@shared': path.resolve(import.meta.dirname, '../shared'),
     },
   },
   server: {
+    // `shared/` leży poza `frontend/`, więc Vite musi mieć jawną zgodę na serwowanie go
+    // (`shared/fixtures/README.md` §„Konsumpcja z frontendu”). Proxy zostaje bez zmian.
+    fs: {
+      allow: ['..'],
+    },
     proxy: {
       '/api': 'http://localhost:8000',
     },

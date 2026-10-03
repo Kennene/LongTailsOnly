@@ -1,6 +1,7 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
-import { fetchActivityStats, type LeaseActivityStats } from '@/api/activity';
+import { fetchActivityStats } from '@/api/activity';
+import type { LeaseActivityStats } from '@/types/api';
 
 /**
  * Statystyki użycia dzierżawy dla modala decyzji.

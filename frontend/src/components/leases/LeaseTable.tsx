@@ -2,6 +2,9 @@ import type { ReactNode } from 'react';
 
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import { RecommendationBadge } from '@/components/leases/RecommendationBadge';
+import { RoleBadge } from '@/components/leases/RoleBadge';
+import { TeamChip } from '@/components/leases/TeamChip';
+import { UserAvatar } from '@/components/leases/UserAvatar';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -12,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatDateTimeShortPl, formatDaysRemaining } from '@/lib/dateTime';
-import { getRoleLabel } from '@/lib/statusBadges';
+import { initialsFrom } from '@/lib/userInitials';
 import { cn } from '@/lib/utils';
 import type { LeaseOverview, LeaseStatus } from '@/types/api';
 
@@ -36,10 +39,12 @@ const STATUS_RANK: Record<LeaseStatus, number> = {
  * a `Ostatnia aktywność` rosła do ~234 px, spychając `Status`, `Rekomendację` i akcję wiersza
  * poza ekran), natomiast samo `w-*` nie trzyma kolumny, gdy treść jest szersza od rezerwacji.
  * Wartości zmierzone w Chromium (`text-sm`, 1024–1920 px): `w-60 max-w-60` = 240 px mieści
- * najdłuższą tożsamość („Tomasz Wiśniewski” 127 px + „tomasz-admin” 86 px + odstęp) i pełne
- * `owner/repo` w `font-mono` (`longtails/legacy-reports` = 210 px), `w-16 max-w-16` = 64 px
- * mieści nazwy zespołów (`DEV`, `QA`) oraz myślnik dla braku wartości. Sufit zostaje na wypadek
- * dłuższych danych z backendu — wtedy komórka się ucina, zamiast rozsadzać całą tabelę.
+ * najdłuższą tożsamość i pełne `owner/repo` w `font-mono` (`longtails/legacy-reports` = 210 px),
+ * `w-16 max-w-16` = 64 px mieści nazwy zespołów (`DEV`, `QA`) oraz myślnik dla braku wartości.
+ * Po przejściu na wspólne fixture'y sprawdzone ponownie (1440 px, `shared/fixtures`): 15 wierszy,
+ * najdłuższa tożsamość „Tomasz (IT Security)” + „tomasz-admin”, zero przyciętych komórek i zero
+ * poziomego przewijania tabeli. Sufit zostaje na wypadek dłuższych danych z backendu — wtedy
+ * komórka się ucina, zamiast rozsadzać całą tabelę.
  */
 const COLUMN_WIDTH = {
   user: 'w-60 max-w-60',
@@ -104,22 +109,27 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
           return (
             <TableRow key={lease.id} className="group">
               <TableCell className={COLUMN_WIDTH.user}>
-                {/* Jedna linia: nazwa i login obok siebie. Stos `div` + `div` dawał 2–3 linie,
-                    czyli wiersze 57–77 px zamiast pasma 36–40 px (DESIGN.md §3). */}
-                <div className="flex items-baseline gap-1.5">
+                {/* Jedna linia: nazwa, login i awatar obok siebie. Stos `div` + `div` dawał 2–3 linie,
+                    czyli wiersze 57–77 px zamiast pasma 36–40 px (DESIGN.md §3). Awatar jedzie na
+                    końcu komórki: nazwa jest sygnałem, inicjały tylko go potwierdzają, więc nie
+                    zabierają pierwszego miejsca w wierszu. */}
+                <div className="flex items-center gap-1.5">
                   <span className="shrink-0 font-medium">{lease.user.name}</span>
                   <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
                     {lease.user.login}
                   </span>
+                  <UserAvatar initials={initialsFrom(lease.user)} login={lease.user.login} />
                 </div>
               </TableCell>
               <TableCell className={cn(COLUMN_WIDTH.team, SECONDARY_COLUMN)}>
-                {lease.user.team?.name ?? '—'}
+                {lease.user.team === null ? '—' : <TeamChip label={lease.user.team.name} />}
               </TableCell>
               <TableCell className={cn(COLUMN_WIDTH.repository, 'font-mono')}>
                 <span className="block truncate">{repositoryFullName}</span>
               </TableCell>
-              <TableCell className={SECONDARY_COLUMN}>{getRoleLabel(lease.current_role)}</TableCell>
+              <TableCell className={SECONDARY_COLUMN}>
+                <RoleBadge role={lease.current_role} />
+              </TableCell>
               <TableCell className="font-mono">
                 {lease.last_activity_at === null
                   ? '—'

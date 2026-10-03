@@ -12,6 +12,7 @@ import {
   getSimulatedNow,
 } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import type { SimulationClock } from '@/types/api';
 
 const INITIAL_CLOCK = /3 października 2026/;
 const CUSTOM_DAYS_LABEL = 'Własna liczba dni';
@@ -29,6 +30,20 @@ it('renders the simulated clock and offset read from the API', async () => {
 
   expect(await screen.findByText(INITIAL_CLOCK)).toBeInTheDocument();
   expect(screen.getByText('Przesunięcie: 0 dni')).toBeInTheDocument();
+});
+
+it('maps `simulated_now` from the clock endpoint onto the bar', async () => {
+  // Kontrakt `GET /simulation/clock` to `SimulationClock { simulated_now, offset_days }`,
+  // a pasek czyta wewnętrzny `ClockRead { now, offset_days }` — mapowanie należy do `api/simulation.ts`.
+  const clock: SimulationClock = {
+    simulated_now: '2026-11-05T03:00:00Z',
+    offset_days: 33,
+  };
+  server.use(http.get('/api/v1/simulation/clock', () => HttpResponse.json(clock)));
+  renderWithProviders(<TimeTravelBar />);
+
+  expect(await screen.findByText('5 listopada 2026, 04:00')).toBeInTheDocument();
+  expect(screen.getByText('Przesunięcie: +33 dni')).toBeInTheDocument();
 });
 
 it('advances the clock with the +15 dni preset', async () => {

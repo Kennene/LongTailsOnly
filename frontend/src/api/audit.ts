@@ -1,4 +1,4 @@
-import type { AuditLogRead } from '@/types/api';
+import type { AuditEntry } from '@/types/api';
 
 import { getJson } from './client';
 import { shouldUseFixtures } from './config';
@@ -7,20 +7,16 @@ import { auditFixture } from './fixtures/audit';
 /**
  * Dziennik audytu — jedyne miejsce styku z transportem.
  *
- * `AuditLogResponse` to **oczekiwany kontrakt kroku 4.5**: generowany `src/types/api.ts` zna już
- * encję `AuditLogRead`, ale nie zna jeszcze koperty listy (spec §5). Trzymamy ją tutaj, a nie
- * w pliku kontraktu, bo ten jest generowany z Pydantic i nie edytujemy go ręcznie — gdy 4.5
- * dostarczy DTO, podmieniamy wyłącznie ten typ.
+ * `GET /api/v1/audit` oddaje **gołą tablicę** `AuditEntry[]`: bez koperty `{ entries }` (żaden
+ * endpoint nie paginuje — ADR 0011 §6), z `actor_login` rozwiązanym po stronie backendu
+ * (LEFT JOIN z `users`), więc widok nie łączy się z listą użytkowników sam.
+ *
+ * Kolejność (najnowsze pierwsze) należy do backendu, frontend jej nie zmienia.
  */
-export interface AuditLogResponse {
-  entries: AuditLogRead[];
-}
-
-/** Zdarzenia dziennika; kolejność (najnowsze pierwsze) należy do backendu, frontend jej nie zmienia. */
-export async function fetchAuditLog(): Promise<AuditLogResponse> {
+export async function fetchAuditLog(): Promise<AuditEntry[]> {
   if (shouldUseFixtures()) {
-    return { entries: auditFixture };
+    return auditFixture;
   }
 
-  return getJson<AuditLogResponse>('/api/v1/audit');
+  return getJson<AuditEntry[]>('/api/v1/audit');
 }

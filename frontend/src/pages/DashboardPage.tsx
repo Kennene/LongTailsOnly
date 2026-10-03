@@ -26,7 +26,9 @@ export function DashboardPage(): React.JSX.Element {
       <h1 className="text-2xl font-semibold tracking-tight">Pulpit</h1>
 
       {isError ? (
-        <Alert variant="destructive">
+        // `data-testid`, bo okno ostrzegawcze pod spodem ma własny alert z własnym „Odśwież” —
+        // test musi wiedzieć, który przycisk ponawia liczniki, a który listę dzierżaw.
+        <Alert variant="destructive" data-testid="kpi-error">
           <AlertTitle>Nie udało się pobrać liczników</AlertTitle>
           <AlertDescription>
             Sprawdź, czy backend odpowiada, a następnie spróbuj ponownie.

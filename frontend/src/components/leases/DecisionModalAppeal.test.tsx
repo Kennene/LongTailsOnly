@@ -3,51 +3,39 @@ import userEvent from '@testing-library/user-event';
 import { toast } from 'sonner';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { appealsFixture } from '@/api/fixtures';
+import { fetchActivityStats } from '@/api/activity';
+import { appealsFixture, leasesFixture } from '@/api/fixtures';
 import { DecisionModal } from '@/components/leases/DecisionModal';
-import { getLastAppealDecision, resetAppealsMswState } from '@/test/msw/domains/appeals';
+import {
+  getLastAppealRejection,
+  getLastAppealRequest,
+  resetAppealsMswState,
+} from '@/test/msw/domains/appeals';
 import { getLastDecisionRequest } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import type { AppealRead, LeaseOverview } from '@/types/api';
+import type { AppealOverview, LeaseOverview } from '@/types/api';
 
 /**
- * Tryb odwołania modala decyzji (UC-3, zadanie 11).
+ * Tryb odwołania modala decyzji (UC-3).
+ *
+ * Backend ma dziś wyłącznie `POST /api/v1/appeals/{id}/reject` — rozstrzygnięcie odwołania
+ * (`POST /api/v1/appeals/{id}/decision`, zadanie 4.3C) jeszcze nie istnieje, a decyzja
+ * o dzierżawie odsyła dzierżawy z odwołaniem `PENDING` właśnie tam (409, D13). Modal musi więc
+ * odrzucać wniosek realnym żądaniem, a ścieżkę zatwierdzenia zostawiać wyłączoną z wyjaśnieniem.
  *
  * Osobny plik od `DecisionModal.test.tsx`: tamten pilnuje ścieżki dzierżawy
- * (`POST /api/v1/leases/{id}/decision`) i ma zostać nietknięty, bo jest regresją
- * kompatybilności propa `appeal` (jego brak = dzisiejsze zachowanie).
+ * (`POST /api/v1/leases/{id}/decision`) i ma zostać nietknięty.
  */
 
-const pendingAppeal: AppealRead = appealsFixture[0]; // dzierżawa 3, status PENDING
-const expiredLease: LeaseOverview = {
-  id: 3,
-  user: {
-    id: 4,
-    login: 'piotr',
-    name: 'Piotr Lewandowski',
-    is_admin: false,
-    team: { id: 1, name: 'DEV', slug: 'dev' },
-  },
-  repository: {
-    id: 3,
-    name: 'legacy-reports',
-    owner: 'longtails',
-    default_branch: 'main',
-    default_lease_duration_days: 30,
-  },
-  current_role: 'write',
-  granted_at: '2026-08-01T00:00:00Z',
-  expires_at: '2026-09-30T00:00:00Z',
-  is_active: false,
-  status: 'EXPIRED',
-  days_remaining: -3,
-  last_activity_at: null,
-  recommendation: 'REVOKE',
-};
-const otherLease: LeaseOverview = { ...expiredLease, id: 1 };
-
+const pendingAppeal: AppealOverview = appealsFixture[0]; // dzierżawa 5, marta, status PENDING
+const otherLease: LeaseOverview = leasesFixture[0]; // dzierżawa 1 z fixture'ów, ACTIVE
+const REJECTION_JUSTIFICATION = 'Brak konkretnego planu użycia dostępu w tym tygodniu.';
+const REJECTION_REQUIRED = 'Uzasadnienie odrzucenia jest wymagane';
+const APPROVE_UNAVAILABLE =
+  'Zatwierdzenie odwołania wymaga POST /api/v1/appeals/{id}/decision, którego backend jeszcze nie ma (zadanie 4.3C) — działa tylko odrzucenie przez /reject.';
 const HISTORY_TEST_ID = 'appeal-history';
 const ACTIVITY_TEST_ID = 'appeal-activity';
+const LEASE_CONTEXT_TEST_ID = 'appeal-lease-context';
 
 /** `resetAppealsMswState()` nie jest wołany przez `setup.ts` — stan tej domeny czyścimy tutaj. */
 beforeEach(() => {
@@ -55,9 +43,13 @@ beforeEach(() => {
   toast.dismiss();
 });
 
+/**
+ * Tryb odwołania nie potrzebuje już propa `lease` (wszystko niesie `AppealOverview`),
+ * więc renderujemy go bez dzierżawy — to jest właśnie regresja, której pilnujemy.
+ */
 async function renderAppealModal(onOpenChange: (open: boolean) => void = () => {}): Promise<void> {
   renderWithProviders(
-    <DecisionModal appeal={pendingAppeal} lease={expiredLease} open onOpenChange={onOpenChange} />,
+    <DecisionModal appeal={pendingAppeal} lease={null} open onOpenChange={onOpenChange} />,
   );
 
   // Wybór daty wymaga czasu symulowanego z API — czekamy, aż modal będzie gotowy.
@@ -67,68 +59,114 @@ async function renderAppealModal(onOpenChange: (open: boolean) => void = () => {
 }
 
 describe('DecisionModal w trybie odwołania', () => {
-  it('pokazuje uzasadnienie odwołania oraz pustą historię, gdy dzierżawa ma jedno odwołanie', async () => {
-    // Dzierżawa bez innych odwołań w fixture'ach — `AppealHistory` ma wtedy pokazać pustkę.
-    const lonelyAppeal: AppealRead = { ...pendingAppeal, id: 99, lease_id: 99 };
-    renderWithProviders(
-      <DecisionModal
-        appeal={lonelyAppeal}
-        lease={{ ...expiredLease, id: 99 }}
-        open
-        onOpenChange={() => {}}
-      />,
-    );
+  it('pokazuje kontekst odwołania z pól overview, bez udziału listy dzierżaw', async () => {
+    await renderAppealModal();
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
-    });
-
-    expect(screen.getByText('Uzasadnienie odwołania')).toBeInTheDocument();
-    // Ta sama treść jest też w historii (modal pokazuje wniosek i wpis w historii),
-    // więc asercję przypinamy do akapitu uzasadnienia.
+    expect(screen.getByText('Rozpatrzenie odwołania')).toBeInTheDocument();
+    expect(screen.getByText('Marta (marta)')).toBeInTheDocument();
     expect(screen.getByTestId('appeal-justification')).toHaveTextContent(
-      lonelyAppeal.justification,
+      pendingAppeal.justification,
     );
-    expect(await screen.findByText('Brak odwołań')).toBeInTheDocument();
+
+    const context = screen.getByTestId(LEASE_CONTEXT_TEST_ID);
+    expect(context).toHaveTextContent('longtails/qa-automation');
+    expect(context).toHaveTextContent('Odczyt (read)');
+    expect(context).toHaveTextContent('Pozostało 2 dni');
+    expect(context).toHaveTextContent(/Poprzednie odwołania\s*0/);
   });
 
   it('pokazuje historię odwołań tej dzierżawy i statystyki aktywności', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     await renderAppealModal();
 
-    // Historia filtruje pełną listę po `lease_id`, więc odwołania innych dzierżaw nie wchodzą.
-    expect(screen.queryByText(appealsFixture[1].justification)).not.toBeInTheDocument();
-    expect(screen.queryByText(appealsFixture[2].justification)).not.toBeInTheDocument();
-
-    const history = screen.getByTestId(HISTORY_TEST_ID);
+    // Historia jest filtrowana po `lease_id` (zarówno zapytaniem, jak i fixture'ami),
+    // więc odwołania innych dzierżaw nie wchodzą.
+    const history = await screen.findByTestId(HISTORY_TEST_ID);
+    expect(within(history).getByText(pendingAppeal.justification)).toBeInTheDocument();
     expect(within(history).getByText('Oczekujące')).toBeInTheDocument();
+    expect(within(history).queryByText(appealsFixture[1].justification)).not.toBeInTheDocument();
+    expect(within(history).queryByText(appealsFixture[2].justification)).not.toBeInTheDocument();
 
+    // Liczniki pochodzą z `GET /api/v1/leases/{lease_id}/activity-stats` dla **tej** dzierżawy;
+    // liczby bierzemy z tego samego źródła zamiast wpisywać je na sztywno (shared/activity.json).
+    const stats = await fetchActivityStats(pendingAppeal.lease_id);
     const activity = screen.getByTestId(ACTIVITY_TEST_ID);
-    expect(within(activity).getByTestId('stat-push')).toHaveTextContent('5');
-    expect(within(activity).getByTestId('stat-review')).toHaveTextContent('4');
-    expect(within(activity).getByTestId('stat-comment')).toHaveTextContent('7');
+    expect(within(activity).getByTestId('stat-push')).toHaveTextContent(String(stats.push_count));
+    expect(within(activity).getByTestId('stat-review')).toHaveTextContent(
+      String(stats.review_count),
+    );
+    expect(within(activity).getByTestId('stat-comment')).toHaveTextContent(
+      String(stats.comment_count),
+    );
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `/api/v1/leases/${String(pendingAppeal.lease_id)}/activity-stats`,
+      expect.anything(),
+    );
   });
 
-  it('wysyła decyzję na endpoint odwołania, potwierdza toastem i zamyka modal', async () => {
+  it('odrzuca odwołanie przez /reject, potwierdza toastem i zamyka modal', async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn<(open: boolean) => void>();
     await renderAppealModal(onOpenChange);
 
-    await user.click(screen.getByRole('button', { name: '2x' }));
-    await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+    await user.type(screen.getByLabelText('Uzasadnienie odrzucenia'), REJECTION_JUSTIFICATION);
+    await user.click(screen.getByRole('button', { name: 'Odrzuć odwołanie' }));
 
     await waitFor(() => {
-      expect(getLastAppealDecision()).toEqual({
+      expect(getLastAppealRejection()).toEqual({
         appeal_id: pendingAppeal.id,
-        request: { action: 'EXTEND', extension: { multiplier: 2 } },
+        justification: REJECTION_JUSTIFICATION,
       });
     });
-    // Decyzja o odwołaniu nie może iść drugą ścieżką (endpoint dzierżawy).
+    // Odrzucenie nie może iść żadną inną ścieżką (decyzja o odwołaniu ani o dzierżawie).
     expect(getLastDecisionRequest()).toBeNull();
+    expect(getLastAppealRequest()).toBeNull();
 
-    expect(await screen.findByText('Decyzja zapisana')).toBeInTheDocument();
+    expect(await screen.findByText('Odwołanie odrzucone')).toBeInTheDocument();
     await waitFor(() => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
+  });
+
+  it('wymaga uzasadnienia odrzucenia i nie wysyła żądania bez niego', async () => {
+    const user = userEvent.setup();
+    await renderAppealModal();
+
+    await user.click(screen.getByRole('button', { name: 'Odrzuć odwołanie' }));
+
+    expect(await screen.findByText(REJECTION_REQUIRED)).toBeInTheDocument();
+    expect(screen.getByLabelText('Uzasadnienie odrzucenia')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(getLastAppealRejection()).toBeNull();
+  });
+
+  it('traktuje uzasadnienie odrzucenia z samych białych znaków jako puste', async () => {
+    const user = userEvent.setup();
+    await renderAppealModal();
+
+    await user.type(screen.getByLabelText('Uzasadnienie odrzucenia'), '   ');
+    await user.click(screen.getByRole('button', { name: 'Odrzuć odwołanie' }));
+
+    expect(await screen.findByText(REJECTION_REQUIRED)).toBeInTheDocument();
+    expect(getLastAppealRejection()).toBeNull();
+  });
+
+  it('wyłącza zatwierdzenie odwołania i wyjaśnia brak endpointu decyzji o dzierżawie', async () => {
+    const user = userEvent.setup();
+    await renderAppealModal();
+
+    expect(screen.getByText(APPROVE_UNAVAILABLE)).toBeInTheDocument();
+    const approve = screen.getByRole('button', { name: 'Zatwierdź odwołanie' });
+    expect(approve).toBeDisabled();
+
+    // Szkic przedłużenia zostaje wybieralny (modal pokazuje, co odwołanie by dało),
+    // ale bez endpointu decyzji o dzierżawie nie może wysłać żadnego żądania.
+    await user.click(screen.getByRole('button', { name: '2x' }));
+    expect(approve).toBeDisabled();
+    expect(getLastDecisionRequest()).toBeNull();
+    expect(getLastAppealRejection()).toBeNull();
   });
 });
 
@@ -140,9 +178,9 @@ describe('DecisionModal bez odwołania', () => {
       expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
     });
 
+    expect(screen.queryByText('Rozpatrzenie odwołania')).not.toBeInTheDocument();
     expect(screen.queryByText('Uzasadnienie odwołania')).not.toBeInTheDocument();
     expect(screen.queryByTestId(HISTORY_TEST_ID)).not.toBeInTheDocument();
     expect(screen.queryByTestId(ACTIVITY_TEST_ID)).not.toBeInTheDocument();
-    expect(screen.queryByText('Brak odwołań')).not.toBeInTheDocument();
   });
 });

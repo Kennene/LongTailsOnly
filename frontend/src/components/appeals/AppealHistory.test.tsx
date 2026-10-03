@@ -5,17 +5,18 @@ import { appealsFixture } from '@/api/fixtures';
 import { AppealHistory } from '@/components/appeals/AppealHistory';
 import { formatDateTimePl } from '@/lib/dateTime';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import type { AppealRead } from '@/types/api';
+import type { AppealOverview } from '@/types/api';
 
-// Fixture'y w kształcie kontraktu: `appealsFixture` jest już posortowany od najnowszego.
-const pendingAppeal: AppealRead = appealsFixture[0];
-const rejectedAppeal: AppealRead = appealsFixture[1];
+// Fixture'y w kształcie kontraktu: `appealsFixture` jest już posortowany od najnowszego,
+// a indeksy bierzemy z `shared/fixtures/appeals.json` (1: PENDING, 2: APPROVED, 3: REJECTED).
+const pendingAppeal: AppealOverview = appealsFixture[0];
+const rejectedAppeal: AppealOverview = appealsFixture[2];
 
 const LONG_JUSTIFICATION =
   'Prowadzę release 2.1 modułu płatności i muszę dokończyć migrację konfiguracji środowisk ' +
   'przed zamrożeniem wydania; bez dostępu do repozytorium blokuję pracę trzech zespołów.';
 
-const longJustificationAppeal: AppealRead = {
+const longJustificationAppeal: AppealOverview = {
   ...pendingAppeal,
   id: 99,
   justification: LONG_JUSTIFICATION,
