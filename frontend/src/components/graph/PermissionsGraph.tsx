@@ -4,68 +4,77 @@ import {
   type AriaLabelConfig,
   Background,
   Controls,
-  type Edge,
-  Handle,
+  type EdgeTypes,
   type Node,
-  type NodeProps,
+  type NodeChange,
   type NodeTypes,
-  Position,
   ReactFlow,
 } from '@xyflow/react';
 import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 
-import { applyColumnLayout } from '@/lib/graphLayout';
+import type { LayoutPositions } from '@/lib/graphForceLayout';
+import {
+  type GraphHighlight,
+  highlightOf,
+  isElevatedRisk,
+  neighboursOf,
+  worseStatus,
+} from '@/lib/graphHighlight';
 import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
-import { cn } from '@/lib/utils';
 import type { GraphEdge, GraphNode, LeaseStatus } from '@/types/api';
 
+import { FloatingEdge } from './FloatingEdge';
+import { GraphCircleNode } from './GraphCircleNode';
+import { GraphDetailsPanel } from './GraphDetailsPanel';
+import {
+  type CircleFlowNode,
+  colorModeOf,
+  type Emphasis,
+  emphasisOf,
+  type FloatingFlowEdge,
+} from './graphFlow';
+import { GraphLegend } from './GraphLegend';
+import { applyOverrideChanges, type NodeOverrides } from './nodeOverrides';
+
 export interface PermissionsGraphProps {
+  /** Węzły i krawędzie po filtrze zespołu (`GraphPage`). */
   nodes: GraphNode[];
   edges: GraphEdge[];
+  /** Układ pajęczyny policzony na **pełnym** grafie — filtry nie przesuwają węzłów. */
+  positions: LayoutPositions;
   onlyRisk: boolean;
+  selectedId: string | null;
+  onSelect: (nodeId: string | null) => void;
 }
 
-/** Statusy, które znaczą „podwyższone ryzyko” (spec §7.6). */
-const RISK_STATUSES: readonly LeaseStatus[] = ['WARNING', 'EXPIRED'];
+/**
+ * Wysokość panelu: pajęczyna demo (31 węzłów) jest mniej więcej kwadratowa, więc wysoki panel daje
+ * `fitView` większe powiększenie niż szeroki i niski — etykiety w okręgach zostają czytelne.
+ */
+const PANE_CLASSES = 'h-[40rem] overflow-hidden rounded-xl border border-border bg-card';
 
-/** Legenda kolorów — te same rodziny stanów, których używa `getStatusBadge`. */
-const LEGEND_STATUSES: readonly LeaseStatus[] = ['ACTIVE', 'WARNING', 'EXPIRED'];
-
-/** Od najgroźniejszego: kolor węzła bierze najgorszy status z jego dzierżaw. */
-const SEVERITY: readonly LeaseStatus[] = ['EXPIRED', 'WARNING', 'ACTIVE'];
+const NODE_TYPES: NodeTypes = { circle: GraphCircleNode };
+const EDGE_TYPES: EdgeTypes = { floating: FloatingEdge };
 
 /**
- * Wysokość panelu jest **wymierzona** (Chromium, dane demo): kolumna ma 7 wierszy po 72 px,
- * czyli 504 px treści, a przy 512 px `fitView` dobijał do `minZoom` i ścinał skrajne węzły.
- * 38rem (608 px) zostawia zapas, więc o powiększeniu decyduje szerokość panelu — przy 1440 px
- * okna etykiety węzłów mają ~12 px, a nie ~9 px.
+ * Polskie etykiety dostępności wbudowanych elementów React Flow (UI po polsku). Węzły zaznacza
+ * się przyciskiem w środku okręgu, więc opisy węzłów i krawędzi React Flow nie są potrzebne.
  */
-const PANE_CLASSES = 'h-[38rem] overflow-hidden rounded-xl border border-border bg-card';
-
-/**
- * Dane węzła dla React Flow. Kontrakt (`GraphNodeData`) nie ma statusu — wisi on wyłącznie na
- * krawędziach dzierżaw, więc widok wylicza go z krawędzi i dokłada tutaj, żeby kolor węzła
- * nadal niósł stan uprawnień.
- */
-type GraphDisplayData = {
-  label: string;
-  team: string | null;
-  is_admin: boolean;
-  status: LeaseStatus | null;
+const ARIA_LABEL_CONFIG: Partial<AriaLabelConfig> = {
+  'controls.ariaLabel': 'Sterowanie widokiem grafu',
+  'controls.zoomIn.ariaLabel': 'Przybliż',
+  'controls.zoomOut.ariaLabel': 'Oddal',
+  'controls.fitView.ariaLabel': 'Dopasuj widok',
+  'handle.ariaLabel': 'Punkt połączenia krawędzi',
 };
-
-type FlowNode = Node<GraphDisplayData, GraphNode['type']>;
-
-function hasElevatedRisk(status: LeaseStatus | null): boolean {
-  return status !== null && RISK_STATUSES.includes(status);
-}
 
 /** Węzły dotknięte ryzykiem: końce krawędzi o statusie `WARNING`/`EXPIRED`. */
 function collectRiskNodeIds(edges: GraphEdge[]): Set<string> {
   const ids = new Set<string>();
 
   edges.forEach((edge: GraphEdge): void => {
-    if (hasElevatedRisk(edge.data.status)) {
+    if (isElevatedRisk(edge.data.status)) {
       ids.add(edge.source);
       ids.add(edge.target);
     }
@@ -75,140 +84,64 @@ function collectRiskNodeIds(edges: GraphEdge[]): Set<string> {
 }
 
 /** Najgorszy status węzła, wyliczony z jego krawędzi dzierżaw (bez krawędzi = brak statusu). */
-function collectStatusByNode(edges: GraphEdge[]): Map<string, LeaseStatus> {
-  const statuses = new Map<string, LeaseStatus>();
-
-  function remember(nodeId: string, status: LeaseStatus | null): void {
-    if (status === null) {
-      return;
-    }
-
-    const current: LeaseStatus | undefined = statuses.get(nodeId);
-    statuses.set(nodeId, current === undefined ? status : worseOf(current, status));
-  }
+function collectStatusByNode(edges: GraphEdge[]): Map<string, LeaseStatus | null> {
+  const statuses = new Map<string, LeaseStatus | null>();
 
   edges.forEach((edge: GraphEdge): void => {
-    remember(edge.source, edge.data.status);
-    remember(edge.target, edge.data.status);
+    [edge.source, edge.target].forEach((nodeId: string): void => {
+      statuses.set(nodeId, worseStatus(statuses.get(nodeId) ?? null, edge.data.status));
+    });
   });
 
   return statuses;
 }
 
-function worseOf(current: LeaseStatus, candidate: LeaseStatus): LeaseStatus {
-  return SEVERITY.indexOf(candidate) < SEVERITY.indexOf(current) ? candidate : current;
+/** Liczba relacji do `aria-label`: członkowie zespołu, a dla osoby i repo — dzierżawy. */
+function relationCount(node: GraphNode, edges: GraphEdge[]): number {
+  const kind: GraphEdge['data']['kind'] = node.type === 'team' ? 'membership' : 'lease';
+
+  return edges.filter(
+    (edge: GraphEdge): boolean =>
+      edge.data.kind === kind && (edge.source === node.id || edge.target === node.id),
+  ).length;
 }
 
 function labelOf(nodes: GraphNode[], id: string): string {
   return nodes.find((node: GraphNode): boolean => node.id === id)?.data.label ?? id;
 }
 
-function toFlowNodes(nodes: GraphNode[], statuses: Map<string, LeaseStatus>): FlowNode[] {
-  return applyColumnLayout(nodes).map((node: GraphNode): FlowNode => ({
-    id: node.id,
-    type: node.type,
-    position: node.position,
-    data: { ...node.data, status: statuses.get(node.id) ?? null },
-  }));
-}
-
 /**
- * Kolor krawędzi pochodzi z `getStatusBadge` (klasa `text-status-*` na grupie), a `stroke`
- * ustawiamy na `currentColor` — dzięki temu działa jedno źródło prawdy o kolorach stanu.
- * `animated` bierzemy z kontraktu (backend zapala je dla `WARNING`/`EXPIRED`).
- */
-function toFlowEdges(edges: GraphEdge[], nodes: GraphNode[]): Edge[] {
-  return edges.map((edge: GraphEdge): Edge => {
-    const status: LeaseStatus | null = edge.data.status;
-    const role = edge.data.role;
-    const badge = status === null ? null : getStatusBadge(status);
-    const roleLabel = role === null ? '' : ` (${getRoleLabel(role)})`;
-
-    return {
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      type: 'smoothstep',
-      animated: edge.animated,
-      className: badge?.className,
-      style: badge === null ? undefined : { stroke: 'currentColor' },
-      ariaLabel: `${labelOf(nodes, edge.source)} → ${labelOf(nodes, edge.target)}${roleLabel}`,
-    };
-  });
-}
-
-/** Węzeł grafu: wypełnienie i obramowanie z rodziny statusu, etykiety po polsku obok koloru. */
-function GraphStatusNode({ data }: NodeProps<FlowNode>): React.JSX.Element {
-  const badge = data.status === null ? null : getStatusBadge(data.status);
-
-  return (
-    <div
-      className={cn(
-        'flex w-40 flex-col gap-0.5 rounded-lg border px-3 py-2 shadow-sm',
-        badge === null ? 'border-border bg-card text-foreground' : badge.className,
-      )}
-    >
-      <Handle className="opacity-0" position={Position.Left} type="target" />
-      <span className="font-mono text-xs font-medium">{data.label}</span>
-      {badge === null ? null : <span className="text-[0.65rem]">{badge.label}</span>}
-      <Handle className="opacity-0" position={Position.Right} type="source" />
-    </div>
-  );
-}
-
-const NODE_TYPES: NodeTypes = {
-  user: GraphStatusNode,
-  team: GraphStatusNode,
-  repo: GraphStatusNode,
-};
-
-/**
- * Polskie etykiety dostępności wbudowanych elementów React Flow (UI po polsku).
+ * Graf uprawnień jako pajęczyna (`@xyflow/react` + układ z `lib/graphForceLayout.ts`).
  *
- * Opisy węzłów i krawędzi pomijają klawisz usuwania — graf jest widokiem tylko do odczytu.
- */
-const ARIA_LABEL_CONFIG: Partial<AriaLabelConfig> = {
-  'controls.ariaLabel': 'Sterowanie widokiem grafu',
-  'controls.zoomIn.ariaLabel': 'Przybliż',
-  'controls.zoomOut.ariaLabel': 'Oddal',
-  'controls.fitView.ariaLabel': 'Dopasuj widok',
-  'handle.ariaLabel': 'Punkt połączenia krawędzi',
-  'node.a11yDescription.default':
-    'Naciśnij Enter lub spację, aby zaznaczyć węzeł. Naciśnij Escape, aby anulować.',
-  'edge.a11yDescription.default':
-    'Naciśnij Enter lub spację, aby zaznaczyć krawędź. Naciśnij Escape, aby anulować.',
-};
-
-function GraphLegend(): React.JSX.Element {
-  return (
-    <ul className="flex flex-wrap items-center gap-4 text-xs">
-      {LEGEND_STATUSES.map((status: LeaseStatus): React.JSX.Element => {
-        const badge = getStatusBadge(status);
-
-        return (
-          <li key={status} className={cn('flex items-center gap-1.5', badge.className)}>
-            <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
-            {badge.label}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/**
- * Graf uprawnień na `@xyflow/react`.
- *
- * Liczniki widocznych elementów (`graph-nodes`, `graph-edges`) wystawiamy obok grafu, bo React
- * Flow potrzebuje zmierzonego kontenera, którego jsdom nie zapewnia — testy czytają liczniki.
+ * Liczniki widocznych elementów (`graph-nodes`, `graph-edges`, `graph-highlighted`) wystawiamy obok
+ * grafu, bo React Flow potrzebuje zmierzonego kontenera, którego jsdom nie zapewnia.
  * `onlyRisk` zostawia wyłącznie węzły połączone krawędzią `WARNING`/`EXPIRED` oraz te krawędzie.
+ * Zaznaczenie (drogi dostępu) liczy `lib/graphHighlight.ts`; reszta grafu wygasa do ~15%.
  */
 export function PermissionsGraph({
   nodes,
   edges,
+  positions,
   onlyRisk,
+  selectedId,
+  onSelect,
 }: PermissionsGraphProps): React.JSX.Element {
-  const { theme = 'system' } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [overrides, setOverrides] = useState<NodeOverrides>({});
+
+  // Escape czyści zaznaczenie niezależnie od tego, gdzie jest fokus (węzeł, lista, tło).
+  useEffect((): (() => void) => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        onSelect(null);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return (): void => window.removeEventListener('keydown', handleKeyDown);
+  }, [onSelect]);
+
   const riskNodeIds = collectRiskNodeIds(edges);
   const statuses = collectStatusByNode(edges);
   const visibleNodes = onlyRisk
@@ -217,10 +150,69 @@ export function PermissionsGraph({
   const visibleNodeIds = new Set(visibleNodes.map((node: GraphNode): string => node.id));
   const visibleEdges = edges.filter(
     (edge: GraphEdge): boolean =>
-      (!onlyRisk || hasElevatedRisk(edge.data.status)) &&
+      (!onlyRisk || isElevatedRisk(edge.data.status)) &&
       visibleNodeIds.has(edge.source) &&
       visibleNodeIds.has(edge.target),
   );
+
+  const selection: GraphHighlight | null = highlightOf(visibleNodes, visibleEdges, selectedId);
+  const hover: GraphHighlight | null =
+    selection === null && hoveredId !== null && visibleNodeIds.has(hoveredId)
+      ? neighboursOf(visibleEdges, hoveredId)
+      : null;
+
+  const flowNodes: CircleFlowNode[] = visibleNodes.map((node: GraphNode): CircleFlowNode => {
+    const emphasis: Emphasis = emphasisOf(
+      (highlight: GraphHighlight): boolean => highlight.nodeIds.has(node.id),
+      selection,
+      hover,
+    );
+
+    return {
+      id: node.id,
+      type: 'circle',
+      position: overrides[node.id]?.position ?? positions[node.id] ?? { x: 0, y: 0 },
+      measured: overrides[node.id]?.measured,
+      // Podświetlone węzły nad wygaszonymi, żeby wygaszony okrąg nie przykrywał drogi dostępu.
+      zIndex: emphasis === 'active' || emphasis === 'hovered' ? 1 : 0,
+      data: {
+        label: node.data.label,
+        kind: node.type,
+        status: statuses.get(node.id) ?? null,
+        relations: relationCount(node, visibleEdges),
+        emphasis,
+        selected: node.id === selectedId,
+        onSelect,
+      },
+    };
+  });
+
+  /**
+   * Kolor krawędzi pochodzi z `getStatusBadge` (klasa `text-status-*` na grupie), a ścieżka
+   * i grot rysują `currentColor` — jedno źródło prawdy o kolorach stanu. Członkostwo nie ma
+   * statusu, więc jest neutralne.
+   */
+  const flowEdges: FloatingFlowEdge[] = visibleEdges.map((edge: GraphEdge): FloatingFlowEdge => {
+    const status: LeaseStatus | null = edge.data.status;
+    const role = edge.data.role;
+    const emphasis: Emphasis = emphasisOf(
+      (highlight: GraphHighlight): boolean => highlight.edgeIds.has(edge.id),
+      selection,
+      hover,
+    );
+
+    return {
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      type: 'floating',
+      className: status === null ? 'text-muted-foreground' : getStatusBadge(status).className,
+      zIndex: emphasis === 'active' ? 1 : 0,
+      focusable: false,
+      data: { kind: edge.data.kind, role, emphasis },
+      ariaLabel: `${labelOf(nodes, edge.source)} → ${labelOf(nodes, edge.target)}${role === null ? '' : ` (${getRoleLabel(role)})`}`,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-3">
@@ -233,35 +225,63 @@ export function PermissionsGraph({
           · widoczne krawędzie:{' '}
           <span className="font-mono text-foreground tabular-nums" data-testid="graph-edges">
             {visibleEdges.length}
+          </span>{' '}
+          · podświetlone węzły:{' '}
+          <span className="font-mono text-foreground tabular-nums" data-testid="graph-highlighted">
+            {selection?.nodeIds.size ?? 0}
           </span>
         </p>
         <GraphLegend />
       </div>
 
-      {visibleNodes.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          Brak danych do wyświetlenia
-        </p>
-      ) : (
-        <div className={PANE_CLASSES}>
-          <ReactFlow
-            ariaLabelConfig={ARIA_LABEL_CONFIG}
-            colorMode={theme === 'light' ? 'light' : 'dark'}
-            edges={toFlowEdges(visibleEdges, visibleNodes)}
-            fitView
-            // Domyślne 0.5 ucinało graf na wąskim panelu (węzły poza ramką). 0.3 to bezpiecznik:
-            // przy typowej szerokości `fitView` i tak dobiera ~0.8–1.0, więc etykiety są czytelne.
-            minZoom={0.3}
-            nodes={toFlowNodes(visibleNodes, statuses)}
-            nodesConnectable={false}
-            nodesDraggable={false}
-            nodeTypes={NODE_TYPES}
-          >
-            <Background color="var(--border)" gap={24} />
-            <Controls showInteractive={false} />
-          </ReactFlow>
-        </div>
-      )}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        {visibleNodes.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+            Brak danych do wyświetlenia
+          </p>
+        ) : (
+          <div className={PANE_CLASSES}>
+            <ReactFlow
+              ariaLabelConfig={ARIA_LABEL_CONFIG}
+              colorMode={colorModeOf(resolvedTheme)}
+              edges={flowEdges}
+              edgesFocusable={false}
+              edgeTypes={EDGE_TYPES}
+              elementsSelectable={false}
+              fitView
+              fitViewOptions={{ padding: 0.08 }}
+              // Nowy zestaw widocznych węzłów (filtr) montuje widok od nowa, żeby `fitView` objął
+              // dokładnie to, co zostało — zaznaczenie i hover nie zmieniają klucza.
+              key={[...visibleNodeIds].join('|')}
+              minZoom={0.2}
+              nodes={flowNodes}
+              nodesConnectable={false}
+              nodesDraggable
+              nodesFocusable={false}
+              nodeTypes={NODE_TYPES}
+              onNodeMouseEnter={(_event: React.MouseEvent, node: Node): void =>
+                setHoveredId(node.id)
+              }
+              onNodeMouseLeave={(): void => setHoveredId(null)}
+              onNodesChange={(changes: NodeChange<CircleFlowNode>[]): void =>
+                setOverrides((current: NodeOverrides): NodeOverrides =>
+                  applyOverrideChanges(current, changes),
+                )
+              }
+              onPaneClick={(): void => onSelect(null)}
+            >
+              <Background color="var(--border)" gap={24} />
+              <Controls showInteractive={false} />
+            </ReactFlow>
+          </div>
+        )}
+        <GraphDetailsPanel
+          edges={visibleEdges}
+          nodes={visibleNodes}
+          onSelect={onSelect}
+          selectedId={selection === null ? null : selectedId}
+        />
+      </div>
     </div>
   );
 }

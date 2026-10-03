@@ -1,12 +1,15 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { GraphFilters } from '@/components/graph/GraphFilters';
 import { PermissionsGraph } from '@/components/graph/PermissionsGraph';
+import { UserPicker } from '@/components/graph/UserPicker';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGraph } from '@/hooks/useGraph';
-import { applyColumnLayout } from '@/lib/graphLayout';
+import { computeForceLayout, type LayoutPositions } from '@/lib/graphForceLayout';
+import { nodeFromParams, selectionParamsOf } from '@/lib/graphHighlight';
 import type { GraphEdge, GraphNode } from '@/types/api';
 
 interface GraphSelection {
@@ -97,32 +100,43 @@ function GraphSkeleton(): React.JSX.Element {
 }
 
 /**
- * Widok `/graph`: relacje dostępu między osobami i repozytoriami.
+ * Widok `/graph`: relacje dostępu między osobami i repozytoriami jako pajęczyna.
  *
  * Węzły i krawędzie pochodzą z `useGraph()`, który w trybie live składa je z listy dzierżaw
  * (`api/graph.ts`) — zespół widać wtedy wyłącznie jako `data.team` osoby, bo lista dzierżaw nie
  * niesie składu zespołów. Węzły zespołów wrócą razem z `GET /api/v1/graph` (krok 4.6B).
  *
- * Układ kolumnowy liczymy raz, na pełnym zbiorze węzłów — dzięki temu zawężenie filtrów nie
- * przesuwa węzłów, a `applyColumnLayout` (idempotentny) nie nadpisuje `position` z API.
+ * Układ pajęczyny (`computeForceLayout`) liczymy raz, na pełnym zbiorze węzłów — zawężenie filtrów
+ * nie przesuwa węzłów, a `position` z API (kolumny backendu) jest ignorowane. Zaznaczony węzeł
+ * żyje w URL (`?user=kamil`, `?repo=…`, `?team=…`), więc link odtwarza stan widoku.
  */
 export function GraphPage(): React.JSX.Element {
   const { data, isError, isPending, refetch } = useGraph();
   const [team, setTeam] = useState<string | null>(null);
   const [onlyRisk, setOnlyRisk] = useState<boolean>(false);
+  const [params, setParams] = useSearchParams();
 
-  const nodes = applyColumnLayout(data?.nodes ?? []);
-  const edges = data?.edges ?? [];
+  const nodes: GraphNode[] = data?.nodes ?? [];
+  const edges: GraphEdge[] = data?.edges ?? [];
+  const positions: LayoutPositions = computeForceLayout(nodes, edges);
   const selection: GraphSelection =
     team === null ? { nodes, edges } : selectTeam(nodes, edges, team);
+  const selectedId: string | null = nodeFromParams(nodes, params);
+  const selectedUser: GraphNode | undefined = nodes.find(
+    (node: GraphNode): boolean => node.id === selectedId && node.type === 'user',
+  );
+
+  function select(nodeId: string | null): void {
+    setParams(selectionParamsOf(nodes, nodeId), { replace: true });
+  }
 
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Graf</h1>
         <p className="text-sm text-muted-foreground">
-          Kto ma dostęp do czego: osoby i repozytoria. Kolor węzła oraz krawędzi niesie status
-          dzierżawy, a filtr zespołu zawęża widok do jednej grupy.
+          Kto ma dostęp do czego: osoby, zespoły i repozytoria. Kliknij węzeł albo wybierz osobę,
+          żeby podświetlić jej drogi dostępu; obrys węzła i kolor krawędzi niosą status dzierżawy.
         </p>
       </header>
 
@@ -157,8 +171,23 @@ export function GraphPage(): React.JSX.Element {
             onTeamChange={setTeam}
             team={team}
             teams={collectTeams(nodes)}
+          >
+            {/* Klucz resetuje pole, gdy zaznaczenie zmieni się kliknięciem w graf albo Escape. */}
+            <UserPicker
+              key={selectedUser?.id ?? 'none'}
+              initialLogin={selectedUser?.data.label ?? ''}
+              onSelect={select}
+              users={nodes.filter((node: GraphNode): boolean => node.type === 'user')}
+            />
+          </GraphFilters>
+          <PermissionsGraph
+            edges={selection.edges}
+            nodes={selection.nodes}
+            onlyRisk={onlyRisk}
+            onSelect={select}
+            positions={positions}
+            selectedId={selectedId}
           />
-          <PermissionsGraph edges={selection.edges} nodes={selection.nodes} onlyRisk={onlyRisk} />
         </>
       )}
     </section>
