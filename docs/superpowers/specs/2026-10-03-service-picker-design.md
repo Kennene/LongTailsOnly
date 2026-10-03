@@ -61,7 +61,7 @@ Na bazowym commicie `b6b6124` `uv run pytest -q` dawało **398 passed, 2 failed*
 **Konsekwencje dla tego zadania:**
 
 1. **Kryterium akceptacji nie może brzmieć „cały `pytest` zielony”.** Brzmi: „brak **nowych** błędów; liczba błędów pozostaje 2”.
-2. **Numer naszego ADR to `0014`** — najniższy wolny. Numeracja 0010–0013 jest zajęta lub skolizjowana; sięgnięcie po nią pogłębiłoby istniejący problem.
+2. **Numer naszego ADR to `0017`** — najniższy wolny **na zmergowanym `main`**. Po rebase na `origin/main` numeracja gospodarza jest ciągła `0001–0016` (kolizje 0010/0011 zostały u nich uporządkowane, a `0014` należy do Osoby 4), więc `0017` jest pierwszą wolną liczbą.
 3. **Nie naprawiamy kolizji ADR-ów w tym zadaniu.** To osobna zmiana dotycząca cudzych dokumentów i indeksu; dopisanie jej tutaj rozdmuchałoby zakres (YAGNI, `CODING_STANDARDS.md` §1.5). Odnotowujemy i zostawiamy.
 
 ---
@@ -333,7 +333,7 @@ Dzięki temu rejestr frontendu i dane, na których pracuje backend, mają **jedn
 - `tests/ports/test_service_registry.py`: rejestracja i odczyt; sortowanie po `id`; duplikat `id` podnosi `ValueError`; `all_services()` zwraca `github` i `demo-tracker`.
 - `tests/api/test_services.py`: `GET /api/v1/services` → 200 i `list[ServiceRead]`; zawiera `github` z `kind == "vcs"` i `capabilities` równym sześciu identyfikatorom tras; zawiera `demo-tracker` z `is_available is False`; odpowiedź jest deterministyczna między wywołaniami.
 - `tests/schemas/test_contract_is_fresh.py` — **musi przejść** po regeneracji; to on pilnuje, że `schema.json` i `types/api.ts` nadążają. Jest to jedyny test, który realnie wyłapie pominięcie regeneracji, więc uruchamiamy go jawnie, a nie tylko w całości suite.
-- `tests/repo/test_docs_integrity.py` — **dwa wcześniejsze błędy pozostają** (§2.1). Sprawdzamy, że nasza zmiana nie dodaje trzeciego: nowy ADR dostaje numer `0014` i **musi** zostać dopisany do `docs/adr/README.md`, inaczej `test_every_adr_file_is_listed_in_index` zgłosi nowy błąd i liczba failed wzrośnie do 3.
+- `tests/repo/test_docs_integrity.py` — po rebase na `origin/main` kolizje numerów ADR-ów **zniknęły u gospodarza**, więc ten test może być zielony; sprawdzamy nazwy, nie liczbę. Nowy ADR dostaje numer `0017` i **musi** zostać dopisany do `docs/adr/README.md`, inaczej `test_every_adr_file_is_listed_in_index` wskaże brakujący plik.
 - `tests/adapters/`: `get_vcs_provider` bez argumentu zwraca adapter GitHuba (zgodność wsteczna); nieznany `service_id` → 404.
 
 ### 7.6 MSW i infrastruktura testów
@@ -352,7 +352,7 @@ Dzięki temu rejestr frontendu i dane, na których pracuje backend, mają **jedn
 5. Wybór usługi przeżywa odświeżenie strony (`localStorage`).
 6. Adresy tras pozostają niezmienione (`/leases`, nie `/github/leases`).
 7. Bramki: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test -- --run`, `npm run build` — zielone. Backend: `UV_CACHE_DIR=<repo>/.uv-cache uv run pytest -q` → **417 + N passed, dokładnie 3 failed**, i to **te same trzy nazwane błędy wcześniejsze** z §2.1. Kryterium jest nazwane, nie liczbowe: **żaden nowy failing test**. Liczby bezwzględne starzeją się razem z gałęzią gospodarza — dwa razy w tym zadaniu okazały się nieaktualne, więc porównujemy zbiór nazw, nie samą liczbę. `tests/schemas/test_contract_is_fresh.py` przechodzi.
-8. Dokumentacja spójna: ADR 0014, `AGENTS.md`/`SKILLS.md` bez zmian, `frontend/DESIGN.md` z nową sekcją o kontrolce chrome (patrz §9).
+8. Dokumentacja spójna: ADR 0017, `AGENTS.md`/`SKILLS.md` bez zmian, `frontend/DESIGN.md` z nową sekcją o kontrolce chrome (patrz §9).
 
 ---
 
@@ -360,7 +360,7 @@ Dzięki temu rejestr frontendu i dane, na których pracuje backend, mają **jedn
 
 | Plik | Zmiana |
 | --- | --- |
-| `docs/adr/0014-wybor-uslugi-i-rejestr-dostawcow.md` **(nowy)** | Decyzja: płaskie trasy + gating przez rejestr usług, `localStorage` zamiast parametru trasy, rejestr backendu jako jawna lista, natywny `<select>`; alternatywy odrzucone (segment w ścieżce, discovery przez `entry_points`, Radix `Select`). **Numer 0014 — najniższy wolny** (§2.1) |
+| `docs/adr/0017-wybor-uslugi-i-rejestr-dostawcow.md` **(nowy)** | Decyzja: płaskie trasy + gating przez rejestr usług, `localStorage` zamiast parametru trasy, rejestr backendu jako jawna lista, natywny `<select>`; alternatywy odrzucone (segment w ścieżce, discovery przez `entry_points`, Radix `Select`). **Numer 0017 — najniższy wolny po rebase** (§2.1) |
 | `frontend/DESIGN.md` | Nowa sekcja o kontrolce chrome: dopuszczalny rozmiar (`h-8`, `text-xs`), użycie `--primary` tylko dla zaznaczenia, zakaz drugiego przycisku `default` |
 | `README.md` | Sekcja „Stan prac” + opis endpointu `GET /api/v1/services` |
 | `frontend/README.md` | Nowy moduł `src/services/` i konwencja `localStorage` |

@@ -1,4 +1,4 @@
-# ADR 0014: Wybór usługi (Service Picker) i rejestr dostawców
+# ADR 0017: Wybór usługi (Service Picker) i rejestr dostawców
 
 **Status:** Proponowany (do akceptacji zespołu) · **Autor:** Kubuś (Osoba 5) · **Data:** 2026-10-03
 **Doprecyzowuje:** ADR 0001 (architektura pluginowa), ADR 0009 (kontrakt), spec `2026-10-03-service-picker-design.md`

@@ -821,7 +821,7 @@ git commit -m "refactor(frontend): namespace query cache per service"
 ### Task 9: Documentation
 
 **Files:**
-- Create: `docs/adr/0014-wybor-uslugi-i-rejestr-dostawcow.md`
+- Create: `docs/adr/0017-wybor-uslugi-i-rejestr-dostawcow.md` (originally written as 0014; renumbered after the rebase — see below)
 - Modify: `docs/adr/README.md`
 - Modify: `frontend/DESIGN.md`
 - Modify: `README.md`
@@ -831,13 +831,13 @@ git commit -m "refactor(frontend): namespace query cache per service"
 - Consumes: everything above.
 - Produces: documentation consistent with the shipped code (`AGENTS.md`: "Kod i dokumentacja muszą być spójne").
 
-- [ ] **Step 1: Write ADR 0014**
+- [ ] **Step 1: Write ADR 0017**
 
-Follow the structure of the neighbouring ADRs. Record: flat routes with per-service gating; `localStorage` persistence instead of a route segment or query parameter; the backend registry as a deliberate in-code list rather than `entry_points` discovery; the native `<select>` decision. Record the rejected alternatives and why: a `/github/leases` route segment (breaks existing demo URLs and 20 test files), `entry_points` discovery (abstraction above the current reality), and Radix `Select` (already rejected three times in-repo for jsdom/testability reasons). **Number 0014 — the lowest free number**; 0010 and 0011 are already collided (spec §2.1) and must not be reused.
+Follow the structure of the neighbouring ADRs. Record: flat routes with per-service gating; `localStorage` persistence instead of a route segment or query parameter; the backend registry as a deliberate in-code list rather than `entry_points` discovery; the native `<select>` decision. Record the rejected alternatives and why: a `/github/leases` route segment (breaks existing demo URLs and 20 test files), `entry_points` discovery (abstraction above the current reality), and Radix `Select` (already rejected three times in-repo for jsdom/testability reasons). **Number 0017 — the lowest free number after the rebase onto `origin/main`**, which owns 0001–0016 continuously (its 0014 belongs to Osoba 4). The 0010/0011 collisions this plan originally worked around were resolved on the host branch.
 
 - [ ] **Step 2: Register the ADR in the index**
 
-Append the `0014` row to the table in `docs/adr/README.md`. Verify the link target matches the filename exactly.
+Append the `0017` row to the table in `docs/adr/README.md`. Verify the link target matches the filename exactly.
 
 - [ ] **Step 3: Verify the ADR index tests did not regress**
 
@@ -852,7 +852,7 @@ Expected: **exactly 2 failed** — the same two pre-existing collisions, and `te
 
 `frontend/README.md`: document the new `src/services/` module and the `lease-governor.service` `localStorage` key.
 
-**Four things ADR 0014 must state explicitly rather than leave implied:**
+**Four things ADR 0017 must state explicitly rather than leave implied:**
 
 0. **The pending-window trade-off, with its cost named (Ruling 31).** Service-scoped readers are gated on `!isPending && activeService.id !== ''`, so on a cold start with a stored choice the first fetch **waits for the catalog**. `main.tsx` sets no query timeout, so a **hung** (not failed) catalog leaves those views on skeletons, where the brief's literal key-swap would have shown data. Record why that is the right trade: the catalog may still degrade the id, and fetching under an id that is about to be invalidated is exactly the wasted-request flash the gate removes. Also record the boundary the gate does *not* cover — a registry-restored id during pendency does not fetch.
 
@@ -863,7 +863,7 @@ Expected: **exactly 2 failed** — the same two pre-existing collisions, and `te
 
 ```bash
 git add docs/adr/ frontend/DESIGN.md README.md frontend/README.md
-git commit -m "docs: ADR 0014 for the service picker and provider registry"
+git commit -m "docs: ADR 0017 for the service picker and provider registry"
 ```
 
 ---
