@@ -1,5 +1,6 @@
 import type { AuditGroup } from '@/components/audit/auditGroups';
 import { ExpandToggle } from '@/components/common/ExpandToggle';
+import { CELL_CENTER, ColumnCaption } from '@/components/common/TableCells';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { formatDateTimePl } from '@/lib/dateTime';
 import { formatCountPl } from '@/lib/grouping';
@@ -37,9 +38,6 @@ export function AuditGroupRows({
   return (
     <>
       <TableRow className="cursor-pointer" onClick={onToggle}>
-        <TableCell className="font-mono whitespace-nowrap">
-          {formatDateTimePl(group.latestAt)}
-        </TableCell>
         <TableCell className="whitespace-nowrap">
           {/* Typ i tożsamość w jednej linii — stos dwóch `div`-ów rozdymał wiersz. */}
           <ExpandToggle
@@ -51,11 +49,18 @@ export function AuditGroupRows({
           {group.actorType}{' '}
           <span className="font-mono text-xs text-muted-foreground">{group.identity}</span>
         </TableCell>
-        <TableCell className="text-muted-foreground">
+        <TableCell className={cn(CELL_CENTER, 'font-mono whitespace-nowrap')}>
+          {formatDateTimePl(group.latestAt)}
+        </TableCell>
+        <TableCell className={cn(CELL_CENTER, 'text-muted-foreground')}>
           {formatCountPl(group.entries.length, { one: 'wpis', few: 'wpisy', many: 'wpisów' })}
         </TableCell>
-        <TableCell />
-        <TableCell />
+        <TableCell className={CELL_CENTER}>
+          {expanded ? <ColumnCaption>Cel</ColumnCaption> : null}
+        </TableCell>
+        <TableCell className={CELL_CENTER}>
+          {expanded ? <ColumnCaption>Uzasadnienie</ColumnCaption> : null}
+        </TableCell>
       </TableRow>
       {expanded
         ? group.entries.map((entry: AuditEntry): React.JSX.Element => (
@@ -72,20 +77,24 @@ function EntryRow({ entry }: { entry: AuditEntry }): React.JSX.Element {
 
   return (
     <TableRow className="bg-muted/20">
-      <TableCell className="font-mono whitespace-nowrap">
+      <TableCell />
+      <TableCell className={cn(CELL_CENTER, 'font-mono whitespace-nowrap')}>
         {formatDateTimePl(entry.timestamp)}
       </TableCell>
-      <TableCell />
-      <TableCell className={cn(COLUMN_WIDTH.action, 'break-words whitespace-normal')}>
+      <TableCell className={cn(COLUMN_WIDTH.action, CELL_CENTER, 'break-words whitespace-normal')}>
         <div className="font-mono">{entry.action}</div>
         {detailsPreview.length === 0 ? null : (
           <div className="text-xs break-words text-muted-foreground">{detailsPreview}</div>
         )}
       </TableCell>
-      <TableCell className={cn(COLUMN_WIDTH.target, 'font-mono break-words whitespace-normal')}>
+      <TableCell
+        className={cn(COLUMN_WIDTH.target, CELL_CENTER, 'font-mono break-words whitespace-normal')}
+      >
         {entry.target}
       </TableCell>
-      <TableCell className={cn(COLUMN_WIDTH.justification, 'break-words whitespace-normal')}>
+      <TableCell
+        className={cn(COLUMN_WIDTH.justification, CELL_CENTER, 'break-words whitespace-normal')}
+      >
         {entry.justification === null ? (
           '—'
         ) : (

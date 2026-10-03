@@ -170,7 +170,15 @@ export default [
       ...testingLibrary.configs['flat/react'].rules,
       'vitest/expect-expect': [
         'error',
-        { assertFunctionNames: ['expect', 'expectIconAndLabel', 'expectBadgeIcon'] },
+        {
+          assertFunctionNames: [
+            'expect',
+            'expectIconAndLabel',
+            'expectBadgeIcon',
+            'expectAlignment',
+            'expectRoleBadge',
+          ],
+        },
       ],
     },
   },

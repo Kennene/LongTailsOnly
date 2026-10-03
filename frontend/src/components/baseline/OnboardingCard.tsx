@@ -1,19 +1,13 @@
 import { toast } from 'sonner';
 
+import { CELL_CENTER, HeadCell } from '@/components/common/TableCells';
+import { RoleBadge } from '@/components/leases/RoleBadge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import { useApplyOnboarding } from '@/hooks/useApplyOnboarding';
-import { getRoleLabel } from '@/lib/statusBadges';
 import type { BaselineEntry, OnboardingProposal } from '@/types/api';
 
 export interface OnboardingCardProps {
@@ -41,8 +35,8 @@ function EntriesTable({ label, entries, empty_message }: EntriesTableProps): Rea
         <Table aria-label={label}>
           <TableHeader>
             <TableRow>
-              <TableHead>Repozytorium</TableHead>
-              <TableHead>Rola</TableHead>
+              <HeadCell leading>Repozytorium</HeadCell>
+              <HeadCell>Rola</HeadCell>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -51,7 +45,9 @@ function EntriesTable({ label, entries, empty_message }: EntriesTableProps): Rea
                 <TableCell className="font-mono">
                   {entry.repository.owner}/{entry.repository.name}
                 </TableCell>
-                <TableCell>{getRoleLabel(entry.proposed_role)}</TableCell>
+                <TableCell className={CELL_CENTER}>
+                  <RoleBadge role={entry.proposed_role} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

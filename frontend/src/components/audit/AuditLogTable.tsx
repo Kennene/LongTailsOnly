@@ -1,11 +1,10 @@
-import type { ReactNode } from 'react';
-
 import { AuditGroupRows } from '@/components/audit/AuditGroupRows';
 import type { AuditGroup } from '@/components/audit/auditGroups';
 import { groupAuditByActor } from '@/components/audit/auditGroups';
 import { ExpandAllButton } from '@/components/common/ExpandToggle';
+import { HeadCell } from '@/components/common/TableCells';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableHeader, TableRow } from '@/components/ui/table';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import type { AuditEntry } from '@/types/api';
 
@@ -16,7 +15,7 @@ export interface AuditLogTableProps {
 const SKELETON_ROWS: number[] = [0, 1, 2, 3];
 
 /**
- * Dziennik zdarzeń (spec §7.7): czas, aktor, akcja, cel i uzasadnienie — pogrupowany po aktorze.
+ * Dziennik zdarzeń (spec §7.7): aktor, czas, akcja, cel i uzasadnienie — pogrupowany po aktorze.
  * Każdy aktor (login, a SYSTEM jako całość) to jeden wiersz z liczbą wpisów i czasem ostatniego;
  * jego zdarzenia rozwijają się pod nim. Aktorzy idą od najświeższej aktywności.
  */
@@ -36,11 +35,12 @@ export function AuditLogTable({ entries }: AuditLogTableProps): React.JSX.Elemen
       <Table>
         <TableHeader>
           <TableRow>
+            <HeadCell leading>Aktor</HeadCell>
             <HeadCell>Czas</HeadCell>
-            <HeadCell>Aktor</HeadCell>
             <HeadCell>Akcja</HeadCell>
-            <HeadCell>Cel</HeadCell>
-            <HeadCell>Uzasadnienie</HeadCell>
+            {/* „Cel” i „Uzasadnienie” opisują pojedynczy wpis, nie aktora — jak „Poziom” w Dostępach. */}
+            <HeadCell srOnly>Cel</HeadCell>
+            <HeadCell srOnly>Uzasadnienie</HeadCell>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -69,12 +69,4 @@ export function AuditLogTableSkeleton(): React.JSX.Element {
       ))}
     </div>
   );
-}
-
-interface HeadCellProps {
-  children: ReactNode;
-}
-
-function HeadCell({ children }: HeadCellProps): React.JSX.Element {
-  return <TableHead className="text-muted-foreground">{children}</TableHead>;
 }

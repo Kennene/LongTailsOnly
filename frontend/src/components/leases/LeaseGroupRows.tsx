@@ -1,4 +1,5 @@
 import { ExpandToggle } from '@/components/common/ExpandToggle';
+import { CELL_CENTER, ColumnCaption } from '@/components/common/TableCells';
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import {
   countPendingRecommendations,
@@ -21,9 +22,6 @@ import { formatDateTimeShortPl, formatDaysRemaining } from '@/lib/dateTime';
 import { initialsFrom } from '@/lib/userInitials';
 import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
-
-/** Komórki tabeli dostępów są wyśrodkowane jak nagłówki (`LeaseTable`); tylko „Użytkownik” trzyma lewą. */
-const CENTER = 'text-center';
 
 export interface LeaseGroupRowsProps {
   group: LeaseGroup;
@@ -88,47 +86,35 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
           <UserAvatar initials={initialsFrom(group.user)} login={group.user.login} />
         </div>
       </TableCell>
-      <TableCell className={cn(COLUMN_WIDTH.team, SECONDARY_COLUMN, CENTER)}>
+      <TableCell className={cn(COLUMN_WIDTH.team, SECONDARY_COLUMN, CELL_CENTER)}>
         {group.user.team === null ? '—' : <TeamChip label={group.user.team.name} />}
       </TableCell>
-      <TableCell className={cn(COLUMN_WIDTH.repository, CENTER, 'text-muted-foreground')}>
+      <TableCell className={cn(COLUMN_WIDTH.repository, CELL_CENTER, 'text-muted-foreground')}>
         {formatRepositoryCount(group.leases.length)}
       </TableCell>
-      <TableCell className={cn(SECONDARY_COLUMN, CENTER)}>
-        {expanded ? <ColumnLabel>Poziom</ColumnLabel> : null}
+      <TableCell className={cn(SECONDARY_COLUMN, CELL_CENTER)}>
+        {expanded ? <ColumnCaption>Poziom</ColumnCaption> : null}
       </TableCell>
-      <TableCell className={cn(CENTER, 'font-mono')}>
+      <TableCell className={cn(CELL_CENTER, 'font-mono')}>
         {lastActivity === null ? '—' : formatDateTimeShortPl(lastActivity)}
       </TableCell>
-      <TableCell className={CENTER}>
+      <TableCell className={CELL_CENTER}>
         {formatDaysRemaining(group.mostUrgent.days_remaining)}
       </TableCell>
       {/* Status należy do dostępu, nie do osoby — pokazują go dopiero wiersze repozytoriów,
           a wiersz osoby po rozwinięciu podpisuje tylko kolumnę nad nimi. */}
-      <TableCell className={CENTER}>
-        {expanded ? <ColumnLabel>Status</ColumnLabel> : null}
+      <TableCell className={CELL_CENTER}>
+        {expanded ? <ColumnCaption>Status</ColumnCaption> : null}
       </TableCell>
-      <TableCell className={cn(CENTER, 'text-muted-foreground')}>
+      <TableCell className={cn(CELL_CENTER, 'text-muted-foreground')}>
         {pending === 0 ? '—' : `${pending} do decyzji`}
       </TableCell>
       {withActions ? (
         <TableCell className={ACTION_COLUMN}>
-          {expanded ? <ColumnLabel>Akcje</ColumnLabel> : null}
+          {expanded ? <ColumnCaption>Akcje</ColumnCaption> : null}
         </TableCell>
       ) : null}
     </TableRow>
-  );
-}
-
-/**
- * Podpis kolumny w wierszu osoby — widoczny zamiennik nagłówka „Poziom”/„Status”/„Akcje”, który
- * w `<thead>` jest tylko dla czytników ekranu. Ten sam krój co nagłówki tabeli (`HeadCell`). `aria-hidden`, żeby czytnik nie czytał go drugi raz.
- */
-function ColumnLabel({ children }: { children: string }): React.JSX.Element {
-  return (
-    <span aria-hidden="true" className="font-medium text-muted-foreground">
-      {children}
-    </span>
   );
 }
 
@@ -142,21 +128,21 @@ function LeaseRow({ lease, onDecide }: LeaseRowProps): React.JSX.Element {
   return (
     <TableRow className="group bg-muted/20" data-lease-id={lease.id}>
       <TableCell className={COLUMN_WIDTH.user} />
-      <TableCell className={cn(COLUMN_WIDTH.team, SECONDARY_COLUMN, CENTER)} />
-      <TableCell className={cn(COLUMN_WIDTH.repository, CENTER, 'font-mono')}>
+      <TableCell className={cn(COLUMN_WIDTH.team, SECONDARY_COLUMN, CELL_CENTER)} />
+      <TableCell className={cn(COLUMN_WIDTH.repository, CELL_CENTER, 'font-mono')}>
         <span className="block truncate">{`${lease.repository.owner}/${lease.repository.name}`}</span>
       </TableCell>
-      <TableCell className={cn(SECONDARY_COLUMN, CENTER)}>
+      <TableCell className={cn(SECONDARY_COLUMN, CELL_CENTER)}>
         <RoleBadge role={lease.current_role} />
       </TableCell>
-      <TableCell className={cn(CENTER, 'font-mono')}>
+      <TableCell className={cn(CELL_CENTER, 'font-mono')}>
         {lease.last_activity_at === null ? '—' : formatDateTimeShortPl(lease.last_activity_at)}
       </TableCell>
-      <TableCell className={CENTER}>{formatDaysRemaining(lease.days_remaining)}</TableCell>
-      <TableCell className={CENTER}>
+      <TableCell className={CELL_CENTER}>{formatDaysRemaining(lease.days_remaining)}</TableCell>
+      <TableCell className={CELL_CENTER}>
         <LeaseStatusBadge status={lease.status} />
       </TableCell>
-      <TableCell className={CENTER}>
+      <TableCell className={CELL_CENTER}>
         <RecommendationBadge recommendation={lease.recommendation} />
       </TableCell>
       {/* `py-1` zamiast `p-2`: przycisk `sm` ma 28 px i przy `p-2` rozdymał wiersz do 45 px.
