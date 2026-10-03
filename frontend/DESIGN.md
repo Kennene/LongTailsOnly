@@ -133,7 +133,8 @@ Układ liczy deterministycznie `computeForceLayout` (d3-force, stałe ziarno, 30
 - Fokus zawsze widoczny (`focus-visible:ring-3 ring-ring/50`), nigdy `outline: none` bez zamiennika; kolejność tabulacji zgodna z kolejnością czytania.
 - Stan niesie etykieta i kształt, kolor tylko wzmacnia. Kropka sygnału jest `aria-hidden`.
 - Ikony wyłącznie z `lucide-react`, jeden zestaw i jedna grubość kreski; żadnych emoji ani glifów Unicode w roli ikony.
-- Powierzchnie przeglądarki należą do systemu: `color-scheme` per motyw (natywne scrollbary i kontrolki), `::selection` z `--primary`, `caret-color: var(--primary)`, `scrollbar-color` w tonie `--foreground`.
+- Powierzchnie przeglądarki należą do systemu: `color-scheme` per motyw (natywne scrollbary), `::selection` z `--primary`, `caret-color: var(--primary)`, `scrollbar-color` w tonie `--foreground`.
+- `color-scheme` **nie wystarcza** dla listy opcji natywnego `<select>`: przeglądarka maluje ją poza CSS strony, a gdy select ma własne `background`/`color` (nasze mają `bg-transparent`), popup sięga po jasny motyw systemowy i jasny tekst opcji staje się nieczytelny. Dlatego `select option` dostaje w `index.css` jawnie `--popover` i `--popover-foreground`.
 - Dialogi: `Dialog` z Radixa (pułapka fokusu, `Esc`, `aria-labelledby`), nie własne nakładki.
 
 ## 7. Zasady — krótko
