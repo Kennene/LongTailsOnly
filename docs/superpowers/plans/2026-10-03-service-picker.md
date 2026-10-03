@@ -22,7 +22,7 @@
 - **Routes stay flat.** Never introduce `/github/leases`; gate the existing paths instead.
 - **`--primary` means selection/primary action/focus only** (`frontend/DESIGN.md:52`); never use it for status.
 - **Backend commands must run with `UV_CACHE_DIR=<repo>/.uv-cache`** — `uv` cannot reach `~/.cache/uv` in the sandbox and fails with `Failed to initialize cache`.
-- **Baseline before this work: frontend 183 tests / 20 files passing; backend 398 passed, 2 failed.** The 2 failures are pre-existing ADR-integrity collisions (spec §2.1) and must stay at exactly 2.
+- **Baseline is measured on the current tree, not copied from this plan.** On the spec's original base `b6b6124` the backend was 398 passed / 2 failed; after the rebase onto `frontend-integration` it is **417 passed / 3 failed** (the two ADR collisions plus one lease-fixture status assertion, all pre-existing — spec §2.1). **The acceptance test is named, not numeric: no NEW failing test.** Absolute counts in this plan have gone stale twice; compare the set of failing test names instead.
 
 ## Review Focus
 
@@ -842,7 +842,7 @@ Append the `0014` row to the table in `docs/adr/README.md`. Verify the link targ
 - [ ] **Step 3: Verify the ADR index tests did not regress**
 
 Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest tests/repo/test_docs_integrity.py -q`
-Expected: **exactly 2 failed** — the same two pre-existing collisions. If the count is 3, the new ADR is not indexed correctly in Step 2.
+Expected: **exactly 2 failed** — the same two pre-existing collisions, and `test_every_adr_file_is_listed_in_index` must still name the **same two unlisted files** (`0010-frontend-navigation-and-data-layer.md`, `0011-person-4-baseline-appeals-audit-insights.md`). **Check the names, not the count:** if the unlisted list gains your new ADR file, Step 2's index row is wrong even when the count looks right. (The repo-wide backend count is 3 failed, not 2 — the third is the unrelated lease-fixture status failure; see the Global Constraints note.)
 
 - [ ] **Step 4: Document the control in DESIGN.md and the module in both READMEs**
 
@@ -880,7 +880,7 @@ Expected: all four exit 0. The suite must be at **183 + the new tests**, 0 failu
 - [ ] **Step 2: Run the backend gate**
 
 Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest -q`
-Expected: **exactly 2 failed** (the pre-existing ADR collisions), with the passed count grown from 398. Any third failure is a regression from this branch.
+Expected: **417 + N passed, exactly 3 failed**, and the three must be the **named** pre-existing failures from spec §2.1: `test_fixtures_match_contract.py::test_lease_fixtures_cover_all_statuses_roles_and_recommendations`, `test_docs_integrity.py::test_every_adr_file_is_listed_in_index`, `test_docs_integrity.py::test_adr_numbers_are_unique`. **Any other failing name is a regression from this branch.** Do not compare raw counts: the host branch moves them (this plan's "398/2" was already stale when Task 10 ran).
 
 - [ ] **Step 3: Confirm the contract guard and the registration invariant**
 
