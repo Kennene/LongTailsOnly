@@ -676,10 +676,13 @@ it('navigates to the default view when the current one is unsupported', async ()
   expect(await screen.findByTestId('dashboard-marker')).toBeInTheDocument();
 });
 
-it('degrades visibly when the catalog request fails', async () => {
+it('degrades visibly when the catalog request fails, without trapping the user', async () => {
   server.use(http.get('/api/v1/services', () => new HttpResponse(null, { status: 500 })));
   renderWithProviders(<ServicePicker />);
   expect(await screen.findByRole('alert')).toHaveTextContent(/usług/i);
+  // Ruling 21: the selector must survive the failure — a user stuck on a stale stored
+  // service has to be able to switch away while the backend is down.
+  expect(screen.getByLabelText('Usługa')).toBeInTheDocument();
 });
 ```
 
@@ -696,7 +699,11 @@ Expected: FAIL — `ServicePicker` does not exist.
 
 Move the duplicated string from `AppealForm.tsx:21-22`, `GraphFilters.tsx:21-22` and `AuditFilters.tsx:25-26` into `frontend/src/lib/selectClasses.ts` as one exported constant and import it in all four places, keeping each existing comment about why a native `<select>` was chosen.
 
-`ServicePicker.tsx` renders: an `sr-only` `<Label htmlFor="service-picker">Usługa</Label>`; a `<span>` holding the active service's icon at `size-4` with `text-muted-foreground`; and a native `<select id="service-picker">` using `SELECT_CLASSES` plus `h-8`, rendering catalog entries as options with the `(niedostępna)` suffix when `is_available` is false. A stored value missing from the catalog appears as an own option `(nieznana)`. On error, render a destructive `Alert` with Polish copy naming the services, and keep the rest of the shell usable — never throw during render. Do not use `--primary` for the control.
+`ServicePicker.tsx` renders: an `sr-only` `<Label htmlFor="service-picker">Usługa</Label>`; a `<span>` holding the active service's icon at `size-4` with `text-muted-foreground`; and a native `<select id="service-picker">` using `SELECT_CLASSES` plus `h-8`, rendering catalog entries as options with the `(niedostępna)` suffix when `is_available` is false. A stored value missing from the catalog appears as an own option `(nieznana)`. Do not use `--primary` for the control.
+
+**Error behaviour — settled, do not re-litigate (Ruling 21):** when the catalog request fails, **keep rendering the selector and show a destructive `Alert` alongside it** — never replace the selector with the alert. Reason: the selector can still render the frontend registry's known services, so a user stuck on a stale stored service must be able to switch away while the backend is down; replacing the selector with an alert leaves them trapped. This is also why `setActiveService` accepts a selection while the catalog is unknown-but-failed as well as while it is pending — a dead click on a visible option is the worse failure. Never throw during render.
+
+**Pending behaviour:** while the catalog is pending, render the selector from the frontend registry rather than a spinner (`DESIGN.md:98` forbids a spinner in content). Set `aria-busy` while pending. Note `activeService.id` is `''` for the whole pending window, so **do not key anything off it** — key off `isPending`.
 
 - [ ] **Step 5: Wire TopBar, Sidebar and App**
 
