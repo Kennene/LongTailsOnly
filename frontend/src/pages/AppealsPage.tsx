@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { AppealForm } from '@/components/appeals/AppealForm';
+import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { DecisionModal } from '@/components/leases/DecisionModal';
+import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,7 +23,7 @@ import { useSubmitAppeal } from '@/hooks/useSubmitAppeal';
 import { type ApiErrorDescription, describeApiError, describeEngineError } from '@/lib/apiErrors';
 import { isAppealable } from '@/lib/appealable';
 import { formatDateTimePl, formatDaysRemaining } from '@/lib/dateTime';
-import { getAppealStatusBadge, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
+import { getRoleLabel } from '@/lib/statusBadges';
 import type { AppealOverview, LeaseOverview } from '@/types/api';
 
 const APPEALS_LIST_HEADING_ID = 'appeals-submitted-heading';
@@ -48,23 +49,17 @@ function LeaseCandidatesTable({ leases }: LeaseCandidatesTableProps): React.JSX.
         </TableRow>
       </TableHeader>
       <TableBody>
-        {leases.map((lease: LeaseOverview): React.JSX.Element => {
-          const badge = getStatusBadge(lease.status);
-
-          return (
-            <TableRow key={lease.id}>
-              <TableCell className="font-medium">{lease.user.name}</TableCell>
-              <TableCell className="font-mono text-xs">{lease.repository.name}</TableCell>
-              <TableCell>{getRoleLabel(lease.current_role)}</TableCell>
-              <TableCell>{formatDaysRemaining(lease.days_remaining)}</TableCell>
-              <TableCell>
-                <Badge className={badge.className} variant="outline">
-                  {badge.label}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          );
-        })}
+        {leases.map((lease: LeaseOverview): React.JSX.Element => (
+          <TableRow key={lease.id}>
+            <TableCell className="font-medium">{lease.user.name}</TableCell>
+            <TableCell className="font-mono text-xs">{lease.repository.name}</TableCell>
+            <TableCell>{getRoleLabel(lease.current_role)}</TableCell>
+            <TableCell>{formatDaysRemaining(lease.days_remaining)}</TableCell>
+            <TableCell>
+              <LeaseStatusBadge status={lease.status} />
+            </TableCell>
+          </TableRow>
+        ))}
       </TableBody>
     </Table>
   );
@@ -82,7 +77,6 @@ interface AppealListItemProps {
  * ma zapasową kreskę w `formatDaysRemaining`.
  */
 function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.Element {
-  const badge = getAppealStatusBadge(appeal.status);
   const days: string = appeal.lease_is_active
     ? formatDaysRemaining(appeal.days_remaining)
     : 'Dostęp nieaktywny';
@@ -90,10 +84,7 @@ function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.E
   return (
     <li className="flex flex-col gap-2 border-b border-border py-3 last:border-b-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Badge className={badge.className} variant="outline">
-          <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-          {badge.label}
-        </Badge>
+        <AppealStatusBadge status={appeal.status} />
         <span className="text-sm font-medium">{appeal.user.name}</span>
         <span className="font-mono text-xs text-muted-foreground">{appeal.repository.name}</span>
         <span className="text-xs text-muted-foreground">{`Wniosek: ${getRoleLabel(

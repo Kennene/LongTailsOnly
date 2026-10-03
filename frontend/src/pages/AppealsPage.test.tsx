@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { appealsFixture, leasesFixture } from '@/api/fixtures';
 import { fetchLeases } from '@/api/leases';
+import { getAppealStatusBadge, getStatusBadge } from '@/lib/statusBadges';
 import { AppealsPage } from '@/pages/AppealsPage';
 import {
   getLastAppealDecision,
@@ -72,6 +73,18 @@ beforeEach(() => {
  */
 function renderAppealsPage(): void {
   renderWithProviders(<AppealsPage />);
+}
+
+/**
+ * Ikona w pigułce jest `aria-hidden`, więc drzewo dostępności jej nie zawiera (`getByRole('img')`
+ * nie ma tu czego znaleźć) — stąd zejście do `svg` w DOM, wzorem `badgeIcons.test.tsx`.
+ */
+function expectBadgeIcon(badge: HTMLElement, slug: string): void {
+  // eslint-disable-next-line testing-library/no-node-access -- patrz wyżej
+  const icon: SVGElement | undefined = badge.getElementsByTagName('svg')[0];
+
+  expect(icon).toHaveAttribute('aria-hidden', 'true');
+  expect(icon?.getAttribute('class')).toContain(`lucide-${slug}`);
 }
 
 /** Wybiera pierwszego kandydata z listy i zwraca jego dostęp (do asercji na wierszu). */
@@ -302,5 +315,19 @@ describe('AppealsPage', () => {
 
     expect(await screen.findByText(EMPTY_STATE)).toBeInTheDocument();
     expect(screen.queryByLabelText('Dostęp')).not.toBeInTheDocument();
+  });
+
+  it('niesie ikonę w każdej pigułce statusu, tak jak lista Dostępów', async () => {
+    const [candidate] = appealCandidates();
+    const candidateBadge = getStatusBadge(candidate.status);
+    renderAppealsPage();
+
+    // Ten sam status powtarza się w kilku wierszach, więc bierzemy pierwszy z nich.
+    const [candidateLabel] = await screen.findAllByText(candidateBadge.label);
+    expectBadgeIcon(candidateLabel, candidateBadge.slug);
+
+    const submitted = await screen.findByRole('list', { name: SUBMITTED_LIST });
+    const appealBadge = getAppealStatusBadge(PENDING_APPEAL.status);
+    expectBadgeIcon(within(submitted).getAllByText(appealBadge.label)[0], appealBadge.slug);
   });
 });
