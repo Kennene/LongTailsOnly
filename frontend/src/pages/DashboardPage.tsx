@@ -1,4 +1,5 @@
 import { KpiCard } from '@/components/dashboard/KpiCard';
+import { WarningWindowList } from '@/components/dashboard/WarningWindowList';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -79,6 +80,8 @@ export function DashboardPage(): React.JSX.Element {
           />
         </div>
       )}
+
+      <WarningWindowList />
     </section>
   );
 }

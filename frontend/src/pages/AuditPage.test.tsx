@@ -12,8 +12,8 @@ const EMPTY_STATE = 'Brak zdarzeń w dzienniku';
 const API_ERROR = 'Dziennik audytu jest niedostępny';
 
 /**
- * Najdłuższe uzasadnienie z fixture'a — dowód, że długi tekst (i polskie znaki) zawija się
- * w komórce, a nie rozsadza tabeli (plan, „Zakres przeglądu”, punkt 5).
+ * Najdłuższe uzasadnienie z fixture'a — dowód, że długi tekst (i polskie znaki) jest w komórce
+ * przycięty do dwóch linii, a nie rozsadza tabeli (audyt: wiersz 417 px przy 1024 px).
  */
 function findLongJustification(): string {
   const entry = auditFixture.find((candidate) => (candidate.justification?.length ?? 0) > 120);
@@ -42,7 +42,30 @@ it('renders audit entries with time, actor, action, target and a details preview
 
   const longJustification: string = findLongJustification();
   expect(longJustification.length).toBeGreaterThan(120);
-  expect(table.getByText(longJustification)).toHaveClass('break-words');
+
+  // Uzasadnienie: rezerwujemy szerokość kolumny i przycinamy prozę do dwóch linii, a pełny
+  // tekst zostaje dostępny w podpowiedzi (natywny `title`, bez dokładania JS-a).
+  const justificationCell: HTMLElement = table.getByRole('cell', { name: longJustification });
+  expect(justificationCell).toHaveClass('w-96');
+
+  const justification: HTMLElement = within(justificationCell).getByText(longJustification);
+  expect(justification).toHaveClass('line-clamp-2');
+  expect(justification).toHaveAttribute('title', longJustification);
+});
+
+it('keeps the time and actor cells on a single line', async () => {
+  renderWithProviders(<AuditPage />);
+
+  expect(await screen.findByText('lease.extend')).toBeInTheDocument();
+
+  const rows: HTMLElement[] = within(screen.getByRole('table')).getAllByRole('row');
+  const cells: HTMLElement[] = within(rows[1]).getAllByRole('cell');
+  const [timeCell, actorCell] = cells;
+
+  expect(timeCell).toHaveClass('whitespace-nowrap');
+  expect(actorCell).toHaveClass('whitespace-nowrap');
+  // Typ i identyfikator aktora dzielą jedną linię — jedno zdanie, nie dwa bloki.
+  expect(actorCell).toHaveTextContent('ADMIN #1');
 });
 
 it('narrows the table to the selected actor type', async () => {

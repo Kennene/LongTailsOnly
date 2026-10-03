@@ -17,12 +17,21 @@ export interface AuditLogTableProps {
   entries: AuditLogRead[];
 }
 
-/** Szerokości kolumn tekstowych — długie uzasadnienie i `target` nie rozsadzają tabeli. */
+/**
+ * Szerokości kolumn tekstowych — długie uzasadnienie i `target` nie rozsadzają tabeli.
+ *
+ * Uzasadnienie ma **zarezerwowaną** szerokość (`w-96`), a nie tylko zdjęty sufit (`max-w-96`):
+ * przy `max-w-*` przeglądarka oddawała całe wolne miejsce pozostałym kolumnom i przy 1024 px
+ * zostawiała uzasadnieniu ~10 znaków w linii (audyt, pomiar 417 px na wiersz).
+ */
 const COLUMN_WIDTH = {
   action: 'max-w-64',
   target: 'max-w-56',
-  justification: 'max-w-96',
+  justification: 'w-96',
 } as const;
+
+/** Dwie linie prozy to sufit gęstości — pełny tekst zostaje w `title` (audyt, pomiar). */
+const JUSTIFICATION_CLAMP = 'line-clamp-2';
 
 const SKELETON_ROWS: number[] = [0, 1, 2, 3];
 
@@ -48,12 +57,15 @@ export function AuditLogTable({ entries }: AuditLogTableProps): React.JSX.Elemen
 
           return (
             <TableRow key={entry.id}>
-              <TableCell className="font-mono">{formatDateTimePl(entry.timestamp)}</TableCell>
-              <TableCell>
-                <div>{entry.actor_type}</div>
-                <div className="font-mono text-xs text-muted-foreground">
+              <TableCell className="font-mono whitespace-nowrap">
+                {formatDateTimePl(entry.timestamp)}
+              </TableCell>
+              <TableCell className="whitespace-nowrap">
+                {/* Typ i identyfikator w jednej linii — stos dwóch `div`-ów rozdymał wiersz. */}
+                {entry.actor_type}{' '}
+                <span className="font-mono text-xs text-muted-foreground">
                   {formatActorId(entry)}
-                </div>
+                </span>
               </TableCell>
               <TableCell className={cn(COLUMN_WIDTH.action, 'break-words whitespace-normal')}>
                 <div className="font-mono">{entry.action}</div>
@@ -69,7 +81,15 @@ export function AuditLogTable({ entries }: AuditLogTableProps): React.JSX.Elemen
               <TableCell
                 className={cn(COLUMN_WIDTH.justification, 'break-words whitespace-normal')}
               >
-                {entry.justification ?? '—'}
+                {entry.justification === null ? (
+                  '—'
+                ) : (
+                  // `title` daje pełny tekst bez dokładania JS-a; `line-clamp-2` trzyma wiersz
+                  // w dwóch liniach, więc tabela zachowuje gęstość 36–40 px (DESIGN.md §3).
+                  <div className={JUSTIFICATION_CLAMP} title={entry.justification}>
+                    {entry.justification}
+                  </div>
+                )}
               </TableCell>
             </TableRow>
           );

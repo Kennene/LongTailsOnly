@@ -1,12 +1,25 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { leasesFixture } from '@/api/fixtures/leases';
 import { App } from '@/App';
 import { getSimulatedNow } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import type { LeaseOverview } from '@/types/api';
 
 const ADMIN_ROW = /tomasz-admin/;
 const LAST_ADMIN_MESSAGE = 'Nie można odebrać uprawnień ostatniemu administratorowi.';
+
+/**
+ * Liczniki pulpitu liczymy z fixture'a dzierżaw — to samo źródło prawdy co `/leases`
+ * (audyt: „Aktywne 12” przy czterech wierszach tabeli).
+ */
+const ACTIVE_LEASES: number = leasesFixture.filter(
+  (lease: LeaseOverview): boolean => lease.status === 'ACTIVE',
+).length;
+const WARNING_LEASES: number = leasesFixture.filter(
+  (lease: LeaseOverview): boolean => lease.status === 'WARNING',
+).length;
 
 /**
  * Przepływ pitch flow z `PLAN.md` Faza 4 w zakresie linii cięcia (UC-2, UC-4, UC-5):
@@ -21,8 +34,11 @@ it('przeprowadza demo: podróż w czasie zmienia statusy i chroni ostatniego adm
   renderWithProviders(<App />, { route: '/' });
 
   // 1. Stan wyjściowy — liczniki z API (4.6) i zielone dzierżawy.
-  expect(await screen.findByTestId('kpi-active')).toHaveTextContent('12');
-  expect(screen.getByTestId('kpi-warning')).toHaveTextContent('1');
+  const kpiActive: HTMLElement = await screen.findByTestId('kpi-active');
+  expect(within(kpiActive).getByText(String(ACTIVE_LEASES))).toBeInTheDocument();
+  expect(
+    within(screen.getByTestId('kpi-warning')).getByText(String(WARNING_LEASES)),
+  ).toBeInTheDocument();
 
   // 2. Podróż w czasie o 25 dni (UC-4) — własna liczba dni, bo presety to +15/+30/+60.
   await user.type(screen.getByLabelText('Własna liczba dni'), '25');
