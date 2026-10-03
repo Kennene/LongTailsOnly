@@ -1,18 +1,22 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { fetchActivityStats } from '@/api/activity';
+import { useActiveService } from '@/services/ServicesContext';
 import type { LeaseActivityStats } from '@/types/api';
 
 /**
- * Statystyki użycia dostępu dla modala decyzji.
+ * Statystyki użycia dzierżawy dla modala decyzji — w kontekście aktywnej usługi.
  *
- * `enabled` blokuje żądanie, dopóki nie ma konkretnego dostępu (`lease_id > 0`) — modal
- * montuje się także bez kontekstu odwołania.
+ * `enabled` blokuje żądanie, dopóki nie ma konkretnej dzierżawy (`lease_id > 0`) — modal
+ * montuje się także bez kontekstu odwołania — oraz dopóki katalog nie jest rozstrzygnięty
+ * (patrz `useLeases`: inaczej odczyt startuje w namespace „brak usługi”).
  */
 export function useActivityStats(lease_id: number): UseQueryResult<LeaseActivityStats> {
+  const { activeService, isPending } = useActiveService();
+
   return useQuery({
-    queryKey: ['activity-stats', lease_id],
+    queryKey: ['activity-stats', activeService.id, lease_id],
     queryFn: () => fetchActivityStats(lease_id),
-    enabled: lease_id > 0,
+    enabled: lease_id > 0 && !isPending && activeService.id !== '',
   });
 }

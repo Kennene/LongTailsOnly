@@ -1,34 +1,9 @@
-<<<<<<< HEAD
-import {
-  FileCheck2,
-  FlaskConical,
-  Gavel,
-  LayoutDashboard,
-  Network,
-  ScrollText,
-  ShieldCheck,
-} from 'lucide-react';
-import { NavLink } from 'react-router-dom';
-
-import { cn } from '@/lib/utils';
-
-const NAV_ITEMS = [
-  { to: '/', label: 'Pulpit', icon: LayoutDashboard },
-  { to: '/leases', label: 'Dostępy', icon: FileCheck2 },
-  { to: '/appeals', label: 'Odwołania', icon: Gavel },
-  { to: '/baseline', label: 'Standard zespołu', icon: ShieldCheck },
-  { to: '/graph', label: 'Graf', icon: Network },
-  { to: '/audit', label: 'Audyt', icon: ScrollText },
-  { to: '/mocks', label: 'Mocki', icon: FlaskConical },
-];
-=======
 import { ShieldCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
 import { getServiceConfig, type ServiceRoute } from '@/services/serviceRegistry';
 import { useActiveService } from '@/services/ServicesContext';
->>>>>>> b41577d (feat(frontend): service picker in the top bar with per-service navigation)
 
 export function Sidebar(): React.JSX.Element {
   const { activeService } = useActiveService();
