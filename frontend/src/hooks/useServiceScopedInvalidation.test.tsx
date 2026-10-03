@@ -91,6 +91,27 @@ describe('service-scoped invalidation', () => {
     expect(invalidateQueries).not.toHaveBeenCalledWith({ queryKey: ['leases', DEMO_TRACKER] });
   });
 
+  it('derives the reject-appeal invalidation prefixes from the active service, not a literal', async () => {
+    // `demo-tracker` to dokładnie ta wartość, której użyłby zaszyty na twardo prefiks, a przypadek
+    // wyżej rozstrzyga właśnie pod nią — więc hardkod przechodził tam niezauważony. Rozstrzygamy pod
+    // `github`, żeby pin objął wszystkie trzy prefiksy odrzucenia (zadanie 10, Ruling 37).
+    const user = userEvent.setup();
+    window.localStorage.setItem(STORAGE_KEY, GITHUB);
+    const { queryClient } = renderWithProviders(<RejectAppealProbe />);
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await user.click(screen.getByRole('button', { name: REJECT_APPEAL_LABEL }));
+
+    await waitFor(() => {
+      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['appeals', GITHUB] });
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['dashboard', GITHUB] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['audit', GITHUB] });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({ queryKey: ['appeals', DEMO_TRACKER] });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({ queryKey: ['dashboard', DEMO_TRACKER] });
+    expect(invalidateQueries).not.toHaveBeenCalledWith({ queryKey: ['audit', DEMO_TRACKER] });
+  });
+
   it('derives the decision invalidation prefix from the active service, not a literal', async () => {
     // `demo-tracker` to dokładnie ta wartość, której użyłby zaszyty na twardo prefiks, więc
     // rozstrzygamy pod `github` — hardkod `'demo-tracker'` musi tu paść na każdej z pięciu osi.
