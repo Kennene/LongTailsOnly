@@ -798,7 +798,7 @@ Expected: **exactly 2 failed** — the same two pre-existing collisions. If the 
 
 `frontend/DESIGN.md`: a short section for the chrome picker — permitted size (`h-8`, `text-xs`), `--primary` reserved for selection, no second `default`-variant button, badge/icon rules already in force.
 
-`README.md`: add `GET /api/v1/services` to the API description and note the service picker in the work-status table.
+`README.md`: add `GET /api/v1/services` to the API description and note the service picker in the work-status table. **State that `capabilities` is returned in the registry's declaration order** — not sorted, and not guaranteed by the contract — so consumers must treat it as a set. Reason (finding from the Task 3 review): TypeScript sees a bare `string[]`, so a future reordering of the registry tuple would silently change the payload with every test still green.
 
 `frontend/README.md`: document the new `src/services/` module and the `lease-governor.service` `localStorage` key.
 
