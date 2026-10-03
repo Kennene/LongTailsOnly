@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { appealsFixture } from '@/api/fixtures';
 import { AppealsPage } from '@/pages/AppealsPage';
-import { getLastAppealRequest, resetAppealsMswState } from '@/test/msw/domains/appeals';
+import {
+  getLastAppealDecision,
+  getLastAppealRequest,
+  resetAppealsMswState,
+} from '@/test/msw/domains/appeals';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 const UNIQUE_JUSTIFICATION = 'Prowadzę release v2.1 w przyszłym tygodniu';
@@ -80,5 +84,19 @@ describe('AppealsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Złóż odwołanie' }));
 
     expect(await screen.findByText(DUPLICATE_MESSAGE)).toBeInTheDocument();
+  });
+
+  it('otwiera modal decyzji z odwołaniem po kliknięciu „Rozpatrz”', async () => {
+    const user = userEvent.setup();
+    renderAppealsPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Rozpatrz' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Decyzja o dzierżawie')).toBeInTheDocument();
+    // Kontekst dzierżawy pochodzi z `useLeases` po `lease_id` odwołania (AppealRead go nie niesie).
+    expect(within(dialog).getByText('Piotr Lewandowski (piotr)')).toBeInTheDocument();
+    expect(within(dialog).getByText('Uzasadnienie odwołania')).toBeInTheDocument();
+    expect(getLastAppealDecision()).toBeNull();
   });
 });

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { AppealForm } from '@/components/appeals/AppealForm';
+import { DecisionModal } from '@/components/leases/DecisionModal';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,13 +68,14 @@ function LeaseCandidatesTable({ leases }: LeaseCandidatesTableProps): React.JSX.
 interface AppealListItemProps {
   appeal: AppealRead;
   lease: LeaseOverview | undefined;
+  onResolve: (appeal: AppealRead) => void;
 }
 
 /**
  * `AppealRead` niesie tylko `user_id` i `lease_id`, więc osobę i repozytorium bierzemy
  * z listy dzierżaw; gdy dzierżawy nie ma na liście, pokazujemy identyfikatory z kontraktu.
  */
-function AppealListItem({ appeal, lease }: AppealListItemProps): React.JSX.Element {
+function AppealListItem({ appeal, lease, onResolve }: AppealListItemProps): React.JSX.Element {
   const badge = getAppealStatusBadge(appeal.status);
   const person: string = lease === undefined ? `Użytkownik #${appeal.user_id}` : lease.user.name;
   const repository: string =
@@ -94,8 +97,24 @@ function AppealListItem({ appeal, lease }: AppealListItemProps): React.JSX.Eleme
       </div>
       <p className="max-w-prose text-sm break-words">{appeal.justification}</p>
       {appeal.status === 'PENDING' ? (
-        // Seam dla zadania 11 (PR 5.8b): ten przycisk otworzy modal decyzji z historią odwołań.
-        <Button className="self-start" size="sm" type="button" variant="outline">
+        // Bez dzierżawy na liście nie ma kontekstu dla modala (nagłówek czyta z `lease`),
+        // więc przycisk zostaje wyłączony z wyjaśnieniem zamiast otwierać pusty modal.
+        <Button
+          // Etykieta dostępna tylko w stanie wyłączonym: w normalnym trybie nazwą przycisku
+          // zostaje widoczne „Rozpatrz”, żeby nie dublować treści dla czytnika ekranu.
+          aria-label={lease === undefined ? 'Rozpatrz (brak dzierżawy na liście)' : undefined}
+          className="self-start"
+          disabled={lease === undefined}
+          onClick={() => onResolve(appeal)}
+          size="sm"
+          title={
+            lease === undefined
+              ? 'Odwołanie wskazuje dzierżawę spoza listy — brak kontekstu do decyzji.'
+              : undefined
+          }
+          type="button"
+          variant="outline"
+        >
           Rozpatrz
         </Button>
       ) : null}
@@ -107,6 +126,7 @@ export function AppealsPage(): React.JSX.Element {
   const leasesQuery = useLeases();
   const appealsQuery = useAppeals();
   const submitAppeal = useSubmitAppeal();
+  const [selectedAppeal, setSelectedAppeal] = useState<AppealRead | null>(null);
 
   const leases: LeaseOverview[] = leasesQuery.data ?? [];
   const candidates: LeaseOverview[] = leases.filter(
@@ -123,6 +143,10 @@ export function AppealsPage(): React.JSX.Element {
         },
       },
     );
+  }
+
+  function findLease(lease_id: number): LeaseOverview | undefined {
+    return leases.find((lease: LeaseOverview): boolean => lease.id === lease_id);
   }
 
   return (
@@ -243,15 +267,25 @@ export function AppealsPage(): React.JSX.Element {
                 <AppealListItem
                   appeal={appeal}
                   key={appeal.id}
-                  lease={leases.find(
-                    (lease: LeaseOverview): boolean => lease.id === appeal.lease_id,
-                  )}
+                  lease={findLease(appeal.lease_id)}
+                  onResolve={setSelectedAppeal}
                 />
               ))}
             </ul>
           ) : null}
         </CardContent>
       </Card>
+
+      <DecisionModal
+        appeal={selectedAppeal}
+        lease={selectedAppeal === null ? null : (findLease(selectedAppeal.lease_id) ?? null)}
+        onOpenChange={(open: boolean): void => {
+          if (!open) {
+            setSelectedAppeal(null);
+          }
+        }}
+        open={selectedAppeal !== null}
+      />
     </section>
   );
 }

@@ -2,7 +2,7 @@ import type { HttpHandler } from 'msw';
 import { http, HttpResponse } from 'msw';
 
 import { appealsFixture } from '@/api/fixtures';
-import type { AppealCreate, AppealRead } from '@/types/api';
+import type { AppealCreate, AppealRead, DecisionRequest } from '@/types/api';
 
 import { getLeases, getSimulatedNow } from '../state';
 
@@ -17,6 +17,7 @@ import { getLeases, getSimulatedNow } from '../state';
 let appeals: AppealRead[] = cloneAppeals();
 let nextAppealId: number = appealsFixture.length + 1;
 let lastAppealRequest: { lease_id: number; justification: string } | null = null;
+let lastAppealDecision: { appeal_id: number; request: DecisionRequest } | null = null;
 
 function cloneAppeals(): AppealRead[] {
   return appealsFixture.map((appeal: AppealRead): AppealRead => ({ ...appeal }));
@@ -26,11 +27,22 @@ export function resetAppealsMswState(): void {
   appeals = cloneAppeals();
   nextAppealId = appealsFixture.length + 1;
   lastAppealRequest = null;
+  lastAppealDecision = null;
 }
 
 /** Ostatnie żądanie `POST /api/v1/appeals`, jakie dotarło do „backendu” (albo `null`). */
 export function getLastAppealRequest(): { lease_id: number; justification: string } | null {
   return lastAppealRequest;
+}
+
+/** Ostatnie żądanie `POST /api/v1/appeals/:id/decision` (albo `null`). */
+export function getLastAppealDecision(): { appeal_id: number; request: DecisionRequest } | null {
+  return lastAppealDecision;
+}
+
+/** Ciało żądania decyzji bez pól `undefined` — `toEqual` w teście porównuje dokładny kształt. */
+async function readDecisionRequest(request: Request): Promise<DecisionRequest> {
+  return JSON.parse(JSON.stringify(await request.json())) as DecisionRequest;
 }
 
 export const appealsHandlers: HttpHandler[] = [
@@ -69,5 +81,29 @@ export const appealsHandlers: HttpHandler[] = [
     appeals = [created, ...appeals];
 
     return HttpResponse.json(created, { status: 201 });
+  }),
+
+  http.post('/api/v1/appeals/:appealId/decision', async ({ params, request }) => {
+    const appealId = Number(params.appealId);
+    const body = await readDecisionRequest(request);
+    lastAppealDecision = { appeal_id: appealId, request: body };
+
+    const index = appeals.findIndex((appeal: AppealRead): boolean => appeal.id === appealId);
+    if (index === -1) {
+      return HttpResponse.json({ detail: 'Appeal not found' }, { status: 404 });
+    }
+
+    // Rozpatrzenie wniosku: wniosek przechodzi w stan rozstrzygnięty, a czas bierzemy
+    // z symulowanego zegara (frontend nigdy nie używa zegara systemowego).
+    const resolved: AppealRead = {
+      ...appeals[index],
+      status: 'APPROVED',
+      resolved_at: getSimulatedNow(),
+    };
+    appeals = appeals.map((appeal: AppealRead): AppealRead =>
+      appeal.id === appealId ? resolved : appeal,
+    );
+
+    return HttpResponse.json(resolved);
   }),
 ];
