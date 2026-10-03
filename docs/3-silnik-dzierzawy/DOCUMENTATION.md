@@ -169,6 +169,11 @@ uv run python scripts/export_contract.py
 npx --yes json-schema-to-typescript@15 -i contract/schema.json -o ../frontend/src/types/api.ts --unreachableDefinitions --additionalProperties=false --bannerComment "/* AUTO-GENERATED from backend/contract/schema.json - do not edit. Regenerate: see backend/README.md */"
 ```
 
+Testy silnika: `tests/domain/test_lease_status.py`, `test_renewal_matrix.py`, `test_recommendation.py`, `test_extension.py`,
+`tests/services/test_record_activity.py`, `test_lease_overviews.py`, `test_last_admin_guard.py`, `test_decision_downscope_revoke.py`,
+`test_enforcement_service.py`, `test_apply_decision.py`, `tests/api/test_enforcement_api.py`, `test_leases_api.py`,
+`test_leases_demo.py` (seed przez prawdziwe API: UC-2…UC-5).
+
 Na `main` przed rozpoczęciem: `295 passed, 2 failed`. Oba błędy to `tests/repo/test_docs_integrity.py` (dwa ADR-y z numerem 0011);
 nie dotyczą silnika i są zgłoszone jako osobne zadanie.
 
@@ -181,4 +186,27 @@ nie dotyczą silnika i są zgłoszone jako osobne zadanie.
 | 3.3 | Wykrywanie deeskalacji write → read | ✅ `lease_rules.recommend`, `lease_service.list_lease_overviews` / `get_lease_overview` |
 | 3.4 | Ochrona ostatniego admina | ✅ `last_admin_guard.ensure_not_last_admin`, `VCSProvider.remove_collaborator` (gałąź `guziol/ochrona-ostatniego-admina`) |
 | 3.5 | Tryby disabled / warning / auto | ✅ `enforcement_service` (`run_auto_enforcement`, `change_mode`), `decision_service` (`downscope_lease`, `revoke_lease`), `GET/PUT /api/v1/enforcement/mode`, hook w `POST /simulation/time-travel` |
-| 3.6 | Endpointy | ⏳ |
+| 3.6 | Endpointy | ✅ `GET /api/v1/leases`, `GET /api/v1/leases/{id}`, `POST /api/v1/leases/{id}/decision`, `GET /api/v1/leases/{id}/activity-stats`; `decision_service.apply_lease_decision`; poprawione scenariusze UC-2…UC-5 |
+
+## 10. Notatki dla zespołu
+
+**Osoba 4 (Durczkos).**
+- Oba punkty styku z ADR 0011 §6 istnieją pod tymi samymi nazwami. `list_lease_overviews(session, now)` ma dodatkowo
+  opcjonalny argument `mode` (domyślnie bieżący tryb), a `apply_lease_decision` przyjmuje też `actor_id=None` (aktor `SYSTEM`).
+- `LeaseStatus` ma teraz `PERMANENT` i `REVOKED`; Twoje zerowanie statusu dla admina i nieaktywnych w `_snapshot` dalej działa.
+- `apply_lease_decision` przy blokadzie ostatniego admina zapisuje (flush) wpis `LAST_ADMIN_BLOCKED` i rzuca `LastAdminError` (403).
+  Żeby wpis został w bazie, router musi zrobić `commit` przed ponownym rzuceniem błędu (tak robi `POST /api/v1/leases/{id}/decision`).
+- `DOWNSCOPE`/`REVOKE` bez uzasadnienia → 422 (D8); `/leases/{id}/decision` odsyła dzierżawy z odwołaniem `PENDING` na `/appeals/{id}/decision` (409).
+- O1 i O2 z ADR 0011 są rozstrzygnięte (D2, D3).
+
+**Osoba 2 (Dawid).** `_guard_last_admin` w `GitHubCollaboratorService` woła teraz wspólne `ensure_not_last_admin`
+(odpowiedzi i testy mocka bez zmian). `POST /api/v1/simulation/time-travel` w trybie `auto` uruchamia `run_auto_enforcement`.
+Port `VCSProvider` ma `remove_collaborator`; adapter na Twoim mocku musi go zaimplementować.
+
+**Osoba 5 (Kubuś).** Endpointy w §6, typy w `frontend/src/types/api.ts`: `LeaseOverview`, `LeaseStatus` (5 wartości),
+`LeaseActivityStats`, `EnforcementMode`, `EnforcementModeRead`, `EnforcementModeUpdate`. Badge statusu potrzebuje kolorów dla `PERMANENT` i `REVOKED`.
+
+**Osoba 6 (Sydor).** Poprawione scenariusze: uc-02 (5 i 29 dni), uc-03 (3 dni), uc-04 (29 dni, w t30 `REVOKE`),
+uc-05 (PUT kamila daje 204, bo kamil już ma `write`; potem usunięcie kamila 204, tomasza 403). Wartości dni zakładają zegar
+po 10:00 UTC w dniu seeda (np. 12:00). `shared/fixtures/leases*.json` mają dni liczone w dół i statusy tylko z 3 wartości; są
+poglądowe, więc ich nie ruszałem. Punkty kontrolne oracle z `tests/integration/test_github_mock_contract.py` (kamil@core-api, kamil@payment-service, marta@qa-automation po 0, +15 i +30 dniach) silnik daje te same (test `test_lease_overviews.py`).

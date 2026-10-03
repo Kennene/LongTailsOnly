@@ -18,7 +18,7 @@ uv run pytest tests/scenarios -q                            # z uv
 | `uc-02-downscope.json` | UC-2 | `kamil@payment-service`: `write` bez pushów → `DOWNSCOPE` |
 | `uc-03-appeal-flow.json` | UC-3 | Odwołanie `marta@qa-automation`, puste uzasadnienie → `422` |
 | `uc-04-time-travel.json` | UC-4 | `ACTIVE` → `WARNING` → `EXPIRED` po +25 i +5 dniach |
-| `uc-05-last-admin.json` | UC-5 | Drugi admin nadany akcją, potem `403` na ostatnim |
+| `uc-05-last-admin.json` | UC-5 | Drugi admin nadany akcją i usunięty (`204`), właściciel organizacji chroniony (`403`) |
 
 ## Kształt scenariusza
 

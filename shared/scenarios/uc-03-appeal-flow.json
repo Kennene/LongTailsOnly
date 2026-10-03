@@ -6,7 +6,7 @@
     "anchor": "2026-10-03T00:00:00Z",
     "seed": "default",
     "relies_on": ["marta", "qa-automation"],
-    "note": "Dzierżawa marta@qa-automation wygasa za 2 dni (scenariusz B z ADR 0008). lease_id rozwiązywane przez $from, bo identyfikatory zależą od kolejności seedowania."
+    "note": "Dzierżawa marta@qa-automation wygasa za 3 dni (scenariusz B z ADR 0008). lease_id rozwiązywane przez $from, bo identyfikatory zależą od kolejności seedowania. Wartości dni przy zegarze po 10:00 UTC w dniu seeda (np. 12:00); days_remaining zaokrąglane w górę (lease_window.py, docs/3-silnik-dzierzawy D5)."
   },
   "when": [
     { "type": "reset" },
@@ -55,7 +55,7 @@
       "target": "leases",
       "model": "LeaseOverview",
       "where": { "user.login": "marta", "repository.name": "qa-automation" },
-      "expect": { "status": "WARNING", "days_remaining": 2, "recommendation": "KEEP" }
+      "expect": { "status": "WARNING", "days_remaining": 3, "recommendation": "KEEP" }
     },
     {
       "target": "appeal",

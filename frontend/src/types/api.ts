@@ -311,6 +311,22 @@ export interface GraphPosition {
   y: number;
 }
 /**
+ * Evidence of use for the decision modal: renewing actions in the lease window (docs/3-silnik-dzierzawy §6).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "LeaseActivityStats".
+ */
+export interface LeaseActivityStats {
+  comment_count: number;
+  last_activity_at: string | null;
+  lease_id: number;
+  push_count: number;
+  review_count: number;
+  window_days: number;
+  window_end: string;
+  window_start: string;
+}
+/**
  * Lease plus values computed by the lease service (Task 8 of the team plan).
  *
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema

@@ -12,7 +12,7 @@ from app.domain.enums import ActionType, EnforcementMode, Recommendation
 from app.domain.lease_rules import Activity, lease_days_remaining, lease_status, newest_activity, recommend, renews
 from app.domain.roles import RENEWING_ACTIONS, required_permission_for
 from app.models import ActivityEvent, Lease
-from app.schemas.lease import LeaseOverview, LeaseRead
+from app.schemas.lease import LeaseActivityStats, LeaseOverview, LeaseRead
 from app.services.errors import ServiceError
 
 ActivityByLease = dict[tuple[int, int], list[Activity]]
@@ -83,3 +83,21 @@ def _overview(lease: Lease, activity: list[Activity], now: datetime, advise: boo
         recommendation=(recommend(status, lease.current_role, newest.action if newest else None)
                         if advise else Recommendation.KEEP),
     )
+
+
+async def lease_activity_stats(session: AsyncSession, lease_id: int, now: datetime) -> LeaseActivityStats:
+    """Push / review / comment counts of the lease holder in this repo over [now - lease period, now]."""
+    lease = await get_lease(session, lease_id)
+    window_days = lease.repository.default_lease_duration_days
+    window_start = now - timedelta(days=window_days)
+    activity = (await _renewing_activity(session, {lease.user_id}, now)).get((lease.user_id, lease.repo_id), [])
+    in_window = [a for a in activity if a.at >= window_start]
+    latest = newest_activity(activity, since=None, until=now)
+
+    def count(action: ActionType) -> int:
+        return sum(1 for a in in_window if a.action is action)
+
+    return LeaseActivityStats(lease_id=lease.id, window_days=window_days, window_start=window_start, window_end=now,
+                              push_count=count(ActionType.PUSH), review_count=count(ActionType.PR_REVIEW),
+                              comment_count=count(ActionType.ISSUE_COMMENT),
+                              last_activity_at=latest.at if latest else None)

@@ -2,7 +2,7 @@
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 
 from app.domain.enums import ActionType, LeaseStatus, Recommendation, Role
 from app.domain.lease_window import WARNING_WINDOW_DAYS, days_remaining
@@ -57,3 +57,20 @@ def recommend(status: LeaseStatus, role: Role, newest: ActionType | None) -> Rec
     if newest is None:
         return Recommendation.REVOKE
     return Recommendation.KEEP if renews(newest, role) else Recommendation.DOWNSCOPE
+
+
+def extension_base(expires_at: datetime | None, is_active: bool, now: datetime) -> datetime:
+    """EXTEND keeps the days an active lease still has; a revoked lease starts again from now."""
+    return max(now, expires_at) if is_active and expires_at is not None else now
+
+
+def extension_expiry(base: datetime, *, lease_days: int, days: int | None = None, multiplier: float | None = None,
+                     until: date | None = None) -> datetime:
+    """New end of a lease: base + N days, base + round(TTL x M) days, or the end of the given UTC day."""
+    if until is not None:
+        return datetime.combine(until + timedelta(days=1), time(0), tzinfo=UTC)
+    if multiplier is not None:
+        return base + timedelta(days=round(lease_days * multiplier))
+    if days is None:
+        raise ValueError("Choose days, a multiplier or a date")
+    return base + timedelta(days=days)
