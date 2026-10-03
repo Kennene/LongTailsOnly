@@ -1,4 +1,4 @@
-# LongTailsOnly — GitHub Access Lease Governor
+# TailCut — GitHub Access Lease Governor
 
 > **Żaden dostęp nie jest wieczny.**
 > Panel dla zespołów bezpieczeństwa IT, w którym uprawnienia do repozytoriów są dostępem czasowym: wygasają, chyba że odnowi je dowód rzeczywistego użycia albo świadoma decyzja administratora.
