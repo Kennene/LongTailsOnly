@@ -44,7 +44,9 @@ export function AppealForm({
   }
 
   return (
-    <form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
+    // `max-w-2xl`: uzasadnienie to proza, więc pole trzyma miarę 65–75 znaków (DESIGN.md §2),
+    // zamiast rozciągać się na całą szerokość karty.
+    <form className="flex max-w-2xl flex-col gap-4" noValidate onSubmit={handleSubmit}>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="appeal-lease">Dostęp</Label>
         <select
