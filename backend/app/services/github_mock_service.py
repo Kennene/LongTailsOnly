@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.github_mock.http import GitHubError
 from app.core.config import Settings
-from app.domain.enums import Role
+from app.domain.enums import Provider, Role
 from app.models import Lease, Repository, Team, User
 
 
@@ -48,12 +48,14 @@ class GitHubMockService:
 
     async def list_repos(self, org: str) -> list[Repository]:
         self._check_org(org)
-        query = select(Repository).where(Repository.owner == org).order_by(Repository.id)
+        query = select(Repository).where(Repository.owner == org, Repository.provider == Provider.GITHUB).order_by(Repository.id)
         return list((await self.session.scalars(query)).all())
 
     async def get_repo(self, owner: str, repo: str) -> Repository:
         found = await self.session.scalar(
-            select(Repository).where(Repository.owner == owner, Repository.name == repo)
+            select(Repository).where(
+                Repository.owner == owner, Repository.name == repo, Repository.provider == Provider.GITHUB
+            )
         )
         if found is None or owner != self.org:
             raise not_found("repos/repos#get-a-repository")

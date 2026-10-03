@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite+aiosqlite:///./longtails.db"
     github_org: str = "longtails"
+    jira_site: str = "longtails"
     enable_demo_reset: bool = True
 
 
