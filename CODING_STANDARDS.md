@@ -35,12 +35,14 @@ Celem nadrzędnym jest **maksymalna czytelność, modułowość i szybkość dos
 ```
 backend/
 └── app/
-    ├── api/               # Routery FastAPI (leases, appeals, audit, github_mock)
-    ├── core/              # Konfiguracja, Simulated Clock (TimeProvider)
+    ├── api/               # Routery FastAPI (leases, appeals, audit, simulation)
+    ├── core/              # Konfiguracja i ustawienia
     ├── db/                # Baza SQLite, seed danych, sesja
-    ├── models/            # Modele ORM (User, Repo, Lease, AuditLog, Appeal)
+    ├── models/            # Modele ORM (User, Repo, Lease, ActivityEvent, AuditLog, Appeal)
     ├── schemas/           # Pydantic v2 DTO
-    ├── services/          # Logika biznesowa (LeaseService, BaselineService)
+    ├── ports/             # Abstrakcyjne interfejsy (VCSProvider, ClockPort)
+    ├── adapters/          # Adaptery zewnętrzne (GitHubMockAdapter, SimulatedClockAdapter)
+    ├── services/          # Logika domenowa (LeaseEngine, BaselineService, AppealService)
     ├── utils/             # Wspólne pomocniki (daty, formatowanie)
     └── main.py            # Entrypoint aplikacji
 ```

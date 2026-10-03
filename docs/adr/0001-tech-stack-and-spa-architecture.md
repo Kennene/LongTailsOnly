@@ -6,11 +6,14 @@ Projekt bierze udział w hackathonie w kategorii Defence (ścieżka Prelint). Wy
 ## Decyzja
 Przyjmujemy rozdzieloną architekturę klient-serwer w modelu **Single Page Application (SPA)**:
 
-### 1. Backend: Python 3.12 + FastAPI + SQLAlchemy 2.0
+### 1. Backend: Python 3.12 + FastAPI + SQLAlchemy 2.0 (Architektura Portów i Adapterów)
 - **FastAPI**: Asynchroniczny, natywna walidacja typów przez Pydantic v2, automatyczna dokumentacja OpenAPI/Swagger.
 - **Baza danych**: SQLite z driverem asynchronicznym `aiosqlite` oraz SQLAlchemy 2.0 (`Mapped`, `mapped_column`, `select()`).
   - *Uzasadnienie:* Brak konieczności uruchamiania zewnętrznych kontenerów bazodanowych podczas demo; możliwość błyskawicznego resetu i załadowania deterministycznego seeda danych.
-- **Architektura warstwowa**: Routery API -> Serwisy domenowe -> Repozytoria/Modele ORM -> Zegar symulowany (`TimeProvider`).
+- **Architektura Portów i Adapterów (Hexagonal / Plugin Architecture)**:
+  - Rdzeń domenowy (`LeaseEngine`, `BaselineService`, `PolicyEvaluator`) jest całkowicie odseparowany od konkretnego dostawcy VCS/IAM za pomocą interfejsów (portów).
+  - Integracje z systemami zewnętrznymi stanowią wymienne adaptery (w MVP: `GitHubMockAdapter`, w przyszłości: GitLab, Bitbucket, AWS IAM, Azure DevOps).
+  - Zegar symulowany (`TimeProvider`) wstrzykiwany jest jako adapter czasu.
 
 ### 2. Frontend: React 19 (React Compiler) + TypeScript + Vite + Tailwind CSS + shadcn/ui
 - **React 19 & React Compiler**:

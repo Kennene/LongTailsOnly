@@ -18,10 +18,12 @@ W nowoczesnych organizacjach uprawnienia w systemach kontroli wersji (GitHub) s�
 
 #### Rozwiązanie
 Panel administratora bezpieczeństwa IT wprowadzający mechanizm **odnawialnej dzierżawy dostępów (Access Lease)** do GitHuba:
-- Po upływie ustalonego czasu (domyślnie 30 dni) dzierżawa przechodzi w stan wygasły; tryb `warning` wymaga decyzji administratora, a tryb `auto` odbiera lub obniża dostęp automatycznie.
+- Dostęp wygasa samoistnie po ustalonym czasie (domyślnie 30 dni, konfigurowalny przez admina); tryb `warning` wymaga decyzji administratora, a tryb `auto` odbiera lub obniża dostęp automatycznie.
 - Dzierżawa odnawia się wyłącznie w wyniku dowiedzionej aktywności na adekwatnym poziomie uprawnień.
-- Dostęp na poziomie `admin` nie odnawia się przez zwykły `git push` — system wykrywa dysproporcję i proponuje deeskalację.
-- Przed wygaśnięciem generowane jest ostrzeżenie; użytkownik może złożyć odwołanie z unikalnym uzasadnieniem biznesowym (intentional friction).
+- Dostęp na poziomie `write` (push) nie odnawia się przy samym komentowaniu czy review — system wykrywa brak pushów i proponuje deeskalację do `read`.
+- Rola `admin` ma charakter stały (break-glass/owner) i jest zabezpieczona regułą *Last Admin Protection*.
+- Przed wygaśnięciem generowane jest ostrzeżenie; użytkownik może złożyć odwołanie z unikalnym uzasadnieniem biznesowym (intentional friction), a administrator dysponuje elastycznym wyborem przedłużenia (mnożniki np. 2x, presety, custom).
+- **Architektura pluginowa (Porty i Adaptery)**: Rdzeń systemu jest niezależny od dostawcy — w przyszłości pozwala podpiąć GitLab, Bitbucket lub chmurowe IAM.
 
 ---
 
@@ -45,18 +47,18 @@ Panel administratora bezpieczeństwa IT wprowadzający mechanizm **odnawialnej d
 - System automatycznie oblicza **standard zespołu** (repozytoria, w których w ciągu ostatnich 30 dni aktywnie pracowało co najmniej 50% zespołu, na najniższym wystarczającym poziomie, np. `write`). Poziom `admin` nigdy nie jest proponowany automatycznie.
 - Administrator zatwierdza nadanie standardu zespołu jednym kliknięciem.
 
-#### UC-2: Wykrywanie i deeskalacja nadmiarowych uprawnień (Down-scoping)
-- Użytkownik posiada uprawnienie `admin` w repozytorium `payment-service`.
-- W ciągu ostatnich 30 dni użytkownik wykonywał wyłącznie `git push` (poziom `write`), nie modyfikując ustawień repozytorium ani branch protection.
-- System oznacza uprawnienie `admin` jako wygasające, proponując obniżenie uprawnień do `write`.
+#### UC-2: Wykrywanie i deeskalacja nadmiarowych uprawnień (Down-scoping `write` -> `read`)
+- Użytkownik posiada uprawnienie `write` w repozytorium `payment-service`.
+- W ciągu ostatnich 30 dni użytkownik nie wykonywał żadnych operacji `git push` (`PushEvent`), ale aktywnie recenzował Pull Requesty (`PullRequestReviewEvent`) i dodawał komentarze (`IssueCommentEvent`).
+- System oznacza uprawnienie `write` jako wygasające, proponując obniżenie uprawnień do `read` (użytkownik zachowuje możliwość dyskusji i review, tracąc prawo zapisu do kodu).
 
-#### UC-3: Cykl ostrzeżenia, odwołania i decyzji administratora (Warning & Appeal Flow)
+#### UC-3: Cykl ostrzeżenia, odwołania i elastycznej decyzji administratora (Warning & Appeal Flow)
 - Na 7 dni przed wygaśnięciem dzierżawy generowane jest ostrzeżenie w panelu.
 - Użytkownik składa odwołanie z uzasadnieniem (np. „W przyszłym tygodniu prowadzę release wersji v2.1”).
-- Administrator w panelu widzi: historię odwołań użytkownika, statystyki realnego użycia oraz treść wniosku.
+- Administrator w panelu widzi: historię odwołań użytkownika, statystyki realnego użycia (`ActivityEvent`) oraz treść wniosku.
 - Administrator podejmuje decyzję:
-  - **Przedłuż**: ustawia okres ważności (7, 30, 90 dni lub data ręczna).
-  - **Wyłącz / Zdeeskaluj**: odbiera dostęp lub degraduje rolę do poziomu odzwierciedlającego faktyczną pracę.
+  - **Przedłuż (elastyczny wybór)**: mnożnik (np. `1.5x`, `2x` dotychczasowego TTL), preset (`+7`, `+14`, `+30`, `+90` dni) lub dokładna data w kalendarzu.
+  - **Wyłącz / Zdeeskaluj**: odbiera dostęp lub degraduje rolę do `read`.
 
 #### UC-4: Sterowanie czasem (Time Travel Demo Mode)
 - Specjalny panel demonstracyjny dla jury i audytu umożliwia przesunięcie zegara symulacji (np. +15 dni, +30 dni, +60 dni).
