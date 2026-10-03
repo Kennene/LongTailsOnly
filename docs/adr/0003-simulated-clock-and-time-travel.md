@@ -5,7 +5,7 @@ Cykl życia dzierżawy trwa od 7 do 90 dni. Podczas prezentacji konkursowej i te
 
 ## Decyzja
 1. **Wzorzec `TimeProvider` na backendzie**:
-   - Wszystkie moduły backendu (serwis dzierżaw, ewaluator wygasania, rejestr audytu) pobierają aktualny czas wyłącznie przez `time_provider.now()`.
+   - Wszystkie moduły backendu (serwis dzierżaw, ewaluator wygasania, rejestr audytu) pobierają aktualny czas wyłącznie przez `time_provider.get_current_time()`.
    - Bezpośrednie wywołania `datetime.now()` w logice domenowej są zabronione.
 2. **Sterowanie przesunięciem (Offset / Simulated Time)**:
    - System przechowuje globalny offset czasu w pamięci / bazie (`simulated_offset_seconds`).
