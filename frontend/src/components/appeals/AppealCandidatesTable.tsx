@@ -1,7 +1,7 @@
 import { ExpandAllButton, ExpandToggle } from '@/components/common/ExpandToggle';
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import { formatRepositoryCount, groupLeasesByUser } from '@/components/leases/leaseGroups';
-import { Badge } from '@/components/ui/badge';
+import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import {
   Table,
   TableBody,
@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/table';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import { formatDaysRemaining } from '@/lib/dateTime';
-import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
-import type { LeaseOverview, LeaseStatus } from '@/types/api';
+import { getRoleLabel } from '@/lib/statusBadges';
+import type { LeaseOverview } from '@/types/api';
 
 export interface AppealCandidatesTableProps {
   leases: LeaseOverview[];
@@ -102,21 +102,11 @@ function CandidateGroupRows({
               <TableCell>{getRoleLabel(lease.current_role)}</TableCell>
               <TableCell>{formatDaysRemaining(lease.days_remaining)}</TableCell>
               <TableCell>
-                <StatusBadge status={lease.status} />
+                <LeaseStatusBadge status={lease.status} />
               </TableCell>
             </TableRow>
           ))
         : null}
     </>
-  );
-}
-
-function StatusBadge({ status }: { status: LeaseStatus }): React.JSX.Element {
-  const badge = getStatusBadge(status);
-
-  return (
-    <Badge className={badge.className} variant="outline">
-      {badge.label}
-    </Badge>
   );
 }

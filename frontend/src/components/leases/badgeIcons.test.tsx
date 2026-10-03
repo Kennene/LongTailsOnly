@@ -1,13 +1,20 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import { RecommendationBadge } from '@/components/leases/RecommendationBadge';
 import { RoleBadge } from '@/components/leases/RoleBadge';
-import { getRecommendationBadge, getRoleBadge, getStatusBadge } from '@/lib/statusBadges';
-import type { LeaseStatus, Recommendation, Role } from '@/types/api';
+import {
+  getAppealStatusBadge,
+  getRecommendationBadge,
+  getRoleBadge,
+  getStatusBadge,
+} from '@/lib/statusBadges';
+import type { AppealStatus, LeaseStatus, Recommendation, Role } from '@/types/api';
 
 const STATUSES: LeaseStatus[] = ['ACTIVE', 'WARNING', 'EXPIRED', 'PERMANENT', 'REVOKED'];
+const APPEAL_STATUSES: AppealStatus[] = ['PENDING', 'APPROVED', 'REJECTED'];
 const RECOMMENDATIONS: Recommendation[] = ['KEEP', 'DOWNSCOPE', 'REVOKE'];
 const ROLES: Role[] = ['admin', 'write', 'read'];
 
@@ -48,6 +55,19 @@ describe('badge icons', () => {
         container,
         getRecommendationBadge(value).slug,
         getRecommendationBadge(value).label,
+      );
+    },
+  );
+
+  it.each<AppealStatus>(APPEAL_STATUSES)(
+    'renders the %s appeal status badge with the icon from getAppealStatusBadge',
+    (status: AppealStatus) => {
+      const { container } = render(<AppealStatusBadge status={status} />);
+
+      expectIconAndLabel(
+        container,
+        getAppealStatusBadge(status).slug,
+        getAppealStatusBadge(status).label,
       );
     },
   );
