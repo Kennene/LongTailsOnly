@@ -221,6 +221,40 @@ describe('LeaseTable — etykiety „Poziom” i „Status” w wierszu osoby', 
   });
 });
 
+describe('LeaseTable — kolumna „Akcje” i wyrównanie', () => {
+  it('names the actions column for screen readers only, like level and status', () => {
+    renderWithProviders(<LeaseTable leases={leasesFixture} onDecide={vi.fn()} />);
+
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Akcje' })).getByText('Akcje'),
+    ).toHaveClass('sr-only');
+  });
+
+  it('captions the actions column on the person row only after expanding', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LeaseTable leases={leasesFixture} onDecide={vi.fn()} />);
+
+    expect(cellIn(groupRow(DEV_LEASE), 'Akcje').textContent).toBe('');
+
+    await user.click(toggleFor(DEV_LEASE));
+
+    expect(cellIn(groupRow(DEV_LEASE), 'Akcje')).toHaveTextContent('Akcje');
+  });
+
+  it('centres every column header and every lease cell', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LeaseTable leases={leasesFixture} onDecide={vi.fn()} />);
+    await user.click(toggleFor(DEV_LEASE));
+
+    for (const header of screen.getAllByRole('columnheader')) {
+      expect(header).toHaveClass('text-center');
+    }
+    for (const cell of within(leaseRow(DEV_LEASE)).getAllByRole('cell')) {
+      expect(cell).toHaveClass('text-center');
+    }
+  });
+});
+
 describe('LeaseTable — poziom w wierszu repozytorium', () => {
   it('spells the role out next to its icon', async () => {
     const user = userEvent.setup();
