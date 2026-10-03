@@ -5,8 +5,15 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from app.core.enforcement_mode import enforcement_state
 from app.db.session import build_engine, get_engine, get_session, init_db
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def default_enforcement_mode() -> None:
+    """The enforcement mode lives in process memory; every test starts in the default `warning`."""
+    enforcement_state.reset()
 
 
 @pytest.fixture

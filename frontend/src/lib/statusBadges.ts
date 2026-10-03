@@ -18,6 +18,15 @@ const STATUS_BADGES: Record<LeaseStatus, BadgeStyle> = {
     label: 'Wygasła',
     className: 'border-status-expired-border bg-status-expired-subtle text-status-expired',
   },
+  // Admin (break-glass) i odebrany dostęp nie czekają na decyzję, więc zostają neutralne (jak `KEEP`).
+  PERMANENT: {
+    label: 'Stała (admin)',
+    className: 'border-border bg-muted text-muted-foreground',
+  },
+  REVOKED: {
+    label: 'Odebrana',
+    className: 'border-border bg-muted text-muted-foreground line-through',
+  },
 };
 
 const ROLE_LABELS: Record<Role, string> = {

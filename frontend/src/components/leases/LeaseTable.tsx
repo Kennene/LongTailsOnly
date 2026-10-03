@@ -21,8 +21,14 @@ export interface LeaseTableProps {
   onDecide?: (lease: LeaseOverview) => void;
 }
 
-/** Ranga pilności (spec §7.2): wygasłe, potem ostrzeżenia, na końcu aktywne. */
-const STATUS_RANK: Record<LeaseStatus, number> = { EXPIRED: 0, WARNING: 1, ACTIVE: 2 };
+/** Ranga pilności (spec §7.2): wygasłe, ostrzeżenia, aktywne, a za nimi stałe (admin) i odebrane. */
+const STATUS_RANK: Record<LeaseStatus, number> = {
+  EXPIRED: 0,
+  WARNING: 1,
+  ACTIVE: 2,
+  PERMANENT: 3,
+  REVOKED: 4,
+};
 
 /**
  * Szerokości kolumn tożsamości — rezerwacja **i** sufit naraz. W `table-layout: auto` samo

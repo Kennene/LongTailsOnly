@@ -27,6 +27,13 @@ export type AppealStatus = "PENDING" | "APPROVED" | "REJECTED";
  */
 export type DecisionAction = "EXTEND" | "DOWNSCOPE" | "REVOKE";
 /**
+ * How the lease engine acts on lapsing leases (docs/3-silnik-dzierzawy §5).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "EnforcementMode".
+ */
+export type EnforcementMode = "disabled" | "warning" | "auto";
+/**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "Recommendation".
  */
@@ -35,7 +42,7 @@ export type Recommendation = "KEEP" | "DOWNSCOPE" | "REVOKE";
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "LeaseStatus".
  */
-export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED";
+export type LeaseStatus = "ACTIVE" | "WARNING" | "EXPIRED" | "PERMANENT" | "REVOKED";
 
 export interface LongTailsOnlyAPIContract {
   [k: string]: unknown;
@@ -242,6 +249,20 @@ export interface DemoResetResult {
 }
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "EnforcementModeRead".
+ */
+export interface EnforcementModeRead {
+  mode: EnforcementMode;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "EnforcementModeUpdate".
+ */
+export interface EnforcementModeUpdate {
+  mode: EnforcementMode;
+}
+/**
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "GraphEdge".
  */
 export interface GraphEdge {
@@ -288,6 +309,22 @@ export interface GraphNodeData {
 export interface GraphPosition {
   x: number;
   y: number;
+}
+/**
+ * Evidence of use for the decision modal: renewing actions in the lease window (docs/3-silnik-dzierzawy §6).
+ *
+ * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
+ * via the `definition` "LeaseActivityStats".
+ */
+export interface LeaseActivityStats {
+  comment_count: number;
+  last_activity_at: string | null;
+  lease_id: number;
+  push_count: number;
+  review_count: number;
+  window_days: number;
+  window_end: string;
+  window_start: string;
 }
 /**
  * Lease plus values computed by the lease service (Task 8 of the team plan).

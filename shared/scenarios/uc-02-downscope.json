@@ -6,7 +6,7 @@
     "anchor": "2026-10-03T00:00:00Z",
     "seed": "default",
     "relies_on": ["kamil", "payment-service", "core-api"],
-    "note": "kamil ma write w payment-service, ale ostatni PushEvent był 25 dni temu; od tego czasu wyłącznie recenzje PR. Dzierżawa wygasa za 4 dni, więc wchodzi w okno ostrzegawcze (scenariusz A z ADR 0008)."
+    "note": "kamil ma write w payment-service, ale ostatni PushEvent był 25 dni temu; od tego czasu wyłącznie recenzje PR. Dzierżawa wygasa za 5 dni, więc jest w oknie ostrzegawczym, a najnowsza aktywność (review) jest poniżej roli → DOWNSCOPE (scenariusz A z ADR 0008). Wartości dni przy zegarze po 10:00 UTC w dniu seeda (np. 12:00); days_remaining zaokrąglane w górę (lease_window.py, docs/3-silnik-dzierzawy D5)."
   },
   "when": [
     { "type": "reset" },
@@ -21,7 +21,7 @@
         "status": "WARNING",
         "recommendation": "DOWNSCOPE",
         "current_role": "write",
-        "days_remaining": 4
+        "days_remaining": 5
       }
     },
     {
@@ -32,7 +32,7 @@
         "status": "ACTIVE",
         "recommendation": "KEEP",
         "current_role": "write",
-        "days_remaining": 28
+        "days_remaining": 29
       }
     }
   ]

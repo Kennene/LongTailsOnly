@@ -6,7 +6,7 @@
     "anchor": "2026-10-03T00:00:00Z",
     "seed": "default",
     "relies_on": ["tomasz-admin", "kamil", "payment-service"],
-    "note": "Seed nadaje rolę admin wyłącznie tomasz-admin, po jednym na repozytorium (ADR 0008). Dlatego scenariusz najpierw nadaje drugiego administratora: bez tego asercja 403 nie odróżniałaby działającej straży od reguły, która zawsze blokuje."
+    "note": "Seed nadaje rolę admin wyłącznie tomasz-admin, po jednym na repozytorium (ADR 0008). Dlatego scenariusz najpierw nadaje drugiego administratora: bez tego asercja 403 nie odróżniałaby działającej straży od reguły, która zawsze blokuje. tomasz-admin jest jedynym właścicielem organizacji, więc nie da się go usunąć z żadnego repo (Last Admin Protection, docs/3-silnik-dzierzawy §4): usunięcie drugiego admina (kamila) przechodzi, usunięcie tomasza dalej daje 403. kamil ma już write w payment-service, więc PUT tylko zmienia poziom i mock zwraca 204 (201 jest dla nowego kolaboratora)."
   },
   "when": [
     { "type": "reset" },
@@ -26,20 +26,20 @@
     {
       "type": "api",
       "method": "DELETE",
-      "path": "/api/v3/repos/longtails/payment-service/collaborators/tomasz-admin",
-      "as": "remove-first-admin"
+      "path": "/api/v3/repos/longtails/payment-service/collaborators/kamil",
+      "as": "remove-second-admin"
     },
     {
       "type": "api",
       "method": "DELETE",
-      "path": "/api/v3/repos/longtails/payment-service/collaborators/kamil",
-      "as": "remove-last-admin"
+      "path": "/api/v3/repos/longtails/payment-service/collaborators/tomasz-admin",
+      "as": "remove-org-owner"
     }
   ],
   "then": [
     { "target": "remove-only-admin", "expect": { "status_code": 403 } },
-    { "target": "grant-second-admin", "expect": { "status_code": 201 } },
-    { "target": "remove-first-admin", "expect": { "status_code": 204 } },
-    { "target": "remove-last-admin", "expect": { "status_code": 403 } }
+    { "target": "grant-second-admin", "expect": { "status_code": 204 } },
+    { "target": "remove-second-admin", "expect": { "status_code": 204 } },
+    { "target": "remove-org-owner", "expect": { "status_code": 403 } }
   ]
 }
