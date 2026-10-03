@@ -5,6 +5,7 @@ Ten plik instruuje agentów AI, **jak pracować** w tym repozytorium oraz **gdzi
 ## Metodologia pracy
 
 W tym projekcie obowiązuje metodologia **Superpowers**:
+
 - **brainstorming** przed pisaniem kodu: doprecyzowanie wymagań, architektury i decyzji projektowych.
 - **writing-plans**: podział pracy na małe, weryfikowalne kroki (2–5 min). Plany zapisujemy w `docs/superpowers/plans/`.
 - **test-driven-development (TDD)**: cykl Red-Green-Refactor, testy pisane przed kodem produkcyjnym.
@@ -25,5 +26,6 @@ Katalog i opis dostępnych skilli znajduje się w pliku `SKILLS.md`.
 ## Zasady
 
 - **Zawsze sprawdzaj skille przed rozpoczęciem zadania.** Używaj narzędzia `skill` / komendy `/nazwa`.
+- **Bezwzględnie przestrzegaj `CODING_STANDARDS.md`** przy tworzeniu architektury, pisaniu kodu i testów.
 - **Kod i dokumentacja muszą być spójne.**
 - **Dowody ponad deklaracje:** przed zakończeniem zadania uruchom testy / lintery i przedstaw realne wyniki.
