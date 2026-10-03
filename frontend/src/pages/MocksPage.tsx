@@ -41,7 +41,8 @@ export function MocksPage(): React.JSX.Element {
         <CardHeader>
           <CardTitle id={CLOCK_HEADING_ID}>Czas symulowany</CardTitle>
           <CardDescription>
-            Przesuń zegar, żeby zobaczyć wygasanie dostępów. Reset przywraca dane startowe demo.
+            Przesuń zegar do przodu, żeby zobaczyć wygasanie dostępów. Reset wraca do danych
+            startowych.
           </CardDescription>
         </CardHeader>
         <CardContent className="max-w-md">

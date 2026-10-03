@@ -15,7 +15,13 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import type { SimulationClock } from '@/types/api';
 
 const INITIAL_CLOCK = /3 października 2026/;
-const CUSTOM_DAYS_LABEL = 'Własna liczba dni';
+const DAYS_LABEL = 'Liczba dni';
+
+/** Jedyny sposób przesunięcia zegara: wpisanie liczby dni i „Przesuń”. */
+async function jumpBy(user: ReturnType<typeof userEvent.setup>, days: string): Promise<void> {
+  await user.type(screen.getByLabelText(DAYS_LABEL), days);
+  await user.click(screen.getByRole('button', { name: 'Przesuń' }));
+}
 
 /** Tytuły toastów zarejestrowanych przez Sonnera — realna biblioteka, bez mocków. */
 function toastTitles(): string[] {
@@ -24,6 +30,16 @@ function toastTitles(): string[] {
     .map((entry) => ('title' in entry && typeof entry.title === 'string' ? entry.title : ''))
     .filter((title) => title !== '');
 }
+
+it('offers no preset jump buttons, only the typed value and reset', async () => {
+  renderWithProviders(<TimeTravelBar />);
+  await screen.findByText(INITIAL_CLOCK);
+
+  expect(screen.queryByRole('button', { name: /^\+\d+ dni$/ })).not.toBeInTheDocument();
+  expect(screen.getByLabelText(DAYS_LABEL)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Przesuń' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
+});
 
 it('renders the simulated clock and offset read from the API', async () => {
   renderWithProviders(<TimeTravelBar />);
@@ -46,12 +62,12 @@ it('maps `simulated_now` from the clock endpoint onto the bar', async () => {
   expect(screen.getByText('Przesunięcie: +33 dni')).toBeInTheDocument();
 });
 
-it('advances the clock with the +15 dni preset', async () => {
+it('advances the clock by the typed number of days', async () => {
   const user = userEvent.setup();
   renderWithProviders(<TimeTravelBar />);
   await screen.findByText(INITIAL_CLOCK);
 
-  await user.click(screen.getByRole('button', { name: '+15 dni' }));
+  await jumpBy(user, '15');
 
   await waitFor(() => expect(getLastTimeTravelRequest()).toEqual({ days: 15 }));
   expect(getSimulatedNow()).toBe('2026-10-18T00:00:00.000Z');
@@ -64,7 +80,7 @@ it('advances the clock by the custom number of days and clears the input', async
   renderWithProviders(<TimeTravelBar />);
   await screen.findByText(INITIAL_CLOCK);
 
-  const input = screen.getByLabelText(CUSTOM_DAYS_LABEL);
+  const input = screen.getByLabelText(DAYS_LABEL);
   await user.type(input, '25');
   await user.click(screen.getByRole('button', { name: 'Przesuń' }));
 
@@ -78,7 +94,7 @@ it('rejects a custom value above the API limit without calling the API', async (
   renderWithProviders(<TimeTravelBar />);
   await screen.findByText(INITIAL_CLOCK);
 
-  await user.type(screen.getByLabelText(CUSTOM_DAYS_LABEL), '400');
+  await user.type(screen.getByLabelText(DAYS_LABEL), '400');
   await user.click(screen.getByRole('button', { name: 'Przesuń' }));
 
   expect(await screen.findByText('Podaj liczbę dni z zakresu 1–365')).toBeInTheDocument();
@@ -92,7 +108,7 @@ it.each(['0', '-5', 'abc'])(
     renderWithProviders(<TimeTravelBar />);
     await screen.findByText(INITIAL_CLOCK);
 
-    await user.type(screen.getByLabelText(CUSTOM_DAYS_LABEL), value);
+    await user.type(screen.getByLabelText(DAYS_LABEL), value);
     await user.click(screen.getByRole('button', { name: 'Przesuń' }));
 
     expect(await screen.findByText('Podaj dodatnią liczbę dni')).toBeInTheDocument();
@@ -105,7 +121,7 @@ it('resets the demo scenario to the seeded clock after confirmation', async () =
   renderWithProviders(<TimeTravelBar />);
   await screen.findByText(INITIAL_CLOCK);
 
-  await user.click(screen.getByRole('button', { name: '+30 dni' }));
+  await jumpBy(user, '30');
   expect(await screen.findByText(/2 listopada 2026/)).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Reset' }));
@@ -129,13 +145,13 @@ it('disables every control while the jump is pending', async () => {
   renderWithProviders(<TimeTravelBar />);
   await screen.findByText(INITIAL_CLOCK);
 
-  await user.click(screen.getByRole('button', { name: '+15 dni' }));
+  await jumpBy(user, '15');
 
-  expect(screen.getByRole('button', { name: '+30 dni' })).toBeDisabled();
+  expect(screen.getByLabelText(DAYS_LABEL)).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Przesuń' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled();
 
-  await waitFor(() => expect(screen.getByRole('button', { name: '+30 dni' })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Przesuń' })).toBeEnabled());
 });
 
 it('announces a successful jump with a toast', async () => {
@@ -144,7 +160,7 @@ it('announces a successful jump with a toast', async () => {
   await screen.findByText(INITIAL_CLOCK);
   const toastsBefore = toastTitles().length;
 
-  await user.click(screen.getByRole('button', { name: '+15 dni' }));
+  await jumpBy(user, '15');
 
   await waitFor(() => expect(toastTitles()).toHaveLength(toastsBefore + 1));
   expect(toastTitles().at(-1)).toBe('Zmieniono czas symulowany');
@@ -160,7 +176,7 @@ it('surfaces a failed jump instead of looking like a hung button', async () => {
   renderWithProviders(<TimeTravelBar />);
   await screen.findByText(INITIAL_CLOCK);
 
-  await user.click(screen.getByRole('button', { name: '+15 dni' }));
+  await jumpBy(user, '15');
 
   const message = 'Nie udało się zmienić czasu symulowanego.';
   expect(await screen.findByRole('alert')).toHaveTextContent(message);
