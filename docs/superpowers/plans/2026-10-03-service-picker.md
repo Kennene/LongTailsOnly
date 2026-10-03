@@ -701,7 +701,12 @@ Move the duplicated string from `AppealForm.tsx:21-22`, `GraphFilters.tsx:21-22`
 
 `ServicePicker.tsx` renders: an `sr-only` `<Label htmlFor="service-picker">Usługa</Label>`; a `<span>` holding the active service's icon at `size-4` with `text-muted-foreground`; and a native `<select id="service-picker">` using `SELECT_CLASSES` plus `h-8`, rendering catalog entries as options with the `(niedostępna)` suffix when `is_available` is false. A stored value missing from the catalog appears as an own option `(nieznana)`. Do not use `--primary` for the control.
 
-**Options come from the union of the catalog and the frontend registry, and every option you render must be selectable.** A catalog entry the frontend registry does not know is **still an option and still selectable** — the catalog is the backend's, it is authoritative when known, and the provider accepts such a pick (spec §5.6.1, Ruling 23). If you render an option that `setActiveService` then refuses, you have built the dead click this whole design exists to avoid. Registry-only entries appear while the catalog is pending or failed; they are selectable in exactly those windows.
+**Two small clean-ups carried forward from Task 6's review — do these while you are in `ServicesContext.tsx`:**
+
+1. **Qualify the stale comment at `ServicesContext.tsx:105`.** It states, unqualified, that the picker never offers an option outside the frontend registry — false for a settled catalog (spec §5.6.1, Ruling 23). The surrounding block is correctly scoped, so the defect is that one sentence; a future editor trusting it would "restore" the registry-first gate that Ruling 23 rejected. Add the scope, e.g. "w stanach 2 i 3 / dopóki katalog nie jest rozstrzygnięty". No behaviour change.
+2. **Optional but cheap:** the settled + in-catalog + registry-known cell is pinned to *accept* but not to *write* — add a post-click `localStorage` read there so "accepted but write skipped" cannot hide.
+
+
 
 **Error behaviour — settled, do not re-litigate (Ruling 21):** when the catalog request fails, **keep rendering the selector and show a destructive `Alert` alongside it** — never replace the selector with the alert. Reason: the selector can still render the frontend registry's known services, so a user stuck on a stale stored service must be able to switch away while the backend is down; replacing the selector with an alert leaves them trapped. This is also why `setActiveService` accepts a selection while the catalog is unknown-but-failed as well as while it is pending — a dead click on a visible option is the worse failure. Never throw during render.
 
