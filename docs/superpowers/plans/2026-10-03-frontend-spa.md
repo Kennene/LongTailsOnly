@@ -72,6 +72,16 @@ nieistniejące: `GET /api/v1/baseline/1` (realnie `/api/v1/teams/{slug}/baseline
 HTTP „gdy powstaną endpointy widokowe" — rozjazd nie jest więc czerwony, ale skrypt demo (6.6)
 musi użyć ścieżek realnych: `/reject`, `/teams/{slug}/baseline`.
 
+**Znane rozjazdy w danych współdzielonych (do decyzji właścicieli plików).**
+
+Wiring odsłonił rozjazdy w `shared/`, których frontend nie naprawia po cichu:
+
+1. **Status dzierżaw admina** — `shared/fixtures/leases.json` trzymał `ACTIVE` dla trzech dzierżaw `admin`, a silnik liczy `PERMANENT` (`lease_rules.lease_status`; dowód: `backend/tests/api/test_leases_api.py:47`, `backend/tests/services/test_lease_overviews.py:72`). **Naprawione w tym commicie** (`ACTIVE` → `PERMANENT`, `days_remaining: null`); frontend normalizował to u siebie od merge'u, więc zmiana jest idempotentna.
+2. **Liczba dni przy kotwicy** — dla `kamil@core-api` trzy źródła podają trzy wartości: `uc-04` oczekuje **29**, wspólny fixture ma **28**, a silnik liczący `ceil(expires_at − now)` przy kotwicy `2026-10-03T00:00:00Z` daje **30**. `uc-04` jest wewnętrznie spójny (29 → po +25 dniach 4), więc uzgodnienia wymaga fixture i kotwica, nie scenariusz. Offline frontend pokazuje wartości zamrożone z fixture'u, live — z silnika; **przed demo trzeba to uzgodnić**, inaczej krok „+25 dni” pokaże 3 zamiast 4.
+3. **`uc-03` wskazuje nieistniejącą ścieżkę** — `POST /api/v1/appeals/{id}/decision` (plan 4.3C) z oczekiwaniem `APPROVED`, gdy backend serwuje `POST /api/v1/appeals/{id}/reject`. Scenariusz opisuje intencję (zatwierdzenie odwołania), więc go nie przepisuję: wymaga albo kroku 4.3C, albo świadomej zmiany narracji demo na odrzucenie.
+4. **`docs/osoba-4.md`** podaje baseline DEV `11/7/8`, a `shared/fixtures/baseline.json` (i `uc-01`) `10/6/7`. Frontend czyta fixture'y; która strona jest nieaktualna, rozstrzyga seed.
+5. **`shared/fixtures/manifest.json`** nie wymienia nowych konsumentów (`users.json` czyta też pulpit 5.6, `teams`/`repositories` graf 5.9) i nie ma pliku `dashboard.json`, bo `DashboardStats` jest wyliczany z dzierżaw.
+
 ## Globalne ograniczenia
 
 - **Limit 300 linii na plik** (`CODING_STANDARDS.md` §1). Komponent przekraczający limit dzielimy w obrębie jego katalogu domenowego.
