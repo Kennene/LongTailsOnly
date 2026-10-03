@@ -1,12 +1,12 @@
 import type { AppealGroup } from '@/components/appeals/appealGroups';
 import { groupAppealsByUser } from '@/components/appeals/appealGroups';
+import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { ExpandAllButton, ExpandToggle } from '@/components/common/ExpandToggle';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import { formatDateTimePl, formatDaysRemaining } from '@/lib/dateTime';
 import { formatCountPl } from '@/lib/grouping';
-import { getAppealStatusBadge, getRoleLabel } from '@/lib/statusBadges';
+import { getRoleLabel } from '@/lib/statusBadges';
 import type { AppealOverview } from '@/types/api';
 
 export interface AppealListProps {
@@ -114,7 +114,6 @@ interface AppealListItemProps {
  * ma zapasową kreskę w `formatDaysRemaining`. Osobę pokazuje wiersz grupy wyżej.
  */
 function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.Element {
-  const badge = getAppealStatusBadge(appeal.status);
   const days: string = appeal.lease_is_active
     ? formatDaysRemaining(appeal.days_remaining)
     : 'Dostęp nieaktywny';
@@ -122,10 +121,7 @@ function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.E
   return (
     <li className="flex flex-col gap-2 border-b border-border py-3 last:border-b-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Badge className={badge.className} variant="outline">
-          <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-          {badge.label}
-        </Badge>
+        <AppealStatusBadge status={appeal.status} />
         <span className="font-mono text-xs text-muted-foreground">{appeal.repository.name}</span>
         <span className="text-xs text-muted-foreground">{`Wniosek: ${getRoleLabel(
           appeal.requested_role,

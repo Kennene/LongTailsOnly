@@ -160,15 +160,18 @@ export default [
       globals: { ...globals.browser, ...globals.node, ...vitest.environments.env.globals },
     },
     settings: {
-      // Asercje mogą żyć w lokalnym helperze (`expectIconAndLabel`), nie tylko w ciele `it`.
-      // Bez tego `vitest/expect-expect` zgłasza „Test has no assertions” w testach, które
-      // właśnie sprawdzają dwie rzeczy naraz — a to zaproszenie do rozbicia asercji na ślepo.
+      // Asercje mogą żyć w lokalnym helperze (`expectIconAndLabel`, `expectBadgeIcon`), nie tylko
+      // w ciele `it`. Bez tego `vitest/expect-expect` zgłasza „Test has no assertions” w testach,
+      // które właśnie sprawdzają dwie rzeczy naraz — a to zaproszenie do rozbicia asercji na ślepo.
       vitest: { typecheck: false },
     },
     rules: {
       ...vitest.configs.recommended.rules,
       ...testingLibrary.configs['flat/react'].rules,
-      'vitest/expect-expect': ['error', { assertFunctionNames: ['expect', 'expectIconAndLabel'] }],
+      'vitest/expect-expect': [
+        'error',
+        { assertFunctionNames: ['expect', 'expectIconAndLabel', 'expectBadgeIcon'] },
+      ],
     },
   },
 
