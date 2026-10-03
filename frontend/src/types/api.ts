@@ -216,6 +216,7 @@ export interface DashboardStats {
   active: number;
   downscope_recommendations: number;
   expired: number;
+  expired_window_days: number;
   generated_at: string;
   onboarding_candidates: number;
   pending_appeals: number;

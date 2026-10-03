@@ -71,7 +71,7 @@ export function DashboardPage(): React.JSX.Element {
             label="Wygaśnięte"
             tone="EXPIRED"
             value={data.expired}
-            hint="Po terminie ważności"
+            hint={`Wygasłe w ostatnich ${String(data.expired_window_days)} dniach`}
           />
           <KpiCard
             data-testid="kpi-downscope"

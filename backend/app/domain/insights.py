@@ -6,9 +6,11 @@ Pure functions: the service passes in lease and member snapshots, the browser co
 from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Literal
 
 from app.domain.enums import LeaseStatus, Recommendation, Role
+from app.domain.lease_window import lapsed_within_window
 
 NodeKind = Literal["team", "user", "repo"]
 EdgeKind = Literal["membership", "lease"]
@@ -22,6 +24,7 @@ class LeaseSnapshot:
     login: str
     repo: str
     role: Role
+    days_remaining: int | None
     is_active: bool
     status: LeaseStatus | None
     recommendation: Recommendation | None
@@ -48,18 +51,21 @@ class DashboardCounters:
     onboarding_candidates: int
 
 
-def compute_dashboard_counters(
-    leases: Sequence[LeaseSnapshot], members: Iterable[MemberSnapshot], pending_appeals: int
-) -> DashboardCounters:
+def compute_dashboard_counters(leases: Sequence[LeaseSnapshot], members: Iterable[MemberSnapshot],
+                               pending_appeals: int) -> DashboardCounters:
     live = [lease for lease in leases if lease.is_active]
     leased = [lease for lease in live if lease.role is not Role.ADMIN]
     statuses = Counter(lease.status for lease in leased)
     recommendations = Counter(lease.recommendation for lease in leased)
     with_access = {lease.login for lease in live}
+    # „Wygaśnięte” to alarm, nie archiwum: liczy tylko dostępy po terminie z ostatnich 30 dni
+    # (`lapsed_within_window`). Starsze wygaśnięcia zostają w tabeli „Dostępy” i w audycie.
+    recently_expired = [lease for lease in leased
+                        if lease.status is LeaseStatus.EXPIRED and lapsed_within_window(lease.days_remaining)]
     return DashboardCounters(
         active=statuses[LeaseStatus.ACTIVE],
         warning=statuses[LeaseStatus.WARNING],
-        expired=statuses[LeaseStatus.EXPIRED],
+        expired=len(recently_expired),
         permanent=len(live) - len(leased),
         revoked=len(leases) - len(live),
         downscope_recommendations=recommendations[Recommendation.DOWNSCOPE],

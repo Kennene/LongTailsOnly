@@ -16,7 +16,7 @@ async def test_dashboard_stats_from_lease_engine(session: AsyncSession) -> None:
     stats = await get_dashboard_stats(session, now=NOW)
 
     assert stats.model_dump(exclude={"generated_at"}) == {
-        "active": 1, "warning": 1, "expired": 1, "permanent": 1, "revoked": 1,
+        "active": 1, "warning": 1, "expired": 1, "expired_window_days": 30, "permanent": 1, "revoked": 1,
         "downscope_recommendations": 1, "revoke_recommendations": 1, "pending_appeals": 1,
         "onboarding_candidates": 2,
     }

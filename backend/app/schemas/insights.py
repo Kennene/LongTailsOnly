@@ -16,6 +16,7 @@ class DashboardStats(BaseModel):
     active: int
     warning: int
     expired: int
+    expired_window_days: int
     permanent: int
     revoked: int
     downscope_recommendations: int

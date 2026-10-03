@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.time_provider import TimeProvider
 from app.db.seed import seed_demo_data, table_counts
 from app.db.session import build_engine, init_db
-from app.domain.enums import ActionType, Role
+from app.domain.enums import ActionType, LeaseStatus, Role
+from app.domain.lease_window import days_remaining, lapsed_within_window
 from app.domain.roles import is_at_least, required_permission_for
 from app.models import ActivityEvent, Lease, Repository, Team, User
 
@@ -117,6 +118,19 @@ async def test_lease_expiry_matches_activity(session: AsyncSession) -> None:
                       if is_at_least(e.required_permission, lease.current_role)]
         expected = max([lease.granted_at, *qualifying]) + timedelta(days=30)
         assert lease.expires_at == expected, f"{lease.user.login}/{lease.repository.name}"
+
+
+async def test_lapsed_leases_land_on_both_sides_of_the_dashboard_window(session: AsyncSession) -> None:
+    """Licznik „Wygaśnięte” liczy tylko ostatnie 30 dni (`EXPIRED_WINDOW_DAYS`), więc seed musi mieć
+    zarówno świeże wygaśnięcia (inaczej Pulpit pokazuje zero), jak i stare, które wypadają z okna."""
+    await _seeded(session)
+    leases = (await session.execute(select(Lease).where(Lease.current_role != Role.ADMIN))).scalars().all()
+    lapsed = [lease for lease in leases if lease.expires_at is not None and lease.expires_at <= NOW]
+    recent = [lease for lease in lapsed
+              if lapsed_within_window(days_remaining(lease.expires_at, NOW))]
+
+    assert len(recent) == 5, [lease.repository.name for lease in recent]
+    assert len(lapsed) > len(recent)
 
 
 async def test_events_are_in_the_past_and_consistent(session: AsyncSession) -> None:

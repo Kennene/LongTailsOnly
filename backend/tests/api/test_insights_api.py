@@ -24,8 +24,8 @@ async def test_dashboard_stats_endpoint(client: AsyncClient, session: AsyncSessi
     body = (await client.get("/api/v1/dashboard/stats")).json()
 
     assert body == {"generated_at": "2026-10-03T12:00:00Z", "active": 1, "warning": 1, "expired": 1,
-                    "permanent": 1, "revoked": 1, "downscope_recommendations": 1, "revoke_recommendations": 1,
-                    "pending_appeals": 1, "onboarding_candidates": 2}
+                    "expired_window_days": 30, "permanent": 1, "revoked": 1, "downscope_recommendations": 1,
+                    "revoke_recommendations": 1, "pending_appeals": 1, "onboarding_candidates": 2}
 
 
 async def test_graph_endpoint_returns_react_flow_payload(client: AsyncClient, session: AsyncSession) -> None:

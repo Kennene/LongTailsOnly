@@ -32,6 +32,12 @@ def _expires_at(spec: LeaseSpec, granted_at: datetime, anchor: datetime) -> date
     return max([granted_at, *qualifying]) + timedelta(days=LEASE_DURATION_DAYS)
 
 
+def _granted_at(spec: LeaseSpec, anchor: datetime) -> datetime:
+    """Leases in the demo are granted at the anchor, except the ones staggered to lapse at different times."""
+    days_ago = LEASE_GRANTED_DAYS_AGO if spec.granted_days_ago is None else spec.granted_days_ago
+    return anchor - timedelta(days=days_ago)
+
+
 async def seed_demo_data(session: AsyncSession, clock: ClockPort) -> None:
     if await session.scalar(select(User.id).where(User.login == ADMIN_LOGIN)) is not None:
         return
@@ -50,9 +56,9 @@ async def seed_demo_data(session: AsyncSession, clock: ClockPort) -> None:
     session.add_all([Lease(user=users[ADMIN_LOGIN], repository=repo, current_role=Role.ADMIN,
                            granted_at=admin_granted, expires_at=None) for repo in repos.values()])
 
-    granted = anchor - timedelta(days=LEASE_GRANTED_DAYS_AGO)
     for spec in lease_specs():
         user, repo = users[spec.login], repos[spec.repo]
+        granted = _granted_at(spec, anchor)
         session.add(Lease(user=user, repository=repo, current_role=spec.role, granted_at=granted,
                           expires_at=_expires_at(spec, granted, anchor)))
         session.add_all([ActivityEvent(user=user, repository=repo,

@@ -79,7 +79,7 @@ więc 15 rekordów wystarczy do zbudowania i przetestowania widoku.
 | Przypadek | `expires_at` | `days_remaining` | Przykład |
 | --- | --- | --- | --- |
 | Dostęp z terminem | ISO-8601 | liczba dodatnia | `kamil@core-api` → `28` |
-| Dostęp wygasł | ISO-8601 (w przeszłości) | **liczba ujemna** | `kamil@legacy-reports` → `-61` |
+| Dostęp wygasł | ISO-8601 (w przeszłości) | **liczba ujemna** | `kamil@legacy-reports` → `-48` |
 | Stały admin (break-glass) | `null` | `null` | `tomasz-admin@core-api` |
 
 Wartości ujemne **nie są przycinane do zera** — odpowiadają naturalnemu wynikowi
@@ -89,6 +89,13 @@ wyłącznie dla dostępów bez terminu, więc `days_remaining is None` ⇔ `expi
 Panel powinien kluczować po polu `status`, a nie po znaku `days_remaining`.
 Jeżeli Osoba 3 zdecyduje inaczej (np. przycięcie do zera), trzeba zaktualizować fixtures
 i ten dokument w tym samym PR-ze.
+
+Wyjątkiem od „panel kluczuje po `status`” jest licznik „Wygaśnięte” na Pulpicie: pokazuje
+tylko wygaśnięcia z ostatnich 30 dni (`app/domain/lease_window.py::EXPIRED_WINDOW_DAYS`), więc
+patrzy na `status == "EXPIRED"` **i** `days_remaining >= -30`. Dlatego w `leases-expired.json`
+są dzierżawy po obu stronach okna — 2, 6, 11, 17 i 23 dni po terminie wchodzą do licznika,
+a 34 i 47 dni już nie (zostają jako historia w tabeli „Dostępy”). Wartości `days_remaining`
+liczymy dla momentu o dobę po kotwicy demo, tak jak pozostałe wiersze tych plików.
 
 ## Jak dodać fixtures
 

@@ -6,7 +6,7 @@
     "actor_id": null,
     "action": "LEASE_EXPIRED",
     "target": "kamil@legacy-reports",
-    "details": { "recommendation": "REVOKE", "days_remaining": -61, "current_role": "write" },
+    "details": { "recommendation": "REVOKE", "days_remaining": -48, "current_role": "write" },
     "justification": null
   },
   {
