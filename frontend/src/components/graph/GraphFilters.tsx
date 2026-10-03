@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -11,6 +11,8 @@ export interface GraphFiltersProps {
   onTeamChange: (team: string | null) => void;
   onlyRisk: boolean;
   onOnlyRiskChange: (onlyRisk: boolean) => void;
+  /** Dodatkowe kontrolki w tym samym pasku (np. wybór osoby do podświetlenia). */
+  children?: ReactNode;
 }
 
 const TEAM_SELECT_ID = 'graph-team-filter';
@@ -28,6 +30,7 @@ export function GraphFilters({
   onTeamChange,
   onlyRisk,
   onOnlyRiskChange,
+  children,
 }: GraphFiltersProps): React.JSX.Element {
   return (
     <div className="flex flex-wrap items-end gap-6 rounded-xl border border-border bg-card p-4">
@@ -60,6 +63,8 @@ export function GraphFilters({
         />
         <Label htmlFor={RISK_SWITCH_ID}>Tylko podwyższone ryzyko</Label>
       </div>
+
+      {children}
     </div>
   );
 }

@@ -79,6 +79,7 @@ frontend/
     │   └── audit/         # Dziennik audytu
     ├── hooks/             # Custom hooks (TanStack Query)
     ├── lib/               # dateTime, statusBadges, graphLayout, grouping, utils (cn)
+    ├── lib/               # dateTime, statusBadges, graphLayout, graphForceLayout, graphHighlight, utils (cn)
     ├── pages/             # Widoki składane z hooków i komponentów
     ├── test/              # setup, renderWithProviders, handlery MSW
     ├── types/api.ts       # GENEROWANY z backend/contract/schema.json (ADR 0009) — nie edytować
