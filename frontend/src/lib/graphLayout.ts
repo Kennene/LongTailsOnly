@@ -13,14 +13,20 @@ const ROW_GAP = 96;
 /**
  * Deterministyczny układ kolumnowy dla węzłów bez `position` (spec §7.6).
  *
- * `x` wynika z typu węzła (`user` < `team` < `repo`), `y` z kolejności występowania na liście.
- * Węzły, które przyniosły `position` z API, zostają nietknięte — dlatego funkcja jest
- * idempotentna i można ją bezpiecznie wywołać ponownie po każdej zmianie filtrów.
+ * `x` wynika z typu węzła (`user` < `team` < `repo`), a `y` z **kolejności w obrębie kolumny** —
+ * nie z indeksu w całej tablicy. Licznik globalny układał wszystkie węzły w jednej kolumnie
+ * (12 węzłów → 1108 px wysokości w oknie 512 px, więc `fitView` nie mieścił grafu).
+ * Węzły, które przyniosły `position` z API, zostają nietknięte, więc funkcja jest idempotentna.
  */
 export function applyColumnLayout(nodes: GraphNode[]): GraphNode[] {
-  return nodes.map((node: GraphNode, index: number): GraphNode =>
-    node.position === undefined
-      ? { ...node, position: { x: COLUMN_X[node.type], y: index * ROW_GAP } }
-      : node,
-  );
+  const rowsByType = new Map<GraphNode['type'], number>();
+
+  return nodes.map((node: GraphNode): GraphNode => {
+    const row: number = rowsByType.get(node.type) ?? 0;
+    rowsByType.set(node.type, row + 1);
+
+    return node.position === undefined
+      ? { ...node, position: { x: COLUMN_X[node.type], y: row * ROW_GAP } }
+      : node;
+  });
 }

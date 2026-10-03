@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
+import { RecommendationBadge } from '@/components/leases/RecommendationBadge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -23,11 +24,16 @@ export interface LeaseTableProps {
 /** Ranga pilności (spec §7.2): wygasłe, potem ostrzeżenia, na końcu aktywne. */
 const STATUS_RANK: Record<LeaseStatus, number> = { EXPIRED: 0, WARNING: 1, ACTIVE: 2 };
 
-/** Szerokości kolumn tekstowych — długie loginy i nazwy repozytoriów nie rozsadzają tabeli. */
+/**
+ * Szerokości kolumn tekstowych. W `table-layout: auto` samo `max-w-*` jest tylko sufitem i niczego
+ * nie rezerwuje — kolumna tożsamości zwijała się wtedy do ~108 px, a `Ostatnia aktywność` rosła do
+ * ~234 px, spychając `Status`, `Rekomendację` i akcję wiersza poza ekran. Dlatego szerokości
+ * rezerwujemy jawnie (`w-*`), a komórki zostają w jednej linii.
+ */
 const COLUMN_WIDTH = {
-  user: 'max-w-48',
-  team: 'max-w-40',
-  repository: 'max-w-56',
+  user: 'w-44',
+  team: 'w-16',
+  repository: 'w-52',
 } as const;
 
 export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Element {
@@ -58,16 +64,16 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
 
           return (
             <TableRow key={lease.id}>
-              <TableCell className={cn(COLUMN_WIDTH.user, 'break-words whitespace-normal')}>
-                <div className="font-medium">{lease.user.name}</div>
-                <div className="font-mono text-muted-foreground">{lease.user.login}</div>
+              <TableCell className={COLUMN_WIDTH.user}>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="truncate font-medium">{lease.user.name}</span>
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                    {lease.user.login}
+                  </span>
+                </div>
               </TableCell>
-              <TableCell className={cn(COLUMN_WIDTH.team, 'break-words whitespace-normal')}>
-                {lease.user.team?.name ?? '—'}
-              </TableCell>
-              <TableCell
-                className={cn(COLUMN_WIDTH.repository, 'font-mono break-words whitespace-normal')}
-              >
+              <TableCell className={COLUMN_WIDTH.team}>{lease.user.team?.name ?? '—'}</TableCell>
+              <TableCell className={cn(COLUMN_WIDTH.repository, 'font-mono')}>
                 {repositoryFullName}
               </TableCell>
               <TableCell>{getRoleLabel(lease.current_role)}</TableCell>
@@ -78,7 +84,9 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
               <TableCell>
                 <LeaseStatusBadge status={lease.status} />
               </TableCell>
-              <TableCell>{getRecommendationLabel(lease.recommendation)}</TableCell>
+              <TableCell>
+                <RecommendationBadge recommendation={lease.recommendation} />
+              </TableCell>
               {onDecide === undefined ? null : (
                 <TableCell className="text-right">
                   <Button variant="outline" size="sm" onClick={() => onDecide(lease)}>

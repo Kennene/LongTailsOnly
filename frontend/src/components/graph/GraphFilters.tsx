@@ -51,7 +51,13 @@ export function GraphFilters({
       </div>
 
       <div className="flex items-center gap-2 pb-1.5">
-        <Switch checked={onlyRisk} id={RISK_SWITCH_ID} onCheckedChange={onOnlyRiskChange} />
+        {/* `label for` nie nazywa elementu z `role="switch"` — stąd jawna etykieta dostępna. */}
+        <Switch
+          aria-label="Tylko podwyższone ryzyko"
+          checked={onlyRisk}
+          id={RISK_SWITCH_ID}
+          onCheckedChange={onOnlyRiskChange}
+        />
         <Label htmlFor={RISK_SWITCH_ID}>Tylko podwyższone ryzyko</Label>
       </div>
     </div>

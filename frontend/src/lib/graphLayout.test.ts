@@ -44,6 +44,20 @@ it('keeps rows in the order of appearance within a column', () => {
   expect(yOf(laidOut, 'u1')).toBeLessThan(yOf(laidOut, 'u2'));
 });
 
+it('starts every column at the top instead of stacking all nodes in one column', () => {
+  const laidOut = applyColumnLayout([
+    { id: 'u1', type: 'user', data: { label: 'anna' } },
+    { id: 'u2', type: 'user', data: { label: 'bartek' } },
+    { id: 'u3', type: 'user', data: { label: 'celina' } },
+    { id: 'r1', type: 'repo', data: { label: 'core-api' } },
+    { id: 'r2', type: 'repo', data: { label: 'payment-gw' } },
+  ]);
+
+  expect(yOf(laidOut, 'u1')).toBe(0);
+  expect(yOf(laidOut, 'r1')).toBe(0);
+  expect(yOf(laidOut, 'r2')).toBe(yOf(laidOut, 'u2'));
+});
+
 it('is idempotent for nodes that already carry a position', () => {
   const laidOut = applyColumnLayout(THREE_TYPES);
 

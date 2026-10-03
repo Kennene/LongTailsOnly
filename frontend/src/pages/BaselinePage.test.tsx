@@ -28,8 +28,9 @@ it('renders baseline entries for both teams and never proposes administrator acc
   // niżej mogą być synchroniczne — inaczej ścigałyby się z siecią.
   expect(screen.getByText('longtails/core-api')).toBeInTheDocument();
   expect(screen.getByText('longtails/qa-automation')).toBeInTheDocument();
-  expect(screen.getByText('11/12 aktywnych')).toBeInTheDocument();
-  expect(screen.getByText('6/6 aktywnych')).toBeInTheDocument();
+  // Kolumna „Udział aktywnych (30 dni)” — sama liczba, bez powtarzania nagłówka w każdej komórce.
+  expect(screen.getByText('11/12')).toBeInTheDocument();
+  expect(screen.getByText('6/6')).toBeInTheDocument();
 
   expect(screen.getAllByText('Zapis (write)').length).toBeGreaterThan(0);
   expect(screen.getAllByText('Odczyt (read)').length).toBeGreaterThan(0);

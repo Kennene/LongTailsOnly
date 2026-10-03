@@ -10,6 +10,7 @@ import {
   type ExtensionChoice,
 } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
+import { LeaseActivityPanel } from '@/components/leases/LeaseActivityPanel';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -160,6 +161,10 @@ function DecisionForm({ lease, appeal, onOpenChange }: DecisionFormProps): React
         <dt className="text-muted-foreground">Rekomendacja</dt>
         <dd className="font-medium">{getRecommendationLabel(lease.recommendation)}</dd>
       </dl>
+
+      {/* Dowód użycia tylko w trybie dzierżawy: tryb odwołania ma własny panel z tymi
+          samymi licznikami, więc montowanie obu dublowałoby zapytanie o statystyki. */}
+      {appeal === null ? <LeaseActivityPanel lease_id={lease.id} /> : null}
 
       <ExtensionControls
         choice={choice}

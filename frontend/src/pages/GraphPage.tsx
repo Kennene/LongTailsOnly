@@ -55,8 +55,8 @@ export function GraphPage(): React.JSX.Element {
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Graf</h1>
         <p className="text-sm text-muted-foreground">
-          Kto ma dostęp do czego: osoby, zespoły i repozytoria. Kolor węzła oraz krawędzi niesie
-          status dzierżawy.
+          Kto ma dostęp do czego: osoby i repozytoria (węzły zespołów pojawiają się, gdy dostarczy
+          je API). Kolor węzła oraz krawędzi niesie status dzierżawy.
         </p>
       </header>
 

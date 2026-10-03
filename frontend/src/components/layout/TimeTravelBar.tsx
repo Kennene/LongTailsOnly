@@ -180,7 +180,9 @@ export function TimeTravelBar(): React.JSX.Element {
 
         <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
           <DialogTrigger asChild>
-            <Button type="button" size="xs" variant="destructive" disabled={isBusy}>
+            {/* `outline`, nie `destructive`: czerwony jest zarezerwowany dla odbioru dostępu
+                (DESIGN.md §1), a sam reset ma już ostrzeżenie w dialogu potwierdzenia. */}
+            <Button type="button" size="xs" variant="outline" disabled={isBusy}>
               Reset
             </Button>
           </DialogTrigger>

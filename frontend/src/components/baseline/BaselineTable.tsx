@@ -52,7 +52,7 @@ export function BaselineTable({ response }: BaselineTableProps): React.JSX.Eleme
                   </TableCell>
                   <TableCell>{getRoleLabel(entry.proposed_role)}</TableCell>
                   <TableCell>
-                    {entry.active_members}/{entry.team_size} aktywnych
+                    {entry.active_members}/{entry.team_size}
                   </TableCell>
                 </TableRow>
               ))}
