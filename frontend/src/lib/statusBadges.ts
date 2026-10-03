@@ -32,6 +32,27 @@ const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
   REVOKE: 'Odbierz',
 };
 
+/**
+ * Rekomendacje jako pigułki (DESIGN.md §1 i §4): `KEEP` zostaje neutralne (brak koloru jest
+ * sygnałem), `DOWNSCOPE` bierze rodzinę doradczą, a `REVOKE` rodzinę krytyczną (`status-revoke`
+ * to alias `status-expired`). Etykiety pochodzą z `RECOMMENDATION_LABELS`, więc tabela i modal
+ * nie mogą się rozjechać.
+ */
+const RECOMMENDATION_BADGES: Record<Recommendation, BadgeStyle> = {
+  KEEP: {
+    label: RECOMMENDATION_LABELS.KEEP,
+    className: 'border-border bg-muted text-muted-foreground',
+  },
+  DOWNSCOPE: {
+    label: RECOMMENDATION_LABELS.DOWNSCOPE,
+    className: 'border-status-downscope-border bg-status-downscope-subtle text-status-downscope',
+  },
+  REVOKE: {
+    label: RECOMMENDATION_LABELS.REVOKE,
+    className: 'border-status-revoke-border bg-status-revoke-subtle text-status-revoke',
+  },
+};
+
 const APPEAL_STATUS_BADGES: Record<AppealStatus, BadgeStyle> = {
   PENDING: {
     label: 'Oczekujące',
@@ -57,6 +78,10 @@ export function getRoleLabel(role: Role): string {
 
 export function getRecommendationLabel(recommendation: Recommendation): string {
   return RECOMMENDATION_LABELS[recommendation];
+}
+
+export function getRecommendationBadge(recommendation: Recommendation): BadgeStyle {
+  return RECOMMENDATION_BADGES[recommendation];
 }
 
 export function getAppealStatusBadge(status: AppealStatus): BadgeStyle {
