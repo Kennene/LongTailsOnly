@@ -23,3 +23,10 @@ frontend/dist/
 Thumbs.db
 .idea/
 *.swp
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
+*.db
+node_modules/

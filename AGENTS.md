@@ -15,13 +15,13 @@ Katalog i opis dostępnych skilli znajduje się w pliku `SKILLS.md`.
 
 ## Struktura dokumentacji i artefaktów
 
-| Ścieżka                   | Zawartość                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------- |
-| `AGENTS.md`               | Główny przewodnik dla agentów i zasady pracy.                                   |
-| `SKILLS.md`               | Rejestr skilli agentowych w `.agents/skills/`.                                  |
-| `CODING_STANDARDS.md`     | Standardy architektoniczne, technologiczne i konwencje kodu (Backend/Frontend). |
-| `docs/superpowers/specs/` | Specyfikacje architektoniczne i projektowe.                                     |
-| `docs/superpowers/plans/` | Plany realizacji zadań.                                                         |
+| Ścieżka | Zawartość |
+| --- | --- |
+| `AGENTS.md` | Główny przewodnik dla agentów i zasady pracy. |
+| `SKILLS.md` | Rejestr skilli agentowych w `.agents/skills/`. |
+| `docs/superpowers/specs/` | Specyfikacje architektoniczne i projektowe. |
+| `docs/superpowers/plans/` | Plany realizacji zadań. |
+| `docs/github-mock.md` | Dokumentacja mocka GitHuba, zdarzeń aktywności, time-travel i danych demo (uruchamianie, testy). |
 
 ## Zasady
 

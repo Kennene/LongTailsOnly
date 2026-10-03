@@ -4,7 +4,10 @@
       "enum": [
         "PushEvent",
         "PullRequestReviewEvent",
-        "IssueCommentEvent"
+        "IssueCommentEvent",
+        "PullRequestEvent",
+        "IssuesEvent",
+        "PublicEvent"
       ],
       "title": "ActionType",
       "type": "string"

@@ -6,7 +6,10 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.github_mock.http import register_github_error_handlers
+from app.api.github_mock.router import router as github_mock_router
 from app.api.v1.demo import router as demo_router
+from app.api.v1.simulation import router as simulation_router
 from app.core.time_provider import time_provider
 from app.db.bootstrap import prepare_database
 from app.db.session import engine, get_session
@@ -20,6 +23,9 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="LongTailsOnly API", lifespan=lifespan)
 app.include_router(demo_router)
+app.include_router(simulation_router)
+app.include_router(github_mock_router)
+register_github_error_handlers(app)
 
 
 @app.get("/health")

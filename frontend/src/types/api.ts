@@ -4,7 +4,8 @@
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "ActionType".
  */
-export type ActionType = "PushEvent" | "PullRequestReviewEvent" | "IssueCommentEvent";
+export type ActionType =
+  "PushEvent" | "PullRequestReviewEvent" | "IssueCommentEvent" | "PullRequestEvent" | "IssuesEvent" | "PublicEvent";
 /**
  * This interface was referenced by `LongTailsOnlyAPIContract`'s JSON-Schema
  * via the `definition` "Role".

@@ -19,6 +19,10 @@ class ActionType(StrEnum):
     PUSH = "PushEvent"
     PR_REVIEW = "PullRequestReviewEvent"
     ISSUE_COMMENT = "IssueCommentEvent"
+    # Mock-only activity (ADR 0010): visible in /events, never renews a lease.
+    PR_MERGE = "PullRequestEvent"
+    ISSUE_LABEL = "IssuesEvent"
+    REPO_SETTINGS = "PublicEvent"
 
 
 class LeaseStatus(StrEnum):
