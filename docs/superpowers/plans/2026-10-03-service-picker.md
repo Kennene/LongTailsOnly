@@ -113,7 +113,7 @@ Expected: PASS (5 passed)
 
 - [ ] **Step 5: Prove the reset does not poison a later test module**
 
-Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest tests/ports/test_service_registry.py tests/api/test_health.py -q`
+Run: `cd backend && UV_CACHE_DIR=<repo>/.uv-cache uv run pytest tests/ports/test_service_registry.py tests/test_health.py -q`
 Expected: PASS. If a later-running module ever sees an empty catalog, the `_BUILTIN` tier is not being used — fix that rather than making the tests order-dependent.
 
 - [ ] **Step 6: Commit**
@@ -163,18 +163,24 @@ def test_demo_tracker_is_registered_but_unavailable() -> None:
     assert set(demo.capabilities) == {"dashboard", "audit"}
 
 
-async def test_get_vcs_provider_defaults_to_github(session, clock) -> None:
-    provider = get_vcs_provider(session, clock)
+async def test_get_vcs_provider_defaults_to_github(session: AsyncSession) -> None:
+    provider = get_vcs_provider(session, TimeProvider(base_time_source=lambda: NOW))
     assert isinstance(provider, DatabaseVCSAdapter)
 
 
-async def test_get_vcs_provider_rejects_unknown_id(session, clock) -> None:
+async def test_get_vcs_provider_rejects_unknown_id(session: AsyncSession) -> None:
     with pytest.raises(ServiceError) as excinfo:
-        get_vcs_provider(session, clock, service_id="nope")
+        get_vcs_provider(session, TimeProvider(base_time_source=lambda: NOW), service_id="nope")
     assert excinfo.value.status_code == 404
 ```
 
-Reuse the existing `session`/`clock` fixtures from `backend/tests/conftest.py`; read it first and match the fixture names it actually provides rather than inventing new ones.
+**There is no `clock` fixture in `backend/tests/conftest.py`** — it provides only `engine`, `session` and `client`, plus an autouse `default_enforcement_mode`. Build the clock directly, exactly as `backend/tests/adapters/test_database_vcs.py:19` already does:
+
+```python
+NOW = datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
+```
+
+Import `AsyncSession` from `sqlalchemy.ext.asyncio`, `TimeProvider` from `app.core.time_provider`, and `ServiceError` from `app.services.errors`. Match the import ordering and style of `backend/tests/adapters/test_database_vcs.py`, which is the nearest neighbour to this file.
 
 - [ ] **Step 2: Run test to verify it fails**
 
