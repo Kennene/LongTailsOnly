@@ -10,6 +10,27 @@ Pomyśl o biurze, w którym każdy dostaje klucz do pokoju, kiedy go potrzebuje,
 
 Projekt powstał na hackathonie HackYeah 2026 w kategorii Defence.
 
+## Quickstart
+
+### Bare metal
+
+Wymagania: [`uv`](https://docs.astral.sh/uv/), Node.js 24+, `curl`.
+
+```bash
+./build.sh
+./run.sh
+```
+
+### Docker
+
+```bash
+docker compose up -d
+```
+
+Panel: <http://localhost:5173>, API: <http://localhost:8000/docs>. Szczegóły uruchamiania i testów: [`backend/README.md`](backend/README.md), [`frontend/README.md`](frontend/README.md).
+
+---
+
 ## Problem
 
 W firmach, które tworzą oprogramowanie, dostęp do kodu daje się „na wszelki wypadek” i nigdy się go nie odbiera.
