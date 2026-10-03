@@ -10,6 +10,36 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-03-frontend-spa-design.md`
 
+## Status realizacji
+
+> Ten blok jest źródłem statusu. Checkboxy w krokach poniżej zostają odznaczone celowo — opisują
+> mikro-instrukcję wykonawczą (2–5 min), a nie stan prac. Stan na gałęzi `frontend`.
+
+| Zakres                                                       | Stan     | Dowód                                                                                                            |
+| ------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| Zadania 1–13 (PR 5.1–5.10)                                   | zrobione | `frontend/src/**` + 18 plików testów                                                                             |
+| Zadanie 14 (integracja)                                      | zrobione | `src/App.integration.test.tsx` — pulpit → `+25 dni` → okno ostrzegawcze → blokada odbioru ostatniemu adminowi     |
+| Poza planem: rozpatrzenie odwołania w modalu (domknięcie UC-3) | zrobione | `84d64be`                                                                                                        |
+| Poza planem: poprawki z audytu projektowego (graf, gęstość tabel, liczniki KPI, rail nawigacji) | zrobione | `de20507`, `3498286`, `0444b4f`, `1bb4b1d`                                                                       |
+
+**Bramka (ostatni przebieg, całość zielona):** `npm run lint` · `npm run format:check` · `npm run typecheck` · `npm run build` → exit 0; `npx vitest --run` → **18 plików / 150 testów**.
+
+**Commity:** `25c6505` (checkpoint), `985078c` (5.1–5.10 + narzędzia), `84d64be` (UC-3), `de20507`, `aedb894`, `3498286`, `0444b4f`, `1bb4b1d`. Świadomie **nie** 14 commitów per zadanie: agenci pracowali równolegle w jednym drzewie, więc commit tematyczny był jedynym sposobem, by każdy commit był zielony.
+
+**Odchylenia od planu (fakty, nie intencje):**
+
+- `msw 2.15` (plan: 3.0) i `react 19.2` (plan: 19.3) — rozwiązały się z `npm`/CLI.
+- Modal decyzji sam czyta zegar (`useSimulatedClock()`) zamiast propa `simulatedNow`; interfejs to nadal trzy pola plus opcjonalne `appeal`.
+- `Rozpatrz` otwiera modal z kontekstem odwołania (plan tego nie przewidywał).
+- Tabele: szerokości rezerwowane parami `w-* max-w-*` (sam `max-w-*` nic nie rezerwuje — zmierzone dwukrotnie), kolumny drugorzędne `hidden 2xl:table-cell`, kolumna akcji `sticky right-0`; sidebar zwija się do 64 px poniżej `xl`.
+- Znane, ograniczone ustępstwo: 12 px poziomego przewijania dla viewportów 1536–1547 px, bez ucinania danych.
+
+**Czego plan nie objął, a zostaje do zrobienia:**
+
+- Kontrakty backendu 2.5 / 3.6 / 4.2–4.6 — frontend używa fixture'ów w docelowych kształtach; każdy moduł `api/*.ts` ma komentarz „do potwierdzenia", a podmiana dotknie jednego pliku na kontrakt.
+- Test gałęzi `VITE_USE_FIXTURES` (zadanie 4) i `api/leases.test.ts` (zadanie 6): payloady decyzji są pokryte na poziomie UI, ale nie na poziomie klienta API.
+- `docs/github-mock.md` i `AGENTS.md` z `main` opisują mock po stronie backendu — frontend nie został jeszcze zmergowany z `origin/main` (gałąź jest lokalna).
+
 ## Globalne ograniczenia
 
 - **Limit 300 linii na plik** (`CODING_STANDARDS.md` §1). Komponent przekraczający limit dzielimy w obrębie jego katalogu domenowego.
