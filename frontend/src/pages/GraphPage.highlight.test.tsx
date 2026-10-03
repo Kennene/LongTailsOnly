@@ -131,11 +131,35 @@ it('restores the selection from the URL and lists the access in the details pane
   ).toBeInTheDocument();
 });
 
-it('shows no highlight and a hint in the panel when nothing is selected', async () => {
+it('shows no highlight and explains how to clear a selection when nothing is selected', async () => {
   renderWithProviders(<GraphPage />);
 
   await screen.findByTestId('graph-nodes');
 
+  // Podpowiedź siedzi w opisie widoku, a nie nad płótnem — nie zasłania węzłów.
   expect(highlighted()).toBe('0');
-  expect(screen.getByText(/Kliknij osobę, repozytorium lub zespół/)).toBeInTheDocument();
+  expect(screen.getByText(/Escape albo kliknięcie w tło czyści zaznaczenie/)).toBeInTheDocument();
+});
+
+it('shows the details panel only once a node is selected', async () => {
+  renderWithProviders(<GraphPage />);
+
+  await screen.findByTestId('graph-nodes');
+
+  expect(screen.queryByRole('region', { name: /^Szczegóły:/ })).not.toBeInTheDocument();
+
+  await clickNode('kamil');
+
+  expect(screen.getByRole('region', { name: 'Szczegóły: kamil' })).toBeInTheDocument();
+});
+
+it('closes the details panel with its close button and clears the selection', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<GraphPage />, { route: '/graph?user=kamil' });
+
+  const panel: HTMLElement = await screen.findByRole('region', { name: 'Szczegóły: kamil' });
+  await user.click(within(panel).getByRole('button', { name: 'Zamknij szczegóły' }));
+
+  expect(screen.queryByRole('region', { name: /^Szczegóły:/ })).not.toBeInTheDocument();
+  expect(highlighted()).toBe('0');
 });
