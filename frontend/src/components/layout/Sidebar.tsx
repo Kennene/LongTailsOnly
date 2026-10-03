@@ -25,7 +25,7 @@ export function Sidebar(): React.JSX.Element {
         {/* Nazwa produktu zostaje w drzewie dostępności także w zwiniętym pasku (`sr-only`). */}
         <span className="sr-only flex min-w-0 flex-col leading-tight xl:not-sr-only">
           <span className="truncate text-sm font-semibold">Lease Governor</span>
-          <span className="truncate text-[11px] text-muted-foreground">Dostęp do GitHub</span>
+          <span className="truncate text-xs text-muted-foreground">Dostęp do GitHub</span>
         </span>
       </div>
 
@@ -55,7 +55,7 @@ export function Sidebar(): React.JSX.Element {
         ))}
       </nav>
 
-      <p className="hidden shrink-0 border-t border-sidebar-border px-4 py-3 text-[11px] text-muted-foreground xl:block">
+      <p className="hidden shrink-0 border-t border-sidebar-border px-4 py-3 text-xs text-muted-foreground xl:block">
         Demo — zegar symulowany
       </p>
     </aside>

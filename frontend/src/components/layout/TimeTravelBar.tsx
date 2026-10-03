@@ -128,8 +128,11 @@ export function TimeTravelBar(): React.JSX.Element {
     });
   }
 
+  // Poniżej `xl` pasek jest stosem trzech wierszy w wąskim slocie TopBara; od `xl` miejsca jest dość,
+  // więc czas, presety i własna liczba dni stają w jednym wierszu, wyśrodkowanym w pionie
+  // z tytułem obok. Komunikaty błędów zawsze zajmują osobną linię pod spodem.
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1">
+    <div className="flex w-full min-w-0 flex-col gap-1 xl:flex-row xl:flex-wrap xl:items-center xl:justify-end xl:gap-x-3">
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
         <span className="truncate text-xs font-medium text-foreground">
           {clock.data ? formatDateTimePl(clock.data.now) : '—'}
@@ -214,13 +217,17 @@ export function TimeTravelBar(): React.JSX.Element {
       </form>
 
       {validationMessage !== null && (
-        <p id={CUSTOM_DAYS_ERROR_ID} role="alert" className="text-[0.7rem] text-destructive">
+        <p
+          id={CUSTOM_DAYS_ERROR_ID}
+          role="alert"
+          className="text-xs text-destructive xl:basis-full xl:text-right"
+        >
           {validationMessage}
         </p>
       )}
 
       {mutationError !== null && (
-        <p role="alert" className="text-[0.7rem] text-destructive">
+        <p role="alert" className="text-xs text-destructive xl:basis-full xl:text-right">
           {mutationError}
         </p>
       )}

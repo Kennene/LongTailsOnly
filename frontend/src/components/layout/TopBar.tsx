@@ -20,7 +20,7 @@ export function TopBar(): React.JSX.Element {
       <div
         data-slot="time-travel-bar"
         data-testid="time-travel-bar"
-        className="flex w-72 shrink-0 items-center justify-end"
+        className="flex w-72 shrink-0 items-center justify-end xl:w-auto"
       >
         <TimeTravelBar />
       </div>
