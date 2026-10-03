@@ -4,19 +4,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 const CLOCK_HEADING_ID = 'mocks-clock-heading';
 
-/** Grupy odpowiadają tagom w Swaggerze mocków (`backend/app/api/mock_docs.py`). */
+/** Grupy odpowiadają tagom w Swaggerze danego mocka (`backend/app/api/mock_docs.py`). */
 const MOCK_SYSTEMS: readonly MockSystem[] = [
   {
     name: 'GitHub',
     description: 'Udaje GitHub REST API v3 organizacji longtails.',
     basePath: '/api/v3',
     groups: ['Organizacja i repozytoria', 'Dostęp do repozytoriów', 'Zdarzenia'],
+    swaggerUrl: '/mocks/github/docs',
   },
   {
     name: 'Jira',
     description: 'Udaje Jira Cloud REST API v3: projekty 1:1 z repozytoriami.',
     basePath: '/rest/api/3',
     groups: ['Projekty', 'Role projektowe', 'Użytkownicy i grupy', 'Zgłoszenia', 'Audyt'],
+    swaggerUrl: '/mocks/jira/docs',
   },
 ];
 

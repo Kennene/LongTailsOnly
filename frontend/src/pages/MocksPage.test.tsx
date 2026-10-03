@@ -20,12 +20,17 @@ it('groups the demo controls and both mocked systems into separate sections', as
   expect(within(jira).getByText('Role projektowe')).toBeInTheDocument();
 });
 
-it('links both mocked systems to the mock Swagger page', () => {
+it('links each mocked system to its own Swagger page', () => {
   renderWithProviders(<MocksPage />);
 
-  const links = screen.getAllByRole('link', { name: /Swagger/ });
-  expect(links).toHaveLength(2);
-  for (const link of links) {
-    expect(link).toHaveAttribute('href', '/mocks/docs');
-  }
+  const github = screen.getByRole('region', { name: 'GitHub' });
+  expect(within(github).getByRole('link', { name: /Swagger/ })).toHaveAttribute(
+    'href',
+    '/mocks/github/docs',
+  );
+  const jira = screen.getByRole('region', { name: 'Jira' });
+  expect(within(jira).getByRole('link', { name: /Swagger/ })).toHaveAttribute(
+    'href',
+    '/mocks/jira/docs',
+  );
 });

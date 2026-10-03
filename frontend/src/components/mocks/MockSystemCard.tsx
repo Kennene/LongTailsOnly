@@ -2,14 +2,13 @@ import { ExternalLink } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-/** Swagger mocków serwuje backend (`app/api/mock_docs.py`); Vite przekazuje go przez proxy. */
-const MOCK_SWAGGER_URL = '/mocks/docs';
-
 export interface MockSystem {
   name: string;
   description: string;
   basePath: string;
   groups: readonly string[];
+  /** Osobny Swagger tego mocka serwuje backend (`app/api/mock_docs.py`); Vite przekazuje go przez proxy. */
+  swaggerUrl: string;
 }
 
 interface MockSystemCardProps {
@@ -42,12 +41,12 @@ export function MockSystemCard({ system }: MockSystemCardProps): React.JSX.Eleme
           ))}
         </ul>
         <a
-          href={MOCK_SWAGGER_URL}
+          href={system.swaggerUrl}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
         >
-          Swagger mocków
+          Swagger {system.name}
           <ExternalLink className="size-3.5" aria-hidden="true" />
         </a>
       </CardContent>

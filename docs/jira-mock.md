@@ -30,7 +30,7 @@ Projekt Jiry to wiersz `repositories` z `provider='jira'`, `name=KEY` (np. `PAY`
 
 Jak w `docs/github-mock.md`: `cd backend; uv sync --extra dev; uv run uvicorn app.main:app --reload`. Seed (GitHub, aktywność, Jira) ładuje się przy starcie i po `POST /api/v1/demo/reset`.
 Ustawienie `JIRA_SITE` (domyślnie `longtails`) w `.env`.
-Swagger mocka: `http://127.0.0.1:8000/mocks/docs` (endpointy Jiry i GitHuba są ukryte w głównym `/docs`).
+Swagger mocka: `http://127.0.0.1:8000/mocks/jira/docs` (endpointy Jiry i GitHuba są ukryte w głównym `/docs`; mock GitHuba ma własną stronę `/mocks/github/docs`).
 
 ## 3. Endpointy (`/rest/api/3`)
 
