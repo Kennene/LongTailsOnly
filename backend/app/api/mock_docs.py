@@ -40,7 +40,7 @@ GITHUB_DOCS = MockDocs(
     routes=github_mock_router.routes,
     tags=[
         {"name": "GitHub · Organizacja i repozytoria", "description": "Członkowie, zespoły i repozytoria organizacji `longtails`."},
-        {"name": "GitHub · Dostęp do repozytoriów", "description": "Collaboratorzy: odczyt, nadanie i odebranie uprawnień (= dzierżawa)."},
+        {"name": "GitHub · Dostęp do repozytoriów", "description": "Collaboratorzy: odczyt, nadanie i odebranie uprawnień (= dostęp)."},
         {"name": "GitHub · Zdarzenia", "description": "Strumień aktywności repozytorium."},
     ],
 )
