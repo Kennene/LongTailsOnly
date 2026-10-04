@@ -76,9 +76,8 @@ async function renderAppealModal(
     <DecisionModal appeal={appeal} lease={null} open onOpenChange={onOpenChange} />,
   );
 
-  // Wybór daty wymaga czasu symulowanego z API — czekamy, aż modal będzie gotowy.
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
+    expect(screen.getByLabelText('Liczba dni')).toBeEnabled();
   });
 }
 
@@ -187,13 +186,13 @@ describe('DecisionModal w trybie odwołania', () => {
     const onOpenChange = vi.fn<(open: boolean) => void>();
     await renderAppealModal(onOpenChange);
 
-    await user.click(screen.getByRole('button', { name: '2x' }));
+    await user.click(screen.getByRole('button', { name: '+60' }));
     await user.click(screen.getByRole('button', { name: 'Zatwierdź odwołanie' }));
 
     await waitFor(() => {
       expect(getLastAppealDecision()).toEqual({
         appeal_id: pendingAppeal.id,
-        request: { action: 'EXTEND', extension: { multiplier: 2 } },
+        request: { action: 'EXTEND', extension: { custom_days: 60 } },
       });
     });
     // Zatwierdzenie idzie wyłącznie decyzją o dzierżawie: bez odrzucenia i bez nowego wniosku.
@@ -309,7 +308,7 @@ describe('DecisionModal bez odwołania', () => {
     renderWithProviders(<DecisionModal lease={otherLease} open onOpenChange={() => {}} />);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
+      expect(screen.getByLabelText('Liczba dni')).toBeEnabled();
     });
 
     expect(screen.queryByText('Rozpatrzenie odwołania')).not.toBeInTheDocument();

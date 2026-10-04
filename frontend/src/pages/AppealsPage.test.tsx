@@ -197,7 +197,7 @@ describe('AppealsPage', () => {
     await waitFor(() => {
       expect(getLastAppealDecision()).toEqual({
         appeal_id: PENDING_APPEAL.id,
-        request: { action: 'EXTEND', extension: { preset_days: 30 } },
+        request: { action: 'EXTEND', extension: { custom_days: 30 } },
       });
     });
     expect(await screen.findByText('Odwołanie zatwierdzone')).toBeInTheDocument();

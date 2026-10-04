@@ -38,14 +38,17 @@ export function AppealContextPanel({ appeal }: AppealContextPanelProps): React.J
         </blockquote>
       </section>
 
-      <section className="flex flex-col gap-1.5">
+      <section className="flex flex-col items-center gap-2">
         <h3 className="text-xs font-medium text-muted-foreground">Aktywność w dostępie</h3>
-        <div data-testid="appeal-activity">
+        <div className="w-full" data-testid="appeal-activity">
           {statsQuery.data === undefined ? (
-            <div className="flex gap-4" role="status">
+            <div
+              className="mx-auto grid w-full max-w-sm grid-cols-3 justify-items-center"
+              role="status"
+            >
               <span className="sr-only">Wczytywanie statystyk aktywności…</span>
               {[0, 1, 2].map((index: number): React.JSX.Element => (
-                <Skeleton aria-hidden="true" className="h-5 w-16" key={index} />
+                <Skeleton aria-hidden="true" className="h-10 w-16" key={index} />
               ))}
             </div>
           ) : (

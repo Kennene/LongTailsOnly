@@ -6,11 +6,7 @@ import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { AppealContextPanel } from '@/components/leases/AppealContextPanel';
 import { DecisionKindSwitch } from '@/components/leases/DecisionKindSwitch';
 import { DecisionSubject } from '@/components/leases/DecisionSubject';
-import {
-  buildExtension,
-  CUSTOM_DAYS_ERROR,
-  type ExtensionChoice,
-} from '@/components/leases/extensionChoice';
+import { buildExtension, CUSTOM_DAYS_ERROR } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
 import { FailureAlert } from '@/components/leases/FailureAlert';
 import { JustificationField } from '@/components/leases/JustificationField';
@@ -25,9 +21,8 @@ import {
 } from '@/components/ui/dialog';
 import { useDecideAppeal } from '@/hooks/useDecideAppeal';
 import { useRejectAppeal } from '@/hooks/useRejectAppeal';
-import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { type ApiErrorDescription, describeApiError, describeEngineError } from '@/lib/apiErrors';
-import { daysRemaining, formatDaysRemaining } from '@/lib/dateTime';
+import { formatDaysRemaining } from '@/lib/dateTime';
 import type { AppealOverview, DecisionRequest } from '@/types/api';
 
 export interface DecisionModalAppealProps {
@@ -40,7 +35,6 @@ const DECISION_REQUIRED = 'Uzasadnienie jest wymagane';
 const REJECTION_SUCCESS = 'Odwołanie odrzucone';
 const APPROVAL_SUCCESS = 'Odwołanie zatwierdzone';
 const DECISION_SUCCESS = 'Decyzja zapisana';
-const PAST_DATE_ERROR = 'Data musi być późniejsza niż czas symulowany';
 const DECISION_FALLBACK = 'Nie udało się zapisać decyzji o dostępie.';
 const ALREADY_RESOLVED = 'To odwołanie zostało już rozstrzygnięte.';
 
@@ -95,12 +89,10 @@ export function DecisionModalAppeal({
   appeal,
   onOpenChange,
 }: DecisionModalAppealProps): React.JSX.Element {
-  const clock = useSimulatedClock();
   const rejection = useRejectAppeal();
   const decision = useDecideAppeal();
   const [kind, setKind] = useState<AppealDecisionKind>('approve');
-  const [choice, setChoice] = useState<ExtensionChoice | null>(null);
-  const [customDays, setCustomDays] = useState<string>('');
+  const [days, setDays] = useState<string>('');
   const [rejectionText, setRejectionText] = useState<string>('');
   const [decisionText, setDecisionText] = useState<string>('');
   // Tylko walidacja lokalna; błędy API lądują w `FailureAlert` pod formularzem.
@@ -108,7 +100,6 @@ export function DecisionModalAppeal({
   const [isConfirmingRevoke, setIsConfirmingRevoke] = useState<boolean>(false);
   const [failure, setFailure] = useState<ApiErrorDescription | null>(null);
 
-  const now: string | null = clock.data?.now ?? null;
   const isPending: boolean = decision.isPending || rejection.isPending;
   const kinds: { value: AppealDecisionKind; label: string }[] = [
     { value: 'approve', label: 'Zatwierdź' },
@@ -127,14 +118,9 @@ export function DecisionModalAppeal({
     setFailure(null);
   }
 
-  function selectChoice(next: ExtensionChoice): void {
-    setChoice(next);
+  function handleDaysChange(value: string): void {
+    setDays(value);
     setFailure(null);
-  }
-
-  function handleCustomDaysChange(value: string): void {
-    setCustomDays(value);
-    selectChoice({ kind: 'custom' });
   }
 
   function sendDecision(request: DecisionRequest, successMessage: string): void {
@@ -154,15 +140,7 @@ export function DecisionModalAppeal({
   }
 
   function submitApproval(): void {
-    if (choice === null) {
-      return;
-    }
-    if (choice.kind === 'date' && (now === null || daysRemaining(choice.date, now) <= 0)) {
-      setFailure({ message: PAST_DATE_ERROR, detail: null });
-      return;
-    }
-
-    const extension = buildExtension(choice, customDays);
+    const extension = buildExtension(days);
     if (extension === null) {
       setFailure({ message: CUSTOM_DAYS_ERROR, detail: null });
       return;
@@ -229,10 +207,10 @@ export function DecisionModalAppeal({
     }
   }
 
-  const isSubmitDisabled: boolean = isPending || (kind === 'approve' && choice === null);
+  const isSubmitDisabled: boolean = isPending || (kind === 'approve' && days.trim() === '');
 
   return (
-    <DialogContent className="max-h-[90vh] gap-5 overflow-y-auto sm:max-w-lg">
+    <DialogContent className="max-h-[90vh] gap-6 overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>Rozpatrzenie odwołania</DialogTitle>
         <DialogDescription>
@@ -242,7 +220,7 @@ export function DecisionModalAppeal({
 
       {/* Stan wniosku w jednym rzędzie: co osoba ma, o co prosi, status i termin dostępu. */}
       <div
-        className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm"
+        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm"
         data-testid="appeal-lease-context"
       >
         <span className="flex items-center gap-1.5">
@@ -268,16 +246,10 @@ export function DecisionModalAppeal({
 
       <div className="flex flex-col gap-3 border-t pt-4">
         <DecisionKindSwitch options={kinds} value={kind} onChange={changeKind} />
-        <p className="text-sm text-muted-foreground">{KIND_HINT[kind]}</p>
+        <p className="text-center text-sm text-muted-foreground">{KIND_HINT[kind]}</p>
 
         {kind === 'approve' ? (
-          <ExtensionControls
-            choice={choice}
-            customDays={customDays}
-            simulatedNow={now}
-            onChoiceChange={selectChoice}
-            onCustomDaysChange={handleCustomDaysChange}
-          />
+          <ExtensionControls days={days} onDaysChange={handleDaysChange} />
         ) : null}
         {kind === 'reject' ? (
           <JustificationField

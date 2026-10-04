@@ -48,9 +48,8 @@ function findLease(predicate: (lease: LeaseOverview) => boolean): LeaseOverview 
 async function renderModalWithLease(lease: LeaseOverview): Promise<void> {
   renderWithProviders(<DecisionModal lease={lease} open onOpenChange={() => {}} />);
 
-  // Wybór daty wymaga czasu symulowanego z API — czekamy, aż modal będzie gotowy.
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
+    expect(screen.getByLabelText('Liczba dni')).toBeEnabled();
   });
 }
 
@@ -144,7 +143,7 @@ describe('DecisionModal — brak duplikatu dowodu w trybie odwołania', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
+      expect(screen.getByLabelText('Liczba dni')).toBeEnabled();
     });
 
     // Panel dostępu należy wyłącznie do trybu bez odwołania — inaczej liczniki i zapytanie

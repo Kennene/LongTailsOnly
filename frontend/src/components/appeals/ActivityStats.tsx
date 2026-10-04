@@ -34,15 +34,15 @@ export function ActivityStats({ stats }: ActivityStatsProps): React.JSX.Element 
   const isEmptyWindow: boolean = stats.push_count + stats.review_count + stats.comment_count === 0;
 
   return (
-    <div className="flex flex-col gap-1">
-      {/* Jedna linia liczników zamiast trzech kafli — w modalu decyzji to dowód, nie bohater. */}
-      <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+    <div className="flex flex-col items-center gap-2 text-center">
+      {/* Trzy równe kolumny: liczba nad etykietą — odstępy nie zależą od długości słów. */}
+      <dl className="grid w-full max-w-sm grid-cols-3">
         {ACTIVITY_COUNTERS.map((counter: ActivityCounter): React.JSX.Element => (
-          <div className="flex items-baseline gap-1.5" key={counter.key}>
-            <dd className="font-mono font-medium tabular-nums" data-testid={counter.testId}>
+          <div className="flex flex-col items-center gap-0.5" key={counter.key}>
+            <dd className="font-mono text-lg font-medium tabular-nums" data-testid={counter.testId}>
               {stats[counter.key]}
             </dd>
-            <dt className="text-muted-foreground">{counter.label}</dt>
+            <dt className="text-xs text-muted-foreground">{counter.label}</dt>
           </div>
         ))}
       </dl>

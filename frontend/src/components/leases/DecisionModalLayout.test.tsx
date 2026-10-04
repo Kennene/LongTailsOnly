@@ -21,7 +21,7 @@ async function renderModal(lease: LeaseOverview): Promise<void> {
   renderWithProviders(<DecisionModal lease={lease} open onOpenChange={() => {}} />);
 
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
+    expect(screen.getByLabelText('Liczba dni')).toBeEnabled();
   });
 }
 
