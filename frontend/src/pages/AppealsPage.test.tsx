@@ -185,7 +185,7 @@ describe('AppealsPage', () => {
     expect(getLastAppealRejection()).toBeNull();
   });
 
-  it('zatwierdza odwołanie przedłużeniem i pokazuje wniosek oraz dzierżawę po decyzji', async () => {
+  it('zatwierdza odwołanie przedłużeniem i pokazuje wniosek oraz dostęp po decyzji', async () => {
     const user = userEvent.setup();
     renderAppealsPage();
 
@@ -208,7 +208,7 @@ describe('AppealsPage', () => {
     expect(within(submitted).queryByText('Oczekujące')).not.toBeInTheDocument();
     expect(within(submitted).queryByRole('button', { name: 'Rozpatrz' })).not.toBeInTheDocument();
 
-    // Decyzja poszła na dzierżawę z odwołania (unieważnione `['leases']`), a nie tylko na wniosek.
+    // Decyzja poszła na dostęp z odwołania (unieważnione `['leases']`), a nie tylko na wniosek.
     const extended: LeaseOverview | undefined = (await fetchLeases()).find(
       (lease: LeaseOverview): boolean => lease.id === PENDING_APPEAL.lease_id,
     );

@@ -32,7 +32,7 @@ function GuardedRoutes(): React.JSX.Element {
       <Route element={<ServiceRouteGuard />}>
         <Route path="/" element={<p data-testid="dashboard-marker">Pulpit</p>} />
         <Route path="/audit" element={<p data-testid="audit-marker">Audyt</p>} />
-        <Route path="/leases" element={<p data-testid="leases-marker">Dzierżawy</p>} />
+        <Route path="/leases" element={<p data-testid="leases-marker">Dostępy</p>} />
       </Route>
     </Routes>
   );

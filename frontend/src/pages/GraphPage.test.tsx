@@ -36,7 +36,7 @@ function liveGraph(team: string | null = null): PermissionGraph {
   return buildGraphFixture(getLeases(), team);
 }
 
-/** Trasa spoza grafu: wołanie jej to regres do składania węzłów z listy dzierżaw. */
+/** Trasa spoza grafu: wołanie jej to regres do składania węzłów z listy dostępów. */
 function forbidRoute(path: string, calls: string[]): HttpHandler {
   return http.get(path, () => {
     calls.push(path);
@@ -77,7 +77,7 @@ it('renderuje graf z GET /api/v1/graph razem z węzłami zespołów', async () =
   expectCounter('graph-edges', graph.edges.length);
   expect(await screen.findByText('core-api')).toBeInTheDocument();
 
-  // Węzły zespołów pochodzą z ładunku API (lista dzierżaw ich nie niesie), więc widać ich nazwy.
+  // Węzły zespołów pochodzą z ładunku API (lista dostępów ich nie niesie), więc widać ich nazwy.
   expect(nodesOfType(graph, 'team')).toHaveLength(2);
   expect(screen.getAllByText('DEV').length).toBeGreaterThan(0);
   expect(screen.getAllByText(TEAM_LABEL).length).toBeGreaterThan(0);
@@ -177,7 +177,7 @@ it('shows a destructive alert and refetches the graph from the error state', asy
   expectCounter('graph-nodes', liveGraph().nodes.length);
 });
 
-it('nie składa grafu z listy dzierżaw, gdy GET /api/v1/graph zawodzi', async () => {
+it('nie składa grafu z listy dostępów, gdy GET /api/v1/graph zawodzi', async () => {
   const calls: string[] = [];
   server.use(
     http.get('/api/v1/graph', () => HttpResponse.json({ detail: 'Not Found' }, { status: 404 })),
@@ -186,7 +186,7 @@ it('nie składa grafu z listy dzierżaw, gdy GET /api/v1/graph zawodzi', async (
 
   renderWithProviders(<GraphPage />);
 
-  // Brak endpointu jest błędem widoku, a nie powodem do cichego fallbacku na listę dzierżaw.
+  // Brak endpointu jest błędem widoku, a nie powodem do cichego fallbacku na listę dostępów.
   expect(await screen.findByText('Nie udało się pobrać grafu')).toBeInTheDocument();
   expect(screen.queryByTestId('graph-nodes')).not.toBeInTheDocument();
   expect(calls).toEqual([]);

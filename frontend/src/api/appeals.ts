@@ -34,10 +34,10 @@ export async function postAppeal(lease_id: number, justification: string): Promi
 }
 
 /**
- * Rozstrzygnięcie odwołania decyzją o dzierżawie (UC-3):
+ * Rozstrzygnięcie odwołania decyzją o dostępie (UC-3):
  * `POST /api/v1/appeals/{appeal_id}/decision` (`app/api/v1/appeals.py::decide`).
  *
- * Backend przeprowadza decyzję administratora na **dzierżawie z odwołania**
+ * Backend przeprowadza decyzję administratora na **dostępie z odwołania**
  * (`appeal_service.decide_appeal` → `decision_service.apply_lease_decision`) i zamyka wniosek:
  * `EXTEND` daje `APPROVED`, a `DOWNSCOPE`/`REVOKE` — `REJECTED`. Uzasadnienie jest wymagane przez
  * silnik przy `DOWNSCOPE`/`REVOKE` (422), a przy `EXTEND` jest opcjonalne. Wniosek już
@@ -57,8 +57,8 @@ export async function postAppealDecision(
  * Rozstrzygnięcie odwołania przez odrzucenie wniosku (UC-3):
  * `POST /api/v1/appeals/{appeal_id}/reject` (ADR 0011 §5.5).
  *
- * Odrzucenie zamyka wniosek `REJECTED` i **nie dotyka dzierżawy** — to alternatywa dla decyzji
- * o dzierżawie, nie jej skrót.
+ * Odrzucenie zamyka wniosek `REJECTED` i **nie dotyka dostępu** — to alternatywa dla decyzji
+ * o dostępie, nie jej skrót.
  */
 export async function rejectAppeal(
   appeal_id: number,

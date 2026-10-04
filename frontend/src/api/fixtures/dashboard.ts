@@ -7,17 +7,17 @@ import type { AppealRead, ClockRead, DashboardStats, LeaseOverview, UserRead } f
 import { leasesFixture } from './leases';
 
 /**
- * Liczniki pulpitu w kształcie kontraktu (`DashboardStats`) — liczone z listy dzierżaw.
+ * Liczniki pulpitu w kształcie kontraktu (`DashboardStats`) — liczone z listy dostępów.
  *
  * Jedno źródło prawdy dla pulpitu i tabeli `/leases`: audyt wykazał „Aktywne 12” przy czterech
  * wierszach, bo liczby były wpisane ręcznie. Dlatego pulpitu nie wypełniamy własnymi wartościami,
  * tylko liczymy je **tą samą regułą co backend** (`app/domain/insights.py::compute_dashboard_counters`):
- * dzierżawy stałe (`admin`, `expires_at: null`) idą do `permanent`, wyłączone do `revoked`,
- * a statusy i rekomendacje liczymy wyłącznie po dzierżawach czynnych i nie-stałych.
+ * dostępy stałe (`admin`, `expires_at: null`) idą do `permanent`, wyłączone do `revoked`,
+ * a statusy i rekomendacje liczymy wyłącznie po dostępach czynnych i nie-stałych.
  * `expired` to **alarm, nie archiwum**: wchodzą tylko dostępy po terminie z ostatnich
  * `EXPIRED_WINDOW_DAYS` dni (`lapsed_within_window`), starsze zostają w tabeli `/leases`.
  *
- * `pending_appeals` i `onboarding_candidates` nie wynikają z samych dzierżaw: pierwszy bierzemy
+ * `pending_appeals` i `onboarding_candidates` nie wynikają z samych dostępów: pierwszy bierzemy
  * z parametru (w trybie MSW to żywy stan domeny „appeals”, domyślnie wspólny `appeals.json`),
  * drugi liczymy ze wspólnego `users.json` — zamiast wpisywać liczby z sufitu.
  */
@@ -41,7 +41,7 @@ export function countDashboard(
   generatedAt: string,
   /**
    * `pending_appeals` w backendzie to żywy `count` z tabeli odwołań (`insights_service`), a nie
-   * pochodna dzierżaw — testy podają tu stan domeny odwołań, a domyślnie liczymy ze wspólnego
+   * pochodna dostępów — testy podają tu stan domeny odwołań, a domyślnie liczymy ze wspólnego
    * fixture'u (`appeals.json`), żeby tryb `VITE_USE_FIXTURES` i tryb MSW mówiły to samo.
    */
   pendingAppeals: number = countPendingAppeals(),
@@ -88,7 +88,7 @@ function countPendingAppeals(): number {
   ).length;
 }
 
-/** Osoba z zespołem, bez uprawnień administracyjnych i bez czynnej dzierżawy — kandydat do UC-1. */
+/** Osoba z zespołem, bez uprawnień administracyjnych i bez czynnego dostępu — kandydat do UC-1. */
 function countOnboardingCandidates(live: LeaseOverview[]): number {
   const withAccess = new Set<string>(live.map((lease: LeaseOverview): string => lease.user.login));
 

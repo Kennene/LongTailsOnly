@@ -5,8 +5,8 @@ import { useActiveService } from '@/services/ServicesContext';
 import type { LeaseOverview } from '@/types/api';
 
 /**
- * Lista dzierżaw **aktywnej usługi** — prefiks `['leases', <id usługi>]` trzyma integracje
- * w osobnych wpisach cache, więc przełączenie usługi w pickerze nie pokazuje cudzych dzierżaw.
+ * Lista dostępów **aktywnej usługi** — prefiks `['leases', <id usługi>]` trzyma integracje
+ * w osobnych wpisach cache, więc przełączenie usługi w pickerze nie pokazuje cudzych dostępów.
  *
  * `enabled` jest istotne, nie kosmetyczne i ma pin w `useServiceScopedGates.test.tsx`: milczący
  * katalog rozstrzyga się z rejestru frontendu (spec §5.2), więc `activeService.id` jest **niepuste**

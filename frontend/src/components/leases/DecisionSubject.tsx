@@ -13,13 +13,13 @@ export interface DecisionSubjectProps {
  */
 export function DecisionSubject({ user, repository }: DecisionSubjectProps): React.JSX.Element {
   return (
-    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base">
       <span className="flex items-center gap-1.5">
         <span className="font-medium text-foreground">{user.name}</span>
         <UserAvatar initials={initialsFrom(user)} login={user.login} />
       </span>
       <span aria-hidden="true">·</span>
-      <span className="font-mono">{`${repository.owner}/${repository.name}`}</span>
+      <span className="font-mono text-foreground">{`${repository.owner}/${repository.name}`}</span>
     </span>
   );
 }

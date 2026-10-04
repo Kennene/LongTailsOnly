@@ -87,7 +87,7 @@ describe('service-scoped invalidation', () => {
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['audit', DEMO_TRACKER] });
     // Goły prefiks unieważniłby dane **wszystkich** usług — to nie jest kontrakt tego zadania.
     expect(invalidateQueries).not.toHaveBeenCalledWith({ queryKey: ['appeals'] });
-    // Dzierżawy zostają w spokoju: odrzucenie wniosku nic w nich nie zmienia.
+    // Dostępy zostają w spokoju: odrzucenie wniosku nic w nich nie zmienia.
     expect(invalidateQueries).not.toHaveBeenCalledWith({ queryKey: ['leases', DEMO_TRACKER] });
   });
 

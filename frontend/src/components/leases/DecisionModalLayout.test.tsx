@@ -5,7 +5,7 @@ import { expect, it } from 'vitest';
 import { leasesFixture } from '@/api/fixtures';
 import { DecisionModal } from '@/components/leases/DecisionModal';
 import { formatDaysRemaining } from '@/lib/dateTime';
-import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
+import { getRecommendationBadge, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import { initialsFrom } from '@/lib/userInitials';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import type { LeaseOverview } from '@/types/api';
@@ -83,4 +83,13 @@ it('offers Zdeeskaluj only for a write lease, the one level the engine downscope
 
   expect(within(kinds).queryByRole('button', { name: 'Zdeeskaluj' })).not.toBeInTheDocument();
   expect(within(kinds).getByRole('button', { name: 'Odbierz' })).toBeInTheDocument();
+});
+
+it('keeps the recommendation out of the state row, next to the action switch', async () => {
+  await renderModal(activeLease);
+
+  const label: string = getRecommendationBadge(activeLease.recommendation).label;
+
+  expect(within(screen.getByTestId('lease-state')).queryByText(label)).not.toBeInTheDocument();
+  expect(within(screen.getByTestId('lease-recommendation')).getByText(label)).toBeInTheDocument();
 });

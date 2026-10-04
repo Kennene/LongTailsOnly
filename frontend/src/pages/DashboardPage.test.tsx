@@ -27,7 +27,7 @@ const WARNING_EMPTY =
 const KPI_TEST_IDS: string[] = ['kpi-active', 'kpi-warning', 'kpi-expired', 'kpi-downscope'];
 
 /**
- * Oczekiwane liczniki liczymy z żywego stanu dzierżaw i zegara symulowanego — dokładnie z tego,
+ * Oczekiwane liczniki liczymy z żywego stanu dostępów i zegara symulowanego — dokładnie z tego,
  * co widzi handler MSW (`GET /api/v1/dashboard/stats`). Żadna liczba nie jest przepisana drugi raz
  * (audyt: „Aktywne 12” przy czterech wierszach), a fixture pochodzi ze wspólnego
  * `shared/fixtures/leases*.json`.
@@ -44,7 +44,7 @@ function forbidRoute(path: string, calls: string[]): HttpHandler {
   });
 }
 
-/** Dzierżawy w oknie ostrzegawczym w kolejności listy: najpilniejsze (najmniej dni) pierwsze. */
+/** Dostępy w oknie ostrzegawczym w kolejności listy: najpilniejsze (najmniej dni) pierwsze. */
 function warningLeases(leases: LeaseOverview[]): LeaseOverview[] {
   return leases
     .filter((lease: LeaseOverview): boolean => lease.status === 'WARNING')
@@ -60,7 +60,7 @@ function fullName(lease: LeaseOverview): string {
 
 /**
  * Tożsamość wiersza to para (osoba, repozytorium), nie sama osoba: ta sama osoba może mieć
- * jedną dzierżawę w oknie ostrzegawczym, a drugą zupełnie zdrową — i tak jest w fixture'ach.
+ * jeden dostęp w oknie ostrzegawczym, a drugi zupełnie zdrowy — i tak jest w fixture'ach.
  */
 function pairOf(lease: LeaseOverview): string {
   return `${lease.user.login}@${lease.repository.name}`;
@@ -89,7 +89,7 @@ async function expandWarningWindow(section: HTMLElement): Promise<void> {
 
 /**
  * Okno ostrzegawcze pokazuje jedną grupę na osobę (kolejność jak w `groupLeasesByUser`), a po
- * rozwinięciu — dzierżawy `WARNING` tej osoby jako linki do `/leases`, w tej samej kolejności.
+ * rozwinięciu — dostępy `WARNING` tej osoby jako linki do `/leases`, w tej samej kolejności.
  */
 async function expectWarningWindow(section: HTMLElement, leases: LeaseOverview[]): Promise<void> {
   const groups: LeaseGroup[] = groupLeasesByUser(warningLeases(leases));
@@ -141,10 +141,10 @@ describe('DashboardPage', () => {
     expectKpi('kpi-downscope', expected.downscope_recommendations);
   });
 
-  it('pokazuje liczniki z GET /api/v1/dashboard/stats, a nie policzone z listy dzierżaw', async () => {
+  it('pokazuje liczniki z GET /api/v1/dashboard/stats, a nie policzone z listy dostępów', async () => {
     const paths: string[] = [];
     const legacyPaths: string[] = [];
-    // Liczby celowo różne od reguły liczonej z dzierżaw: gdyby widok nadal liczył je sam,
+    // Liczby celowo różne od reguły liczonej z dostępów: gdyby widok nadal liczył je sam,
     // karty pokazałyby `expectedCounters()`, a nie tę odpowiedź.
     const payload: DashboardStats = {
       ...expectedCounters(),
@@ -242,7 +242,7 @@ describe('DashboardPage', () => {
     );
     renderWithProviders(<DashboardPage />);
 
-    // Brak endpointu jest błędem widoku: żadnego cichego fallbacku na liczenie z listy dzierżaw.
+    // Brak endpointu jest błędem widoku: żadnego cichego fallbacku na liczenie z listy dostępów.
     const alert: HTMLElement = await screen.findByTestId('kpi-error');
     expect(alert).toHaveTextContent('Nie udało się pobrać liczników');
     expect(screen.queryByTestId('kpi-active')).not.toBeInTheDocument();
@@ -303,7 +303,7 @@ describe('DashboardPage', () => {
 
     const section: HTMLElement = await screen.findByTestId('warning-window');
 
-    // Po skoku okno zawiera inne dzierżawy: te, którym zostało 1–7 dni.
+    // Po skoku okno zawiera inne dostępy: te, którym zostało 1–7 dni.
     await expectWarningWindow(section, getLeases());
     expect(warningLeases(getLeases())[0].id).not.toBe(warningLeases(leasesFixture)[0].id);
   });
@@ -318,7 +318,7 @@ describe('DashboardPage', () => {
     expect(within(section).queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('rozłącza liczniki od listy dzierżaw: awaria dzierżaw nie zabiera KPI', async () => {
+  it('rozłącza liczniki od listy dostępów: awaria dostępów nie zabiera KPI', async () => {
     const user = userEvent.setup();
     let leasesFailing: boolean = true;
     server.use(
@@ -330,7 +330,7 @@ describe('DashboardPage', () => {
     );
     renderWithProviders(<DashboardPage />);
 
-    // Liczniki czytają `GET /api/v1/dashboard/stats`, a okno ostrzegawcze listę dzierżaw — każda
+    // Liczniki czytają `GET /api/v1/dashboard/stats`, a okno ostrzegawcze listę dostępów — każda
     // sekcja ma własny alert i własne „Odśwież”, więc awaria listy nie zabiera liczb z ekranu.
     const section: HTMLElement = await screen.findByTestId('warning-window');
     expect(await within(section).findByText('Nie udało się pobrać dostępów')).toBeInTheDocument();
@@ -346,7 +346,7 @@ describe('DashboardPage', () => {
     expectKpi('kpi-active', expectedCounters().active);
   });
 
-  it('rozłącza listę dzierżaw od liczników: awaria KPI nie zabiera okna ostrzegawczego', async () => {
+  it('rozłącza listę dostępów od liczników: awaria KPI nie zabiera okna ostrzegawczego', async () => {
     const user = userEvent.setup();
     let statsFailing: boolean = true;
     server.use(

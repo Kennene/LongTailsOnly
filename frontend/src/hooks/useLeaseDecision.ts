@@ -10,7 +10,7 @@ export interface LeaseDecisionVariables {
 }
 
 /**
- * Decyzja o dzierżawie. Unieważnienia niosą prefiks **aktywnej usługi**, bo tylko ona ma te dane
+ * Decyzja o dostępie. Unieważnienia niosą prefiks **aktywnej usługi**, bo tylko ona ma te dane
  * w cache — goły prefiks unieważniałby wpisy wszystkich usług naraz.
  */
 export function useLeaseDecision(): UseMutationResult<

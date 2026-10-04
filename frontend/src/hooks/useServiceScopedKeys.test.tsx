@@ -64,7 +64,7 @@ function cachedKeys(queryClient: QueryClient): QueryKey[] {
     .map((query: Query): QueryKey => query.queryKey);
 }
 
-/** Sonda czytnika dzierżaw — jedyny zasób, którego klucz był dotąd goły. */
+/** Sonda czytnika dostępów — jedyny zasób, którego klucz był dotąd goły. */
 function LeasesProbe(): React.JSX.Element {
   useLeases();
 

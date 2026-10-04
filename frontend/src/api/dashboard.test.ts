@@ -12,7 +12,7 @@ import type { DashboardStats, LeaseOverview } from '@/types/api';
 /**
  * Warstwa danych pulpitu: backend serwuje `GET /api/v1/dashboard/stats` (kontraktowy
  * `DashboardStats`), więc `fetchDashboard()` nie liczy już niczego po stronie frontendu i nie
- * zagląda do listy dzierżaw, zegara ani odwołań — jedno żądanie, jedna odpowiedź.
+ * zagląda do listy dostępów, zegara ani odwołań — jedno żądanie, jedna odpowiedź.
  *
  * Testujemy tutaj, bo widok pokazuje cztery z dziewięciu liczników: `permanent`, `revoked`,
  * `pending_appeals`, `onboarding_candidates` i `generated_at` nigdzie nie trafiają, a właśnie one
@@ -37,7 +37,7 @@ afterEach(() => {
 });
 
 describe('fetchDashboard', () => {
-  it('czyta liczniki z GET /api/v1/dashboard/stats i nie pyta o dzierżawy, zegar ani odwołania', async () => {
+  it('czyta liczniki z GET /api/v1/dashboard/stats i nie pyta o dostępy, zegar ani odwołania', async () => {
     const paths: string[] = [];
     const derivedPaths: string[] = [];
     server.use(
@@ -60,7 +60,7 @@ describe('fetchDashboard', () => {
 
   it('liczy do „Wygaśnięte” tylko wygaśnięcia z okna, a nie wszystkie dostępy po terminie', () => {
     // Licznik pulpitu to alarm świeżych wygaśnięć (backend: `lapsed_within_window`), więc ten sam
-    // zbiór dzierżaw daje mniej niż liczba wszystkich wierszy `EXPIRED` — inaczej rosnąłby wiecznie.
+    // zbiór dostępów daje mniej niż liczba wszystkich wierszy `EXPIRED` — inaczej rosnąłby wiecznie.
     const lapsed: LeaseOverview[] = leasesFixture.filter(
       (lease: LeaseOverview): boolean => lease.status === 'EXPIRED',
     );
@@ -113,7 +113,7 @@ describe('fetchDashboard', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 404 });
-    // Brakujący endpoint nie może po cichu wracać do liczenia liczników z listy dzierżaw.
+    // Brakujący endpoint nie może po cichu wracać do liczenia liczników z listy dostępów.
     expect(derivedPaths).toEqual([]);
   });
 

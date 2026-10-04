@@ -48,7 +48,7 @@ const SUBMIT_LABEL: Record<AppealDecisionKind, string> = {
   revoke: 'Odbierz dostęp',
 };
 
-/** Jedno zdanie pod przełącznikiem: co ta droga zrobi z wnioskiem i z dzierżawą. */
+/** Jedno zdanie pod przełącznikiem: co ta droga zrobi z wnioskiem i z dostępem. */
 const KIND_HINT: Record<AppealDecisionKind, string> = {
   approve: 'Przedłuża dostęp o wybrany okres i zamyka wniosek.',
   reject: 'Zamyka wniosek, dostęp zostaje bez zmian.',
@@ -57,12 +57,12 @@ const KIND_HINT: Record<AppealDecisionKind, string> = {
 };
 
 /**
- * Zdanie po polsku dla błędu decyzji o dzierżawie.
+ * Zdanie po polsku dla błędu decyzji o dostępie.
  *
  * `409` z tego endpointu to wniosek rozstrzygnięty już wcześniej (`appeal_service.pending_appeal`),
- * a nie powtórzone uzasadnienie ani cudza dzierżawa — `describeEngineError` nie ma reguły na ten
+ * a nie powtórzone uzasadnienie ani cudzy dostęp — `describeEngineError` nie ma reguły na ten
  * komunikat i pokazałby angielski `detail` jako zdanie główne. Reszta (403 ostatniego admina,
- * 422 silnika) idzie wspólną tabelą `LEASE_DECISION`, bo to ta sama decyzja co w widoku dzierżaw.
+ * 422 silnika) idzie wspólną tabelą `LEASE_DECISION`, bo to ta sama decyzja co w widoku dostępów.
  */
 function describeDecisionError(error: Error): ApiErrorDescription {
   if (error instanceof ApiError && error.status === 409) {
@@ -74,16 +74,16 @@ function describeDecisionError(error: Error): ApiErrorDescription {
 
 /**
  * Rozpatrzenie odwołania (UC-3). Osoba, repozytorium, rola i pozostałe dni pochodzą
- * z `AppealOverview`, więc modal **nie potrzebuje** propa `lease` ani listy dzierżaw.
+ * z `AppealOverview`, więc modal **nie potrzebuje** propa `lease` ani listy dostępów.
  *
  * Układ jak w decyzji o dostępie: kto i czego dotyczy wniosek, stan w jednym rzędzie, kontekst
  * (uzasadnienie, aktywność, historia), a pod spodem przełącznik **jednej** drogi:
  *
  * - „Zatwierdź” → `POST /api/v1/appeals/{id}/decision` z `EXTEND` i wybranym przedłużeniem:
- *   backend przedłuża dzierżawę i zamyka wniosek jako `APPROVED`,
- * - „Odrzuć” → `POST /api/v1/appeals/{id}/reject`: wniosek zamyka się bez zmian w dzierżawie,
+ *   backend przedłuża dostęp i zamyka wniosek jako `APPROVED`,
+ * - „Odrzuć” → `POST /api/v1/appeals/{id}/reject`: wniosek zamyka się bez zmian w dostępie,
  * - „Zdeeskaluj” / „Odbierz” → ten sam `/decision` z `DOWNSCOPE`/`REVOKE` (uzasadnienie wymagane
- *   przez silnik, 422 bez niego): dzierżawa traci uprawnienia, a wniosek zamyka się odrzuceniem.
+ *   przez silnik, 422 bez niego): dostęp traci uprawnienia, a wniosek zamyka się odrzuceniem.
  */
 export function DecisionModalAppeal({
   appeal,

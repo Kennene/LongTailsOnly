@@ -15,7 +15,7 @@ import type { LeaseOverview } from '@/types/api';
  * - `GET /api/v1/appeals` zwraca **gołą tablicę** `AppealOverview` (bez koperty `{ appeals }`),
  * - `POST /api/v1/appeals` odpowiada `201` i zwraca `AppealOverview`,
  * - `POST /api/v1/appeals/{id}/reject` odrzuca wniosek,
- * - `POST /api/v1/appeals/{id}/decision` rozstrzyga wniosek decyzją o dzierżawie (krok 4.3C):
+ * - `POST /api/v1/appeals/{id}/decision` rozstrzyga wniosek decyzją o dostępie (krok 4.3C):
  *   `EXTEND` zamyka go jako `APPROVED`, a `DOWNSCOPE`/`REVOKE` jako `REJECTED`
  *   (`backend/app/services/appeal_service.py`), a wniosek już rozstrzygnięty to `409`.
  *
