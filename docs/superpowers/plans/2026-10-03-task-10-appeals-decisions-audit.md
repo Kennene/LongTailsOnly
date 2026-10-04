@@ -24,16 +24,16 @@
 - Każda decyzja i każde odwołanie zapisuje `AuditLog`. `AuditLog` nie ma ścieżki update ani delete.
 - `EXTEND`: `days` → `max(now, expires_at) + N`; `multiplier` → `now + round((expires_at - granted_at) × M)`; `until` → `until` (musi być > `now`). Zawsze `granted_at = now`.
 - `DOWNSCOPE` tylko z `write`; `admin` nie podlega `EXTEND` ani `DOWNSCOPE` (422).
-- Odwołanie: status dzierżawy `WARNING`/`EXPIRED`/`REVOKED` (inaczej 409), najwyżej jedno `PENDING` (409), uzasadnienie nowe po normalizacji (422).
+- Odwołanie: status dostępu `WARNING`/`EXPIRED`/`REVOKED` (inaczej 409), najwyżej jedno `PENDING` (409), uzasadnienie nowe po normalizacji (422).
 - Czas zawsze z argumentu `now`.
 
 ## Review Focus
 
-- **Przedłużenie wygasłej dzierżawy presetem:** liczone od `now`, nie od daty w przeszłości → test `test_days_extend_from_later_of_now_and_expiry`.
+- **Przedłużenie wygasłego dostępu presetem:** liczone od `now`, nie od daty w przeszłości → test `test_days_extend_from_later_of_now_and_expiry`.
 - **Ostatni admin w trybie decyzji:** `REVOKE` na `tomasz-admin` zostawia ślad `LAST_ADMIN_BLOCKED` i zwraca błąd → test `test_last_admin_block_is_audited_and_reraised`.
 - **Uzasadnienie różniące się tylko wielkością liter / spacjami:** traktowane jak powtórzone → test `test_appeal_requires_unique_justification`.
 - **Podwójne rozpatrzenie odwołania:** drugie `resolve` → 409 → test `test_resolved_appeal_cannot_be_resolved_again`.
-- **Tryb `auto` a ostatni admin:** pojedynczy `LastAdminError` nie przerywa przebiegu dla pozostałych dzierżaw → test `test_enforce_expired_applies_recommendations_as_system`.
+- **Tryb `auto` a ostatni admin:** pojedynczy `LastAdminError` nie przerywa przebiegu dla pozostałych dostępów → test `test_enforce_expired_applies_recommendations_as_system`.
 
 ---
 
@@ -432,7 +432,7 @@ async def test_enforce_expired_applies_recommendations_as_system(session: AsyncS
 - [ ] **3.4: Zaimplementuj** `backend/app/services/decision_service.py`:
 
 ```python
-"""Decyzje o dzierżawach (ADR 0007 §4) i egzekwowanie w trybie auto (§6)."""
+"""Decyzje o dostępach (ADR 0007 §4) i egzekwowanie w trybie auto (§6)."""
 
 from datetime import datetime, timedelta
 

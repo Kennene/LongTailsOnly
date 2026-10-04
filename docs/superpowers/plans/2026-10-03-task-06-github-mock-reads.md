@@ -17,11 +17,11 @@
 - Ścieżki, kody HTTP i kształty JSON jak w GitHub REST API (ADR 0004); błędy: `{"message": "Not Found", "documentation_url": "..."}`.
 - Nagłówki na każdej odpowiedzi: `X-GitHub-Media-Type: github.v3; format=json`, `X-GitHub-Api-Version: 2022-11-28`, `X-RateLimit-*`.
 - Paginacja: `page` (od 1), `per_page` (domyślnie 30, obcinane do 100), nagłówek `Link` z `rel="next"/"last"/"prev"/"first"`.
-- Kolaborator = dzierżawa z `revoked_at IS NULL`.
+- Kolaborator = dostęp z `revoked_at IS NULL`.
 
 ## Review Focus
 
-- **Odebrany dostęp na liście kolaboratorów:** dzierżawa z `revoked_at` nie może się pojawić → test `test_list_repo_collaborators`.
+- **Odebrany dostęp na liście kolaboratorów:** dostęp z `revoked_at` nie może się pojawić → test `test_list_repo_collaborators`.
 - **Kolejność zdarzeń:** GitHub zwraca najnowsze pierwsze → test `test_list_repo_events`.
 - **`per_page` > 100:** GitHub obcina, nie zwraca 422 → test `test_pagination_sets_link_header_and_caps_per_page`.
 - **Nieznane repo / org:** 404 w formacie GitHuba, nie `{"detail": ...}` → testy `test_unknown_repo_returns_github_404`, `test_unknown_org_returns_github_404`.

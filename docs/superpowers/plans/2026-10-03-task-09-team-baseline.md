@@ -17,7 +17,7 @@
 - Członkowie = `team == T` i `is_admin == False`. Okno `[now - 30 dni, now]`.
 - Repozytorium w standardzie ⇔ `2 × aktywni >= członkowie` (dokładnie 50% wystarcza).
 - Rola: `write`, gdy co najmniej połowa aktywnych ma zdarzenie `write`; w przeciwnym razie `read`; **nigdy `admin`**.
-- `apply_baseline` nie dotyka repozytoriów, w których osoba ma już aktywną dzierżawę.
+- `apply_baseline` nie dotyka repozytoriów, w których osoba ma już aktywny dostęp.
 
 ## Review Focus
 

@@ -2,7 +2,7 @@
 
 > **Dla agentów:** WYMAGANY SUB-SKILL: `superpowers:subagent-driven-development` (zalecany) lub `superpowers:executing-plans`. Kroki używają checkboxów (`- [ ]`).
 
-**Cel:** Deterministyczna populacja demo (1 org, `tomasz-admin`, DEV/QA, 10 repozytoriów, dzierżawy, `ActivityEvent`) wraz ze scenariuszami A–D, ładowana przez `seed_demo_data(session, now)`.
+**Cel:** Deterministyczna populacja demo (1 org, `tomasz-admin`, DEV/QA, 10 repozytoriów, dostępy, `ActivityEvent`) wraz ze scenariuszami A–D, ładowana przez `seed_demo_data(session, now)`.
 
 **Architektura:** Dwie warstwy:
 1. `app/db/seed_data.py` — **czysty**, deklaratywny plan demo (`build_demo_plan() -> DemoPlan`), czyli krotki z offsetami w dniach. Nie zależy od bazy, więc testy scenariuszy i inwariantów działają, zanim Zadanie 3 trafi do `main`.
@@ -17,7 +17,7 @@
 ## Ograniczenia globalne
 
 - Czas wyłącznie z argumentu `now` — zakaz `datetime.now()` w `app/` (ADR 0003).
-- `expires_at` każdej dzierżawy nie-admin = ostatnie zdarzenie odnawiające (lub nadanie) + 30 dni (ADR 0007 §3).
+- `expires_at` każdego dostępu nie-admin = ostatnie zdarzenie odnawiające (lub nadanie) + 30 dni (ADR 0007 §3).
 - `admin` jest stały: `expires_at = None` (ADR 0002, ADR 0006 §5).
 - Populacja: 15–25 kont, DEV ~12, QA ~6, 10 repozytoriów, 1 organizacja.
 - Pliki ≤ 300 linii; jawne type hinty.
@@ -30,7 +30,7 @@
 
 ## Review Focus
 
-- **Spójność z regułą odnawiania:** dzierżawa, której `expires_at` nie wynika z ostatniej aktywności, rozjedzie się z Zadaniem 8 po pierwszym zdarzeniu → test `test_lease_expiry_follows_last_renewing_activity`.
+- **Spójność z regułą odnawiania:** dostęp, którego `expires_at` nie wynika z ostatniej aktywności, rozjedzie się z Zadaniem 8 po pierwszym zdarzeniu → test `test_lease_expiry_follows_last_renewing_activity`.
 - **Zdarzenie bez dostępu:** aktywność nie-kolaboratora jest niespójna z mockiem GitHuba → test `test_every_event_belongs_to_a_leaseholder`.
 - **Ostatni admin:** każde repo ma dokładnie jednego admina (warunek demo w Zadaniu 7) → test `test_admin_is_sole_permanent_admin_of_every_repo`.
 - **Ponowny start aplikacji:** seed na niepustej bazie nie może duplikować danych → test `test_seed_is_idempotent`.
@@ -224,7 +224,7 @@ def _members() -> list[tuple[str, Team | None]]:
 
 
 def _team_activity(logins: list[str], repo: str, action_type: ActionType) -> tuple[list[LeaseSpec], list[EventSpec]]:
-    """Dzierżawa nadana 60 dni temu i odnowiona ostatnim zdarzeniem (+30 dni)."""
+    """Dostęp nadany 60 dni temu i odnowiony ostatnim zdarzeniem (+30 dni)."""
     role = EVENT_PERMISSION[action_type]
     leases: list[LeaseSpec] = []
     events: list[EventSpec] = []
@@ -252,7 +252,7 @@ def _team_activity(logins: list[str], repo: str, action_type: ActionType) -> tup
 | A | `kamil-dev` / `payment-gw`: `write`, nadany 25 dni temu (wygasa za 5); bez `PushEvent`; `PullRequestReviewEvent` 3 dni temu, `IssueCommentEvent` 6 dni temu → rekomendacja `DOWNSCOPE` |
 | B | `marta-qa` / `qa-automation`: `write`, `PushEvent` 27 dni temu → wygasa za 3 dni (`WARNING`) |
 | C | `legacy-billing`: `piotr-dev` (`write`) i `lena-qa` (`read`), nadane 45 dni temu → wygasłe 15 dni temu; zero zdarzeń → `REVOKE` |
-| D | `filip-dev` (DEV): zero dzierżaw i zdarzeń → kandydat do onboardingu z baseline'u |
+| D | `filip-dev` (DEV): zero dostępów i zdarzeń → kandydat do onboardingu z baseline'u |
 
 - [ ] **A2.1: Dopisz testy.** Rozszerz import w `test_seed_data.py` o `SCENARIO_A_LOGIN, SCENARIO_A_REPO, SCENARIO_B_LOGIN, SCENARIO_B_REPO, SCENARIO_C_REPO, SCENARIO_D_LOGIN` i dopisz:
 
@@ -314,10 +314,10 @@ def _scenarios(leases: list[LeaseSpec], events: list[EventSpec]) -> None:
     # B: QA, ostatni push 27 dni temu -> wygasa za 3 dni (okno ostrzegawcze)
     leases.append(LeaseSpec(SCENARIO_B_LOGIN, SCENARIO_B_REPO, Permission.WRITE, 27, LEASE_DAYS - 27))
     events.append(EventSpec(SCENARIO_B_LOGIN, SCENARIO_B_REPO, ActionType.PUSH, 27))
-    # C: nieużywane repo -> dzierżawy wygasłe, brak zdarzeń
+    # C: nieużywane repo -> dostępy wygasłe, brak zdarzeń
     leases.append(LeaseSpec("piotr-dev", SCENARIO_C_REPO, Permission.WRITE, 45, LEASE_DAYS - 45))
     leases.append(LeaseSpec("lena-qa", SCENARIO_C_REPO, Permission.READ, 45, LEASE_DAYS - 45))
-    # D: SCENARIO_D_LOGIN celowo bez dzierżaw i zdarzeń
+    # D: SCENARIO_D_LOGIN celowo bez dostępów i zdarzeń
 ```
 
 - [ ] **A2.4: Uruchom — GREEN.** `pytest tests/db/test_seed_data.py -q` → `11 passed` (inwarianty z A1 nadal zielone).
