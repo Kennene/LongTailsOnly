@@ -84,7 +84,7 @@ Wszystkie kolumny czasu używają `UTCDateTime` (`app/db/types.py`) — `TypeDec
 | `Appeal` | `id: int` PK, `lease_id` FK idx, `user_id` FK, `repo_id` FK, `requested_role: Permission`, `justification: str`, `status: AppealStatus = PENDING`, `created_at`, `resolved_at: datetime \| None` |
 | `AuditLog` | `id: int` PK, `timestamp`, `actor_type: ActorType`, `actor_id: str \| None` (login), `action: AuditAction`, `target: str`, `details: str \| None`, `justification: str \| None` |
 
-`Lease` nie przechowuje `last_activity_*` — ostatnią aktywność wylicza się z `ActivityEvent`. Odebrany dostęp nie jest usuwany, tylko dostaje `revoked_at`, dzięki czemu historia i odwołania zostają. Kolaborator w mocku GitHuba to dzierżawa z `revoked_at IS NULL`.
+`Lease` nie przechowuje `last_activity_*` — ostatnią aktywność wylicza się z `ActivityEvent`. Odebrany dostęp nie jest usuwany, tylko dostaje `revoked_at`, dzięki czemu historia i odwołania zostają. Kolaborator w mocku GitHuba to dostęp z `revoked_at IS NULL`.
 
 ### 6. Porty
 
