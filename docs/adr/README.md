@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Indeks decyzji architektonicznych projektu **GitHub Access Lease Governor**.
+Indeks decyzji architektonicznych projektu **TailCut**.
 Każdy nowy ADR musi zostać dopisany do tabeli poniżej — pilnuje tego test `backend/tests/repo/test_docs_integrity.py`.
 
 Proces podejmowania i pilnowania decyzji opisuje [ADR 0013](0013-prelint-i-straz-adr-w-procesie-pr.md).

@@ -1,4 +1,4 @@
-# Frontend — GitHub Access Lease Governor
+# Frontend — TailCut
 
 Konsola administratora bezpieczeństwa IT (SPA) do zarządzania odnawialnymi dostępami czasowymi GitHuba.
 Stack: **React 19 + React Compiler + TypeScript + Vite + Tailwind CSS v4 + shadcn/ui + TanStack Query + React Router + `@xyflow/react`**.
