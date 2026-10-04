@@ -7,8 +7,8 @@ import type { AppealOverview } from '@/types/api';
 /**
  * Lista odwołań wprost z `GET /api/v1/appeals` — **goła tablica** `AppealOverview`, bez koperty.
  *
- * Filtr wchodzi do klucza zapytania, więc lista całego panelu (`{}`) i historia pojedynczej
- * dzierżawy (`{ lease_id }`) to osobne wpisy cache; inwalidacja po prefiksie
+ * Filtr wchodzi do klucza zapytania, więc lista całego panelu (`{}`) i historia pojedynczego
+ * dostępu (`{ lease_id }`) to osobne wpisy cache; inwalidacja po prefiksie
  * `['appeals', <id usługi>]` pokrywa oba.
  *
  * `enabled` — patrz `useLeases`: bramka nie pyta o dane, dopóki nie ma identyfikatora usługi,

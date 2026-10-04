@@ -56,7 +56,7 @@ Na bazowym commicie `b6b6124` `uv run pytest -q` dawało **398 passed, 2 failed*
 | `tests/repo/test_docs_integrity.py::test_adr_numbers_are_unique` | Numery ADR kolidują: `0010` istnieje dwa razy (`0010-frontend-navigation-and-data-layer.md` i `0010-github-mock-activity-types-and-time-travel-api.md`) oraz `0011` dwa razy (`0011-fixtures-zgodne-z-generowanym-kontraktem.md` i `0011-person-4-baseline-appeals-audit-insights.md`) |
 | `tests/repo/test_docs_integrity.py::test_every_adr_file_is_listed_in_index` | `docs/adr/README.md` indeksuje nowsze pliki pod 0010/0011, a starsze pliki o tych numerach leżą na dysku nieindeksowane. `docs/adr/README.md:13` wprost opisuje kolizję 0010 |
 
-| `tests/contract/test_fixtures_match_contract.py::test_lease_fixtures_cover_all_statuses_roles_and_recommendations` | Test przypina zbiór statusów fixture'ów jako `{ACTIVE, WARNING, EXPIRED}`, a `shared/fixtures/leases.json` zawiera też `PERMANENT`. Wprowadzone przez `f9c9c55` („docs(data): record the shared-data drift…"), który jest przodkiem **zarówno `main`, jak i tej gałęzi**, a pliki fixture'ów są bajtowo identyczne między `frontend-integration` i `HEAD` — czyli błąd jest wcześniejszy i **nie należy do tego zadania**. Należy do właściciela silnika dzierżawy: albo test ma znać `PERMANENT`, albo fixture ma go nie zawierać. |
+| `tests/contract/test_fixtures_match_contract.py::test_lease_fixtures_cover_all_statuses_roles_and_recommendations` | Test przypina zbiór statusów fixture'ów jako `{ACTIVE, WARNING, EXPIRED}`, a `shared/fixtures/leases.json` zawiera też `PERMANENT`. Wprowadzone przez `f9c9c55` („docs(data): record the shared-data drift…"), który jest przodkiem **zarówno `main`, jak i tej gałęzi**, a pliki fixture'ów są bajtowo identyczne między `frontend-integration` i `HEAD` — czyli błąd jest wcześniejszy i **nie należy do tego zadania**. Należy do właściciela silnika dostępu: albo test ma znać `PERMANENT`, albo fixture ma go nie zawierać. |
 
 **Konsekwencje dla tego zadania:**
 
@@ -171,7 +171,7 @@ export type ServiceIconComponent = ComponentType<{ className?: string; 'aria-hid
 export interface ServiceRoute {
   id: ServiceRouteId;
   path: string;      // '/' | '/leases' | ...
-  label: string;     // 'Pulpit' | 'Dzierżawy' | ...
+  label: string;     // 'Pulpit' | 'Dostępy' | ...
   icon: ServiceIconComponent;
 }
 

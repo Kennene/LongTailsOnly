@@ -14,9 +14,9 @@ export interface RejectAppealVariables {
  * Odrzucenie odwołania (UC-3) — `POST /api/v1/appeals/{appeal_id}/reject`.
  *
  * To jedyna droga rozstrzygnięcia wniosku, jaką ma dziś backend: zatwierdzenie wymagałoby
- * decyzji o dzierżawie (3.6/5.5), której jeszcze nie ma. Odrzucenie zmienia listę odwołań,
- * licznik `pending_appeals` dashboardu i dziennik audytu (`APPEAL_REJECTED`); dzierżawy
- * zostawiamy w spokoju, bo odrzucenie wniosku jej nie modyfikuje. Unieważnienia niosą prefiks
+ * decyzji o dostępie (3.6/5.5), której jeszcze nie ma. Odrzucenie zmienia listę odwołań,
+ * licznik `pending_appeals` dashboardu i dziennik audytu (`APPEAL_REJECTED`); dostęp
+ * zostawiamy w spokoju, bo odrzucenie wniosku go nie modyfikuje. Unieważnienia niosą prefiks
  * **aktywnej usługi** — dane innych usług nie są tym wnioskiem dotknięte.
  */
 export function useRejectAppeal(): UseMutationResult<AppealOverview, Error, RejectAppealVariables> {

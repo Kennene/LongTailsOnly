@@ -32,7 +32,7 @@ function expectBadgeIcon(badge: HTMLElement, slug: string): void {
 
 /**
  * Unikalne statusy wierszy — generyczne po samym statusie, bo plik pokrywa dwie różne osie:
- * statusy dzierżaw (`LeaseStatus`, tabela kandydatów) i statusy odwołań (`AppealStatus`, lista
+ * statusy dostępów (`LeaseStatus`, tabela kandydatów) i statusy odwołań (`AppealStatus`, lista
  * odwołań). Wcześniejsza sygnatura unieruchamiała `LeaseStatus` i przez to odrzucała fixture
  * odwołań na etapie typowania.
  */

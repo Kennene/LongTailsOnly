@@ -10,14 +10,14 @@ export interface DecideAppealVariables {
 }
 
 /**
- * Rozstrzygnięcie odwołania decyzją o dzierżawie (UC-3) —
+ * Rozstrzygnięcie odwołania decyzją o dostępie (UC-3) —
  * `POST /api/v1/appeals/{appeal_id}/decision`.
  *
- * Decyzja zmienia **dwie** rzeczy naraz: dzierżawę z odwołania (przedłużenie, deeskalacja albo
+ * Decyzja zmienia **dwie** rzeczy naraz: dostęp z odwołania (przedłużenie, deeskalacja albo
  * odebranie dostępu) i sam wniosek (`APPROVED`/`REJECTED`, `resolved_at`). Unieważniamy więc
- * wszystko, co jedno z drugim łączy: listę odwołań, dzierżawy, licznik `pending_appeals` pulpitu,
+ * wszystko, co jedno z drugim łączy: listę odwołań, dostępy, licznik `pending_appeals` pulpitu,
  * dziennik audytu (`LEASE_EXTENDED`/`LEASE_DOWNSCOPED`/`LEASE_REVOKED` + zamknięcie wniosku),
- * statystyki aktywności modala oraz graf, którego krawędzie niosą status dzierżawy (spec §7.3).
+ * statystyki aktywności modala oraz graf, którego krawędzie niosą status dostępu (spec §7.3).
  */
 export function useDecideAppeal(): UseMutationResult<AppealOverview, Error, DecideAppealVariables> {
   const queryClient = useQueryClient();

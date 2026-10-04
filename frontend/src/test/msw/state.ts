@@ -160,7 +160,7 @@ function extensionDays(request: DecisionRequest, base: string): number {
  * systemowego, więc panel pokazuje dokładnie to, co pokazałby backend po `time_travel`.
  *
  * Rekomendacja bierze się z aktywności w seedzie (snapshot fixture'u), z jednym wyjątkiem:
- * dzierżawa po terminie to `REVOKE` (patrz `recommendationFor`).
+ * dostęp po terminie to `REVOKE` (patrz `recommendationFor`).
  */
 export function withComputedFields(lease: LeaseOverview, elapsedDays: number): LeaseOverview {
   const days: number | null =
@@ -182,7 +182,7 @@ export function withComputedFields(lease: LeaseOverview, elapsedDays: number): L
  *
  * `shared/scenarios/uc-04-time-travel.json` pinuje dla `kamil@core-api` w `t30` status `EXPIRED`
  * **i** rekomendację `REVOKE`, a snapshot kotwicy trzyma tam `KEEP` (fixture'y są zrzutem z bazy
- * sprzed doby, ADR 0008). Dzierżawa po terminie idzie więc na `REVOKE`, a przed terminem
+ * sprzed doby, ADR 0008). Dostęp po terminie idzie więc na `REVOKE`, a przed terminem
  * rekomendacja zostaje ze snapshotu — to ona pinuje `WARNING`/`DOWNSCOPE` z
  * `shared/scenarios/uc-02-downscope.json`.
  */

@@ -9,7 +9,7 @@ import type { AppealCreate, AppealOverview } from '@/types/api';
  * nowego wniosku (z osobą i repozytorium), więc lista nie musi dopytywać o nic więcej.
  *
  * Inwalidujemy trzy rzeczy: listę odwołań, licznik `pending_appeals` dashboardu i dziennik
- * audytu (backend dopisuje tam `APPEAL_SUBMITTED`). Dzierżawy **nie** ruszamy — złożenie
+ * audytu (backend dopisuje tam `APPEAL_SUBMITTED`). Dostępów **nie** ruszamy — złożenie
  * wniosku nic w niej nie zmienia. Prefiksy niosą id **aktywnej usługi**: odwołanie należy
  * do jednej integracji, więc dane pozostałych zostają nietknięte.
  */

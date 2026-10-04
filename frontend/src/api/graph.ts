@@ -19,7 +19,7 @@ export interface GraphQuery {
  *
  * Backend oddaje gotowy `PermissionGraph` w formacie React Flow (ADR 0009): węzły zespołów, osób
  * i repozytoriów oraz krawędzie `membership` i `lease` z rolą, statusem i rekomendacją. Frontend
- * **nie składa już grafu z listy dzierżaw** — lista nie niesie składu zespołów, więc taka ścieżka
+ * **nie składa już grafu z listy dostępów** — lista nie niesie składu zespołów, więc taka ścieżka
  * kłamałaby o członkostwie, a `position` węzłów i tak musi przyjść z API.
  *
  * Odpowiedź idzie na ekran co do znaku: brak endpointu (404) jest błędem widoku, a nie powodem do

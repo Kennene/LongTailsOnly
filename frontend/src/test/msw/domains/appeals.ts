@@ -18,11 +18,11 @@ import { applyDecision, getLeases, getSimulatedNow } from '../state';
  * - `POST /api/v1/appeals` odpowiada `201` i zwraca `AppealOverview` (z osobą i repozytorium),
  * - `POST /api/v1/appeals/{id}/reject` odrzuca wniosek (`REJECTED`, `resolved_at` z zegara
  *   symulowanego), `404` dla nieznanego id i `409` dla już rozstrzygniętego,
- * - `POST /api/v1/appeals/{id}/decision` przeprowadza decyzję administratora na **dzierżawie
+ * - `POST /api/v1/appeals/{id}/decision` przeprowadza decyzję administratora na **dostępie
  *   z odwołania** i zamyka wniosek (`appeal_service.decide_appeal`): `EXTEND` → `APPROVED`,
  *   `DOWNSCOPE`/`REVOKE` → `REJECTED`, `409` dla już rozstrzygniętego, a Last Admin Protection
  *   zostawia wniosek `PENDING` i odpowiada audytowanym `403`. Overview wraca przeliczony
- *   z dzierżawy po decyzji (`_overview` w `appeals.py`), więc rola, termin i dni są świeże.
+ *   z dostępu po decyzji (`_overview` w `appeals.py`), więc rola, termin i dni są świeże.
  *   Żądanie zapisujemy wyłącznie w `getLastAppealDecision()` — `getLastDecisionRequest()` z
  *   `../state` znaczy „przyszło na `POST /api/v1/leases/{id}/decision`” i tak zostaje.
  *
@@ -73,10 +73,10 @@ export function pendingAppealsCount(): number {
 }
 
 /**
- * Przepina wniosek na inną dzierżawę w „backendzie”.
+ * Przepina wniosek na inny dostęp w „backendzie”.
  *
  * Potrzebne tylko testowi Last Admin Protection: seed demo ma jedno oczekujące odwołanie i jest to
- * dzierżawa `read`, więc bez tego nie da się dojść do `403` w `POST /api/v1/appeals/:id/decision`.
+ * dostęp `read`, więc bez tego nie da się dojść do `403` w `POST /api/v1/appeals/:id/decision`.
  */
 export function bindAppealToLease(appeal_id: number, lease_id: number): void {
   appeals = appeals.map((appeal: AppealOverview): AppealOverview =>
@@ -215,7 +215,7 @@ export const appealsHandlers: HttpHandler[] = [
       return HttpResponse.json({ detail: 'Lease not found' }, { status: 404 });
     }
 
-    // Overview po decyzji: backend czyta dzierżawę po commicie, więc rola, termin i dni są świeże.
+    // Overview po decyzji: backend czyta dostęp po commicie, więc rola, termin i dni są świeże.
     const decided: AppealOverview = {
       ...appeals[index],
       status: body.action === 'EXTEND' ? 'APPROVED' : 'REJECTED',

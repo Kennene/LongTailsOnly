@@ -29,7 +29,7 @@ import { leasesFixture } from './leases';
  * z `lib/graphLayout.ts` — ten sam, którym widok ratuje odpowiedź bez `position`.
  *
  * `team` (slug) zawęża graf tak samo jak `GET /api/v1/graph?team=…`: zostają osoby tego zespołu,
- * ich czynne dzierżawy, repozytoria z tych dzierżaw oraz sam węzeł zespołu z krawędziami
+ * ich czynne dostępy, repozytoria z tych dostępów oraz sam węzeł zespołu z krawędziami
  * członkostwa. Bez filtra repozytoria biorą się z całego `repositories.json`, tak jak backend
  * czyta wszystkie repozytoria z bazy.
  */

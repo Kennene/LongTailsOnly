@@ -5,9 +5,9 @@ import { useActiveService } from '@/services/ServicesContext';
 import type { LeaseActivityStats } from '@/types/api';
 
 /**
- * Statystyki użycia dzierżawy dla modala decyzji — w kontekście aktywnej usługi.
+ * Statystyki użycia dostępu dla modala decyzji — w kontekście aktywnej usługi.
  *
- * `enabled` blokuje żądanie, dopóki nie ma konkretnej dzierżawy (`lease_id > 0`) — modal
+ * `enabled` blokuje żądanie, dopóki nie ma konkretnego dostępu (`lease_id > 0`) — modal
  * montuje się także bez kontekstu odwołania — oraz dopóki nie ma identyfikatora usługi, której
  * można by przypisać dane (patrz `useLeases`).
  */

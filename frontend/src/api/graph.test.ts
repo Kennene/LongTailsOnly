@@ -17,7 +17,7 @@ import type {
 /**
  * Warstwa danych grafu: backend serwuje `GET /api/v1/graph` (kontraktowy `PermissionGraph`, ADR 0009)
  * z filtrem `?team=<slug>` (`app/api/v1/graph.py`), więc `fetchGraph()` nie składa już grafu
- * z listy dzierżaw — bierze gotowy ładunek, razem z węzłami zespołów i krawędziami członkostwa.
+ * z listy dostępów — bierze gotowy ładunek, razem z węzłami zespołów i krawędziami członkostwa.
  *
  * Testujemy tutaj, bo widok pokazuje wyłącznie liczniki węzłów i krawędzi — identyfikatory,
  * `data` krawędzi i `position` węzłów nigdzie nie trafiają, a to one pinują kontrakt React Flow.
@@ -38,7 +38,7 @@ function liveGraph(team: string | null = null): PermissionGraph {
   return buildGraphFixture(getLeases(), team);
 }
 
-/** Dzierżawy, które widzi API — graf pomija nieaktywne (odebrany dostęp), tak jak backend. */
+/** Dostępy, które widzi API — graf pomija nieaktywne (odebrany dostęp), tak jak backend. */
 function activeLeases(): LeaseOverview[] {
   return getLeases().filter((lease: LeaseOverview): boolean => lease.is_active);
 }
@@ -58,7 +58,7 @@ afterEach(() => {
 });
 
 describe('fetchGraph', () => {
-  it('czyta graf z GET /api/v1/graph i nie schodzi na listę dzierżaw', async () => {
+  it('czyta graf z GET /api/v1/graph i nie schodzi na listę dostępów', async () => {
     const paths: string[] = [];
     const derivedPaths: string[] = [];
     const payload: PermissionGraph = {
@@ -109,7 +109,7 @@ describe('fetchGraph', () => {
     expect(narrowed.nodes.length).toBeLessThan(whole.nodes.length);
   });
 
-  it('niesie węzły zespołów i krawędzie członkostwa, których lista dzierżaw nie ma', async () => {
+  it('niesie węzły zespołów i krawędzie członkostwa, których lista dostępów nie ma', async () => {
     const graph: PermissionGraph = await fetchGraph();
 
     expect(nodeIds(graph, 'team')).toEqual(['team:dev', 'team:qa']);
@@ -125,7 +125,7 @@ describe('fetchGraph', () => {
     ).toBe(true);
   });
 
-  it('niesie rolę, status i rekomendację dzierżawy oraz zapala animated tylko dla ryzyka', async () => {
+  it('niesie rolę, status i rekomendację dostępu oraz zapala animated tylko dla ryzyka', async () => {
     const leases: LeaseOverview[] = activeLeases();
     const graph: PermissionGraph = await fetchGraph();
 
@@ -185,7 +185,7 @@ describe('fetchGraph', () => {
     });
   });
 
-  it('zwraca 404 z serwera jako błąd, a nie cichy fallback na graf z listy dzierżaw', async () => {
+  it('zwraca 404 z serwera jako błąd, a nie cichy fallback na graf z listy dostępów', async () => {
     const derivedPaths: string[] = [];
     server.use(
       http.get('/api/v1/graph', () => HttpResponse.json({ detail: 'Not Found' }, { status: 404 })),

@@ -36,10 +36,10 @@ export interface DecisionModalProps {
   onOpenChange: (open: boolean) => void;
   /**
    * Odwołanie do rozpatrzenia (UC-3). Gdy podane, modal wchodzi w tryb odwołania i renderuje
-   * `DecisionModalAppeal` — z zatwierdzeniem przedłużeniem albo decyzją o dzierżawie przez
+   * `DecisionModalAppeal` — z zatwierdzeniem przedłużeniem albo decyzją o dostępie przez
    * `POST /api/v1/appeals/{id}/decision` i odrzuceniem przez `POST /api/v1/appeals/{id}/reject`.
    * Cały kontekst (osoba, repozytorium, rola, pozostałe dni) niesie `AppealOverview`, więc
-   * dzierżawa nie jest wtedy potrzebna. Domyślnie `null` — ścieżka decyzji o dzierżawie bez zmian.
+   * dostęp nie jest wtedy potrzebny. Domyślnie `null` — ścieżka decyzji o dostępie bez zmian.
    */
   appeal?: AppealOverview | null;
 }
@@ -67,12 +67,12 @@ export function DecisionModal({
   onOpenChange,
   appeal = null,
 }: DecisionModalProps): React.JSX.Element {
-  // Tryb odwołania nie potrzebuje dzierżawy; tryb dzierżawy nie rusza się bez niej.
+  // Tryb odwołania nie potrzebuje dostępu; tryb dostępu nie rusza się bez niego.
   const isOpen: boolean = open && (appeal !== null || lease !== null);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      {/* `key` czyści wybór i błędy przy każdej zmianie dzierżawy/odwołania i ponownym otwarciu. */}
+      {/* `key` czyści wybór i błędy przy każdej zmianie dostępu/odwołania i ponownym otwarciu. */}
       {isOpen && appeal !== null ? (
         <DecisionModalAppeal
           appeal={appeal}
@@ -97,7 +97,7 @@ interface LeaseDecisionFormProps {
 }
 
 /**
- * Tryb dzierżawy: decyzja idzie przez `POST /api/v1/leases/{id}/decision`.
+ * Tryb dostępu: decyzja idzie przez `POST /api/v1/leases/{id}/decision`.
  *
  * Układ od góry: kogo i czego dotyczy decyzja, stan dostępu w jednym rzędzie odznak, dowód użycia
  * w jednej linii, a pod spodem przełącznik **jednej** akcji (przedłuż / zdeeskaluj / odbierz)
@@ -211,20 +211,27 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
         </DialogDescription>
       </DialogHeader>
 
-      {/* Stan dostępu w jednym rzędzie: poziom, status, termin i rada silnika. */}
-      <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+      {/* Stan dostępu w jednym rzędzie: poziom, status i termin. */}
+      <div
+        className="flex flex-wrap items-center justify-center gap-3 text-sm"
+        data-testid="lease-state"
+      >
         <RoleBadge role={lease.current_role} />
         <LeaseStatusBadge status={lease.status} />
         <span className="text-muted-foreground">{formatDaysRemaining(lease.days_remaining)}</span>
-        <span className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">Rekomendacja</span>
-          <RecommendationBadge recommendation={lease.recommendation} />
-        </span>
       </div>
 
       <LeaseActivityPanel lease_id={lease.id} />
 
       <div className="flex flex-col gap-3 border-t pt-4">
+        {/* Rada silnika stoi przy decyzji, nie w rzędzie stanu — tam zlewała się z odznakami. */}
+        <p
+          className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
+          data-testid="lease-recommendation"
+        >
+          Rekomendacja silnika
+          <RecommendationBadge recommendation={lease.recommendation} />
+        </p>
         <DecisionKindSwitch options={kinds} value={kind} onChange={changeKind} />
 
         {kind === 'extend' ? (
@@ -238,7 +245,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
             <p className="text-center text-sm text-muted-foreground">
               {kind === 'revoke'
                 ? 'Osoba straci dostęp do tego repozytorium.'
-                : 'Zapis zmieni się w odczyt (read) na nowy okres dzierżawy.'}
+                : 'Zapis zmieni się w odczyt (read) na nowy okres dostępu.'}
             </p>
             <JustificationField
               id="decision-justification"
