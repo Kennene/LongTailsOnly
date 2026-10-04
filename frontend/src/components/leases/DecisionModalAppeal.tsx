@@ -4,7 +4,12 @@ import { toast } from 'sonner';
 import { ApiError } from '@/api/client';
 import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { AppealContextPanel } from '@/components/leases/AppealContextPanel';
-import { DECISION_PANEL_HEIGHT, DecisionKindSwitch } from '@/components/leases/DecisionKindSwitch';
+import {
+  DECISION_PANEL_HEIGHT,
+  DecisionKindSwitch,
+  FOOTER_PRIMARY_WIDTH,
+  FOOTER_SECONDARY_WIDTH,
+} from '@/components/leases/DecisionKindSwitch';
 import { DecisionSubject } from '@/components/leases/DecisionSubject';
 import { buildExtension, CUSTOM_DAYS_ERROR } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
@@ -212,8 +217,8 @@ export function DecisionModalAppeal({
 
   return (
     <DialogContent className="max-h-[90vh] gap-6 overflow-y-auto sm:max-w-2xl">
-      <DialogHeader>
-        <DialogTitle>Rozpatrzenie odwołania</DialogTitle>
+      <DialogHeader className="items-center text-center">
+        <DialogTitle className="text-xl">Rozpatrzenie odwołania</DialogTitle>
         <DialogDescription>
           <DecisionSubject user={appeal.user} repository={appeal.repository} />
         </DialogDescription>
@@ -248,7 +253,7 @@ export function DecisionModalAppeal({
       <div className="flex flex-col gap-3 border-t pt-4">
         <DecisionKindSwitch options={kinds} value={kind} onChange={changeKind} />
         <div
-          className={cn('flex flex-col gap-3', DECISION_PANEL_HEIGHT)}
+          className={cn('flex flex-col justify-center gap-3', DECISION_PANEL_HEIGHT)}
           data-testid="decision-panel"
         >
           <p className="text-center text-sm text-muted-foreground">{KIND_HINT[kind]}</p>
@@ -300,20 +305,34 @@ export function DecisionModalAppeal({
       <DialogFooter>
         {isConfirmingRevoke ? (
           <>
-            <Button variant="outline" onClick={() => setIsConfirmingRevoke(false)}>
+            <Button
+              variant="outline"
+              className={FOOTER_SECONDARY_WIDTH}
+              onClick={() => setIsConfirmingRevoke(false)}
+            >
               Zostaw dostęp
             </Button>
-            <Button variant="destructive" disabled={isPending} onClick={handleSubmit}>
+            <Button
+              variant="destructive"
+              className={FOOTER_PRIMARY_WIDTH}
+              disabled={isPending}
+              onClick={handleSubmit}
+            >
               Potwierdzam odebranie
             </Button>
           </>
         ) : (
           <>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              className={FOOTER_SECONDARY_WIDTH}
+              onClick={() => onOpenChange(false)}
+            >
               Zamknij
             </Button>
             <Button
               variant={kind === 'revoke' ? 'destructive' : 'default'}
+              className={FOOTER_PRIMARY_WIDTH}
               disabled={isSubmitDisabled}
               onClick={handleSubmit}
             >

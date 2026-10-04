@@ -3,7 +3,11 @@ import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 
 import { leasesFixture } from '@/api/fixtures';
-import { DECISION_PANEL_HEIGHT } from '@/components/leases/DecisionKindSwitch';
+import {
+  DECISION_PANEL_HEIGHT,
+  FOOTER_PRIMARY_WIDTH,
+  FOOTER_SECONDARY_WIDTH,
+} from '@/components/leases/DecisionKindSwitch';
 import { DecisionModal } from '@/components/leases/DecisionModal';
 import { formatDaysRemaining } from '@/lib/dateTime';
 import { getRecommendationBadge, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
@@ -108,4 +112,23 @@ it('keeps one action panel with a reserved height while switching actions', asyn
     expect(screen.getByTestId('decision-panel')).toBe(panel);
     expect(panel).toHaveClass(DECISION_PANEL_HEIGHT);
   }
+});
+
+it('keeps both footer buttons the same size on every tab and in the revoke confirmation', async () => {
+  const user = userEvent.setup();
+  await renderModal(activeLease);
+
+  const expectFooter = (secondary: string, primary: string): void => {
+    // `selector` + własny tekst przycisku: ukryty „X” w rogu też nazywa się „Zamknij”, ale tylko przez `sr-only`.
+    expect(screen.getByText(secondary, { selector: 'button' })).toHaveClass(FOOTER_SECONDARY_WIDTH);
+    expect(screen.getByText(primary, { selector: 'button' })).toHaveClass(FOOTER_PRIMARY_WIDTH);
+  };
+
+  expectFooter('Zamknij', 'Przedłuż dostęp');
+  await chooseKind(user, 'Zdeeskaluj');
+  expectFooter('Zamknij', 'Zdeeskaluj dostęp');
+  await chooseKind(user, 'Odbierz');
+  expectFooter('Zamknij', 'Odbierz dostęp');
+  await user.click(screen.getByRole('button', { name: 'Odbierz dostęp' }));
+  expectFooter('Zostaw dostęp', 'Potwierdzam odebranie');
 });

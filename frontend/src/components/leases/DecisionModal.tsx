@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { DECISION_PANEL_HEIGHT, DecisionKindSwitch } from '@/components/leases/DecisionKindSwitch';
+import {
+  DECISION_PANEL_HEIGHT,
+  DecisionKindSwitch,
+  FOOTER_PRIMARY_WIDTH,
+  FOOTER_SECONDARY_WIDTH,
+} from '@/components/leases/DecisionKindSwitch';
 import { DecisionModalAppeal } from '@/components/leases/DecisionModalAppeal';
 import { DecisionSubject } from '@/components/leases/DecisionSubject';
 import {
@@ -212,8 +217,8 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
 
   return (
     <DialogContent className="max-h-[90vh] gap-6 overflow-y-auto sm:max-w-2xl">
-      <DialogHeader>
-        <DialogTitle>Decyzja o dostępie</DialogTitle>
+      <DialogHeader className="items-center text-center">
+        <DialogTitle className="text-xl">Decyzja o dostępie</DialogTitle>
         <DialogDescription>
           <DecisionSubject user={lease.user} repository={lease.repository} />
         </DialogDescription>
@@ -234,16 +239,16 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
       <div className="flex flex-col gap-3 border-t pt-4">
         {/* Rada silnika stoi przy decyzji, nie w rzędzie stanu — tam zlewała się z odznakami. */}
         <p
-          className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
+          className="flex items-center justify-center gap-2 text-base text-muted-foreground"
           data-testid="lease-recommendation"
         >
           Rekomendacja silnika
-          <RecommendationBadge recommendation={lease.recommendation} />
+          <RecommendationBadge recommendation={lease.recommendation} className="h-7 px-3 text-sm" />
         </p>
         <DecisionKindSwitch options={kinds} value={kind} onChange={changeKind} />
 
         <div
-          className={cn('flex flex-col gap-3', DECISION_PANEL_HEIGHT)}
+          className={cn('flex flex-col justify-center gap-3', DECISION_PANEL_HEIGHT)}
           data-testid="decision-panel"
         >
           <p className="text-center text-sm text-muted-foreground">{KIND_HINT[kind]}</p>
@@ -272,20 +277,34 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
       <DialogFooter>
         {isConfirmingRevoke ? (
           <>
-            <Button variant="outline" onClick={() => setIsConfirmingRevoke(false)}>
+            <Button
+              variant="outline"
+              className={FOOTER_SECONDARY_WIDTH}
+              onClick={() => setIsConfirmingRevoke(false)}
+            >
               Zostaw dostęp
             </Button>
-            <Button variant="destructive" disabled={isPending} onClick={handleSubmit}>
+            <Button
+              variant="destructive"
+              className={FOOTER_PRIMARY_WIDTH}
+              disabled={isPending}
+              onClick={handleSubmit}
+            >
               Potwierdzam odebranie
             </Button>
           </>
         ) : (
           <>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              className={FOOTER_SECONDARY_WIDTH}
+              onClick={() => onOpenChange(false)}
+            >
               Zamknij
             </Button>
             <Button
               variant={kind === 'revoke' ? 'destructive' : 'default'}
+              className={FOOTER_PRIMARY_WIDTH}
               disabled={isSubmitDisabled}
               onClick={handleSubmit}
             >

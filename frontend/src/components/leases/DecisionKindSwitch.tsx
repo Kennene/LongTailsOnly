@@ -7,6 +7,14 @@ import { Button } from '@/components/ui/button';
  */
 export const DECISION_PANEL_HEIGHT = 'min-h-40';
 
+/**
+ * Stałe szerokości przycisków w stopce modala decyzji. Etykiety zmieniają się z zakładką
+ * („Przedłuż dostęp”, „Potwierdzam odebranie”, „Zatwierdź odwołanie”…), a przyciski mają stać
+ * w miejscu — zmienia się tylko kolor. Szerokość mieści najdłuższą etykietę.
+ */
+export const FOOTER_PRIMARY_WIDTH = 'w-48';
+export const FOOTER_SECONDARY_WIDTH = 'w-32';
+
 export interface DecisionKindOption<Kind extends string> {
   value: Kind;
   label: string;

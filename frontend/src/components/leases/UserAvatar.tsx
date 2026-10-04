@@ -1,12 +1,20 @@
 import { useState } from 'react';
 
 import { avatarUrl } from '@/lib/avatarUrl';
+import { cn } from '@/lib/utils';
 
 export interface UserAvatarProps {
   initials: string;
   /** Login użytkownika; brak loginu zostawia sam krąg z inicjałami. */
   login?: string;
+  /** Rozmiar kręgu — w tabelach domyślne `size-6`, w nagłówku modala decyzji większy. */
+  size?: 'default' | 'lg';
 }
+
+const AVATAR_SIZE: Record<NonNullable<UserAvatarProps['size']>, string> = {
+  default: 'size-6 text-xs',
+  lg: 'size-9 text-sm',
+};
 
 /**
  * Awatar dostępu: generowana ilustracja w neutralnym kręgu, z inicjałami jako podkładem.
@@ -24,7 +32,11 @@ export interface UserAvatarProps {
  * Stały rozmiar `size-6` (24 px) trzyma wiersz w paśmie 36–40 px (`DESIGN.md` §3) — `size-7`
  * rozdymał go zmierzone do 45 px.
  */
-export function UserAvatar({ initials, login }: UserAvatarProps): React.JSX.Element {
+export function UserAvatar({
+  initials,
+  login,
+  size = 'default',
+}: UserAvatarProps): React.JSX.Element {
   const [loadedLogin, setLoadedLogin] = useState<string | null>(null);
   const [failedLogin, setFailedLogin] = useState<string | null>(null);
 
@@ -43,7 +55,10 @@ export function UserAvatar({ initials, login }: UserAvatarProps): React.JSX.Elem
   return (
     <span
       aria-hidden="true"
-      className="relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-xs font-medium text-muted-foreground select-none"
+      className={cn(
+        'relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted font-medium text-muted-foreground select-none',
+        AVATAR_SIZE[size],
+      )}
     >
       {showInitials ? initials : null}
       {src === null ? null : (
