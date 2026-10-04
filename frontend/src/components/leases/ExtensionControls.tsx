@@ -16,7 +16,7 @@ export interface ExtensionControlsProps {
 
 /**
  * Przedłużenie w tym samym układzie co pole uzasadnienia przy „Zdeeskaluj” i „Odbierz”: etykieta
- * nad polem, pod nią wąskie pole „Liczba dni” po lewej i skróty +7 / +30 / +60 po prawej, które
+ * wyśrodkowana nad wąskim polem „Liczba dni” po lewej i skróty +7 / +30 / +60 po prawej, które
  * wpisują liczbę do pola.
  */
 export function ExtensionControls({
@@ -31,20 +31,24 @@ export function ExtensionControls({
   return (
     // Blok węższy niż panel i wyśrodkowany — pole i skróty nie uciekają do krawędzi okna.
     <div className="mx-auto flex w-full max-w-sm flex-col gap-1.5">
-      <Label htmlFor="decision-custom-days">Liczba dni</Label>
-      {/* Wąskie pole przy lewej krawędzi, skróty dosunięte do prawej. */}
-      <div className="flex items-center justify-between gap-2">
-        <Input
-          id="decision-custom-days"
-          type="number"
-          inputMode="numeric"
-          min={CUSTOM_DAYS_MIN}
-          max={CUSTOM_DAYS_MAX}
-          placeholder="1–365"
-          className="w-28"
-          value={days}
-          onChange={(event) => onDaysChange(event.target.value)}
-        />
+      {/* Wąskie pole z etykietą wyśrodkowaną nad nim po lewej, skróty dosunięte do prawej. */}
+      <div className="flex items-end justify-between gap-2">
+        <div className="flex w-28 flex-col gap-1.5">
+          <Label htmlFor="decision-custom-days" className="justify-center">
+            Liczba dni
+          </Label>
+          <Input
+            id="decision-custom-days"
+            type="number"
+            inputMode="numeric"
+            min={CUSTOM_DAYS_MIN}
+            max={CUSTOM_DAYS_MAX}
+            placeholder="1–365"
+            className="w-28"
+            value={days}
+            onChange={(event) => onDaysChange(event.target.value)}
+          />
+        </div>
         <div className="flex gap-2">
           {QUICK_DAYS.map((quick: number) => (
             <Button
