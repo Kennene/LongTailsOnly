@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { ApiError } from '@/api/client';
 import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { AppealContextPanel } from '@/components/leases/AppealContextPanel';
-import { DecisionKindSwitch } from '@/components/leases/DecisionKindSwitch';
+import { DECISION_PANEL_HEIGHT, DecisionKindSwitch } from '@/components/leases/DecisionKindSwitch';
 import { DecisionSubject } from '@/components/leases/DecisionSubject';
 import { buildExtension, CUSTOM_DAYS_ERROR } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
@@ -23,6 +23,7 @@ import { useDecideAppeal } from '@/hooks/useDecideAppeal';
 import { useRejectAppeal } from '@/hooks/useRejectAppeal';
 import { type ApiErrorDescription, describeApiError, describeEngineError } from '@/lib/apiErrors';
 import { formatDaysRemaining } from '@/lib/dateTime';
+import { cn } from '@/lib/utils';
 import type { AppealOverview, DecisionRequest } from '@/types/api';
 
 export interface DecisionModalAppealProps {
@@ -246,39 +247,44 @@ export function DecisionModalAppeal({
 
       <div className="flex flex-col gap-3 border-t pt-4">
         <DecisionKindSwitch options={kinds} value={kind} onChange={changeKind} />
-        <p className="text-center text-sm text-muted-foreground">{KIND_HINT[kind]}</p>
+        <div
+          className={cn('flex flex-col gap-3', DECISION_PANEL_HEIGHT)}
+          data-testid="decision-panel"
+        >
+          <p className="text-center text-sm text-muted-foreground">{KIND_HINT[kind]}</p>
 
-        {kind === 'approve' ? (
-          <ExtensionControls days={days} onDaysChange={handleDaysChange} />
-        ) : null}
-        {kind === 'reject' ? (
-          <JustificationField
-            id="appeal-rejection-justification"
-            label="Uzasadnienie odrzucenia"
-            value={rejectionText}
-            error={validationError}
-            disabled={isPending}
-            placeholder="Dlaczego wniosek nie zasługuje na przedłużenie dostępu."
-            onChange={(value: string): void => {
-              setRejectionText(value);
-              setValidationError(null);
-            }}
-          />
-        ) : null}
-        {kind === 'downscope' || kind === 'revoke' ? (
-          <JustificationField
-            id="decision-justification"
-            label="Uzasadnienie"
-            value={decisionText}
-            error={validationError}
-            disabled={isPending}
-            placeholder="Dlaczego — konkretnie i biznesowo."
-            onChange={(value: string): void => {
-              setDecisionText(value);
-              setValidationError(null);
-            }}
-          />
-        ) : null}
+          {kind === 'approve' ? (
+            <ExtensionControls days={days} onDaysChange={handleDaysChange} />
+          ) : null}
+          {kind === 'reject' ? (
+            <JustificationField
+              id="appeal-rejection-justification"
+              label="Uzasadnienie odrzucenia"
+              value={rejectionText}
+              error={validationError}
+              disabled={isPending}
+              placeholder="Dlaczego wniosek nie zasługuje na przedłużenie dostępu."
+              onChange={(value: string): void => {
+                setRejectionText(value);
+                setValidationError(null);
+              }}
+            />
+          ) : null}
+          {kind === 'downscope' || kind === 'revoke' ? (
+            <JustificationField
+              id="decision-justification"
+              label="Uzasadnienie"
+              value={decisionText}
+              error={validationError}
+              disabled={isPending}
+              placeholder="Dlaczego — konkretnie i biznesowo."
+              onChange={(value: string): void => {
+                setDecisionText(value);
+                setValidationError(null);
+              }}
+            />
+          ) : null}
+        </div>
       </div>
 
       {failure === null ? null : <FailureAlert failure={failure} />}

@@ -34,11 +34,11 @@ export function ActivityStats({ stats }: ActivityStatsProps): React.JSX.Element 
   const isEmptyWindow: boolean = stats.push_count + stats.review_count + stats.comment_count === 0;
 
   return (
-    <div className="flex flex-col items-center gap-2 text-center">
+    <div className="flex flex-col items-center gap-3 text-center">
       {/* Trzy równe kolumny: liczba nad etykietą — odstępy nie zależą od długości słów. */}
-      <dl className="grid w-full max-w-sm grid-cols-3">
+      <dl className="grid w-full max-w-md grid-cols-3 gap-x-6">
         {ACTIVITY_COUNTERS.map((counter: ActivityCounter): React.JSX.Element => (
-          <div className="flex flex-col items-center gap-0.5" key={counter.key}>
+          <div className="flex flex-col items-center gap-1" key={counter.key}>
             <dd className="font-mono text-lg font-medium tabular-nums" data-testid={counter.testId}>
               {stats[counter.key]}
             </dd>

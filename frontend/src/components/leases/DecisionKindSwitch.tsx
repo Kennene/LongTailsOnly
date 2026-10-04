@@ -1,5 +1,12 @@
 import { Button } from '@/components/ui/button';
 
+/**
+ * Wysokość zarezerwowana pod kontrolki wybranej akcji — mieści najwyższy wariant (zdanie, pole
+ * uzasadnienia i komunikat błędu), więc przełączanie „Przedłuż / Zdeeskaluj / Odbierz” nie zmienia
+ * rozmiaru okna. Klasa jest stałą, żeby oba modale i test trzymały tę samą wartość.
+ */
+export const DECISION_PANEL_HEIGHT = 'min-h-40';
+
 export interface DecisionKindOption<Kind extends string> {
   value: Kind;
   label: string;
