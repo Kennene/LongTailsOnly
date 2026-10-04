@@ -1,4 +1,4 @@
-# PLAN IMPLEMENTACJI: GitHub Access Lease Governor (MVP Demo)
+# PLAN IMPLEMENTACJI: TailCut (MVP Demo)
 
 Projekt jest realizowany w architekturze **Single Page Application (SPA)** oraz wzorcu **Portów i Adapterów (Hexagonal / Plugin Architecture)**:
 - **Frontend**: React 19 + React Compiler + Vite + Tailwind CSS + shadcn/ui + @xyflow/react

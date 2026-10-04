@@ -1,4 +1,4 @@
-# DESIGN.md — język projektowy konsoli GitHub Access Lease Governor
+# DESIGN.md — język projektowy konsoli TailCut
 
 **Tryb powierzchni:** Operate — konsola administratora bezpieczeństwa: dashboard, gęste tabele, modal decyzji, formularze, stany puste/błędu.
 **Motyw:** ciemny jest domyślny (`<html class="dark">`, ADR 0001); jasny to świadomy fallback. Wszystkie kolory żyją w `src/index.css`.

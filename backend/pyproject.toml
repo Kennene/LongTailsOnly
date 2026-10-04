@@ -1,7 +1,7 @@
 [project]
 name = "longtails-backend"
 version = "0.1.0"
-description = "GitHub Access Lease Governor - backend API (FastAPI)"
+description = "TailCut - backend API (FastAPI)"
 requires-python = ">=3.14"
 dependencies = [
     "aiosqlite>=0.22.1",

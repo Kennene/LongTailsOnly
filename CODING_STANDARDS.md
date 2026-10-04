@@ -1,6 +1,6 @@
 # CODING_STANDARDS: Standardy inżynierii kodu (Pure MVP Demo)
 
-Dokument definiuje reguły wytwarzania kodu w projekcie GitHub Access Lease Governor dla stacku Python/FastAPI (backend) oraz TypeScript/React 19 (frontend SPA). 
+Dokument definiuje reguły wytwarzania kodu w projekcie TailCut dla stacku Python/FastAPI (backend) oraz TypeScript/React 19 (frontend SPA). 
 
 Celem nadrzędnym jest **maksymalna czytelność, modułowość i szybkość dostarczenia stabilnego demo (MVP)** bez zbędnego balastu.
 
