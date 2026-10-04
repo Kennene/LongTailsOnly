@@ -4,7 +4,8 @@ import { http, HttpResponse } from 'msw';
 
 import { expiredLeasesFixture, leasesFixture } from '@/api/fixtures';
 import { LeaseTable } from '@/components/leases/LeaseTable';
-import { formatDaysRemaining } from '@/lib/dateTime';
+import { formatDaysRemaining, formatOverdueDays } from '@/lib/dateTime';
+import { formatCountPl } from '@/lib/grouping';
 import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import { LeasesPage } from '@/pages/LeasesPage';
 import { server } from '@/test/msw/server';
@@ -137,13 +138,20 @@ describe('LeasesPage', () => {
     expect(headers).toEqual(COLUMNS);
   });
 
-  it('puts the person with the most urgent lease first, with that lease days and no status', async () => {
+  it('puts the person with the most urgent lease first, with the expired count and no status', async () => {
     const rows = await loadLeaseRows();
     const row: HTMLElement = rows[1];
 
     expect(within(row).getByText(MOST_URGENT.user.name)).toBeInTheDocument();
+    // Osoba z wygasłymi dostępami: wiersz mówi, ile ich wygasło (dni pokazują wiersze repozytoriów).
+    const expiredCount: number = leasesFixture.filter(
+      (lease: LeaseOverview): boolean =>
+        lease.user.id === MOST_URGENT.user.id && lease.status === 'EXPIRED',
+    ).length;
     expect(
-      within(row).getByText(formatDaysRemaining(MOST_URGENT.days_remaining)),
+      within(row).getByText(
+        formatCountPl(expiredCount, { one: 'wygasły', few: 'wygasłe', many: 'wygasłych' }),
+      ),
     ).toBeInTheDocument();
     expect(cellsOf(row)[columnIndex(rows, 'Status')].textContent).toBe('');
   });
@@ -177,7 +185,12 @@ describe('LeasesPage', () => {
       const row: HTMLElement = rowFor(rows, lease);
 
       expect(within(row).getByText(fullName(lease))).toBeInTheDocument();
-      expect(within(row).getByText(formatDaysRemaining(lease.days_remaining))).toBeInTheDocument();
+      // Wygasły dostęp mówi, ile dni jest po terminie; pozostałe — ile im zostało.
+      const days: string =
+        lease.status === 'EXPIRED'
+          ? formatOverdueDays(-(lease.days_remaining ?? 0))
+          : formatDaysRemaining(lease.days_remaining);
+      expect(within(row).getByText(days)).toBeInTheDocument();
       expect(within(row).getByText(getStatusBadge(lease.status).label)).toBeInTheDocument();
     });
   });

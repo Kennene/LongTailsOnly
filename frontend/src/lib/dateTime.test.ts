@@ -3,11 +3,14 @@ import { describe, expect, it } from 'vitest';
 import {
   DAY_MS,
   daysRemaining,
+  daysSince,
   DISPLAY_TIME_ZONE,
   formatDateTimePl,
   formatDateTimeShortPl,
+  formatDaysAgo,
   formatDaysRemaining,
   formatOffsetDays,
+  formatOverdueDays,
 } from '@/lib/dateTime';
 
 const NOW = '2026-10-03T12:00:00Z';
@@ -108,4 +111,28 @@ describe('formatDateTimePl with malformed input', () => {
       expect(formatDateTimePl(iso)).toBe('—');
     },
   );
+});
+
+describe('formatOverdueDays', () => {
+  it.each([
+    [61, 'Po terminie 61 dni'],
+    [1, 'Po terminie 1 dzień'],
+  ])('%i → %s', (days: number, expected: string) => {
+    expect(formatOverdueDays(days)).toBe(expected);
+  });
+});
+
+describe('formatDaysAgo / daysSince', () => {
+  it.each([
+    [0, 'dziś'],
+    [1, '1 dzień temu'],
+    [8, '8 dni temu'],
+  ])('%i → %s', (days: number, expected: string) => {
+    expect(formatDaysAgo(days)).toBe(expected);
+  });
+
+  it('counts whole days between a timestamp and the simulated now', () => {
+    expect(daysSince('2026-09-25T12:00:00Z', '2026-10-03T00:00:00Z')).toBe(7);
+    expect(daysSince('2026-10-02T23:00:00Z', '2026-10-03T00:00:00Z')).toBe(0);
+  });
 });

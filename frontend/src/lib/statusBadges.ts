@@ -156,6 +156,20 @@ export function getRoleLabel(role: Role): string {
   return ROLE_META[role].label;
 }
 
+/**
+ * Tekst „Po terminie X dni” w tabeli dostępów — termin minął, więc niesie go rodzina krytyczna
+ * (`status-expired`), jak odznakę „Wygasł”. Klasa mieszka tutaj, bo tylko ten plik nazywa `status-*`.
+ */
+export const OVERDUE_TEXT_CLASS = 'font-medium text-status-expired-foreground';
+
+/**
+ * Wiek ostatniej aktywności przy **wygasłym** dostępie: dawno (poza oknem aktywności) — czerwień,
+ * niedawno — zieleń, bo to dowód, że dostęp jest jeszcze używany. Przy pozostałych dostępach wiek
+ * zostaje neutralny, żeby kolor nie przekrzykiwał statusu.
+ */
+export const ACTIVITY_STALE_TEXT_CLASS = 'text-status-expired-foreground';
+export const ACTIVITY_RECENT_TEXT_CLASS = 'text-status-active-foreground';
+
 export function getRoleBadge(role: Role): BadgeStyle {
   return toBadge(ROLE_META[role]);
 }
