@@ -23,11 +23,8 @@ export function LeaseActivityPanel({ lease_id }: LeaseActivityPanelProps): React
   const statsQuery = useActivityStats(lease_id);
 
   return (
-    <section
-      className="flex flex-col gap-2 rounded-lg border border-border p-3"
-      data-testid="lease-activity"
-    >
-      <h3 className="text-sm font-medium text-muted-foreground">Aktywność w dostępie</h3>
+    <section className="flex flex-col gap-1.5" data-testid="lease-activity">
+      <h3 className="text-xs font-medium text-muted-foreground">Aktywność w dostępie</h3>
       {statsQuery.data !== undefined ? (
         <ActivityStats stats={statsQuery.data} />
       ) : statsQuery.isError ? (
@@ -35,12 +32,12 @@ export function LeaseActivityPanel({ lease_id }: LeaseActivityPanelProps): React
           {STATS_ERROR_MESSAGE}
         </p>
       ) : (
-        <div className="grid grid-cols-3 gap-2" role="status">
+        <div className="flex gap-4" role="status">
           <span className="sr-only">Wczytywanie statystyk aktywności…</span>
           {SKELETON_PLACEHOLDERS.map((index: number): React.JSX.Element => (
             <Skeleton
               aria-hidden="true"
-              className="h-16 w-full"
+              className="h-5 w-16"
               data-testid="lease-activity-skeleton"
               key={index}
             />

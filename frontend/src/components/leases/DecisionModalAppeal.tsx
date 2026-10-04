@@ -1,16 +1,20 @@
-import { type ChangeEvent, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { ApiError } from '@/api/client';
+import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { AppealContextPanel } from '@/components/leases/AppealContextPanel';
-import { DecisionActions } from '@/components/leases/DecisionActions';
+import { DecisionKindSwitch } from '@/components/leases/DecisionKindSwitch';
+import { DecisionSubject } from '@/components/leases/DecisionSubject';
 import {
   buildExtension,
   CUSTOM_DAYS_ERROR,
   type ExtensionChoice,
 } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FailureAlert } from '@/components/leases/FailureAlert';
+import { JustificationField } from '@/components/leases/JustificationField';
+import { RoleBadge } from '@/components/leases/RoleBadge';
 import { Button } from '@/components/ui/button';
 import {
   DialogContent,
@@ -19,14 +23,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useDecideAppeal } from '@/hooks/useDecideAppeal';
 import { useRejectAppeal } from '@/hooks/useRejectAppeal';
 import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { type ApiErrorDescription, describeApiError, describeEngineError } from '@/lib/apiErrors';
 import { daysRemaining, formatDaysRemaining } from '@/lib/dateTime';
-import { getAppealStatusBadge, getRoleLabel } from '@/lib/statusBadges';
 import type { AppealOverview, DecisionRequest } from '@/types/api';
 
 export interface DecisionModalAppealProps {
@@ -34,9 +35,8 @@ export interface DecisionModalAppealProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const JUSTIFICATION_REQUIRED = 'Uzasadnienie odrzucenia jest wymagane';
-const REJECTION_LABEL = 'Uzasadnienie odrzucenia';
-const REJECTION_ERROR_ID = 'appeal-rejection-error';
+const REJECTION_REQUIRED = 'Uzasadnienie odrzucenia jest wymagane';
+const DECISION_REQUIRED = 'Uzasadnienie jest wymagane';
 const REJECTION_SUCCESS = 'Odwołanie odrzucone';
 const APPROVAL_SUCCESS = 'Odwołanie zatwierdzone';
 const DECISION_SUCCESS = 'Decyzja zapisana';
@@ -44,26 +44,23 @@ const PAST_DATE_ERROR = 'Data musi być późniejsza niż czas symulowany';
 const DECISION_FALLBACK = 'Nie udało się zapisać decyzji o dostępie.';
 const ALREADY_RESOLVED = 'To odwołanie zostało już rozstrzygnięte.';
 
-interface LeaseContext {
-  repository: string;
-  requested_role: string;
-  lease_role: string;
-  days: string;
-  previous_appeals: number;
-  status: string;
-}
+type AppealDecisionKind = 'approve' | 'reject' | 'downscope' | 'revoke';
 
-/** Wszystkie etykiety kontekstu w jednym miejscu — modal nie powtarza logiki badge'ów. */
-function buildLeaseContext(appeal: AppealOverview): LeaseContext {
-  return {
-    repository: `${appeal.repository.owner}/${appeal.repository.name}`,
-    requested_role: getRoleLabel(appeal.requested_role),
-    lease_role: getRoleLabel(appeal.lease_role),
-    days: appeal.lease_is_active ? formatDaysRemaining(appeal.days_remaining) : 'Dostęp nieaktywny',
-    previous_appeals: appeal.previous_appeals,
-    status: getAppealStatusBadge(appeal.status).label,
-  };
-}
+/** Etykieta głównego przycisku w stopce — zawsze mówi, co dokładnie się stanie. */
+const SUBMIT_LABEL: Record<AppealDecisionKind, string> = {
+  approve: 'Zatwierdź odwołanie',
+  reject: 'Odrzuć odwołanie',
+  downscope: 'Zdeeskaluj dostęp',
+  revoke: 'Odbierz dostęp',
+};
+
+/** Jedno zdanie pod przełącznikiem: co ta droga zrobi z wnioskiem i z dzierżawą. */
+const KIND_HINT: Record<AppealDecisionKind, string> = {
+  approve: 'Przedłuża dostęp o wybrany okres i zamyka wniosek.',
+  reject: 'Zamyka wniosek, dostęp zostaje bez zmian.',
+  downscope: 'Zmienia zapis w odczyt (read) i zamyka wniosek odrzuceniem.',
+  revoke: 'Odbiera dostęp do repozytorium i zamyka wniosek odrzuceniem.',
+};
 
 /**
  * Zdanie po polsku dla błędu decyzji o dzierżawie.
@@ -85,15 +82,14 @@ function describeDecisionError(error: Error): ApiErrorDescription {
  * Rozpatrzenie odwołania (UC-3). Osoba, repozytorium, rola i pozostałe dni pochodzą
  * z `AppealOverview`, więc modal **nie potrzebuje** propa `lease` ani listy dzierżaw.
  *
- * Wniosek rozstrzygają trzy drogi:
+ * Układ jak w decyzji o dostępie: kto i czego dotyczy wniosek, stan w jednym rzędzie, kontekst
+ * (uzasadnienie, aktywność, historia), a pod spodem przełącznik **jednej** drogi:
  *
- * - „Zatwierdź odwołanie” → `POST /api/v1/appeals/{id}/decision` z `EXTEND` i wybranym
- *   przedłużeniem (uzasadnienie opcjonalne): backend przedłuża dzierżawę i zamyka wniosek jako
- *   `APPROVED`,
- * - „Odbierz dostęp” → ten sam endpoint z `DOWNSCOPE`/`REVOKE` (uzasadnienie wymagane przez silnik,
- *   422 bez niego): dzierżawa traci uprawnienia, a wniosek zamyka się odrzuceniem,
- * - „Odrzuć odwołanie” → `POST /api/v1/appeals/{id}/reject`: wniosek zamyka się bez zmian
- *   w dzierżawie.
+ * - „Zatwierdź” → `POST /api/v1/appeals/{id}/decision` z `EXTEND` i wybranym przedłużeniem:
+ *   backend przedłuża dzierżawę i zamyka wniosek jako `APPROVED`,
+ * - „Odrzuć” → `POST /api/v1/appeals/{id}/reject`: wniosek zamyka się bez zmian w dzierżawie,
+ * - „Zdeeskaluj” / „Odbierz” → ten sam `/decision` z `DOWNSCOPE`/`REVOKE` (uzasadnienie wymagane
+ *   przez silnik, 422 bez niego): dzierżawa traci uprawnienia, a wniosek zamyka się odrzuceniem.
  */
 export function DecisionModalAppeal({
   appeal,
@@ -102,33 +98,43 @@ export function DecisionModalAppeal({
   const clock = useSimulatedClock();
   const rejection = useRejectAppeal();
   const decision = useDecideAppeal();
-  const [justification, setJustification] = useState<string>('');
-  // Tylko walidacja lokalna; błędy API lądują w `Alert` pod formularzem (jedno źródło prawdy).
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [failure, setFailure] = useState<ApiErrorDescription | null>(null);
+  const [kind, setKind] = useState<AppealDecisionKind>('approve');
   const [choice, setChoice] = useState<ExtensionChoice | null>(null);
   const [customDays, setCustomDays] = useState<string>('');
+  const [rejectionText, setRejectionText] = useState<string>('');
+  const [decisionText, setDecisionText] = useState<string>('');
+  // Tylko walidacja lokalna; błędy API lądują w `FailureAlert` pod formularzem.
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isConfirmingRevoke, setIsConfirmingRevoke] = useState<boolean>(false);
+  const [failure, setFailure] = useState<ApiErrorDescription | null>(null);
 
   const now: string | null = clock.data?.now ?? null;
-  const context: LeaseContext = buildLeaseContext(appeal);
+  const isPending: boolean = decision.isPending || rejection.isPending;
+  const kinds: { value: AppealDecisionKind; label: string }[] = [
+    { value: 'approve', label: 'Zatwierdź' },
+    { value: 'reject', label: 'Odrzuć' },
+    // Silnik obniża wyłącznie zapis do odczytu (`downscope_lease`) — przy innym poziomie opcji nie ma.
+    ...(appeal.lease_role === 'write'
+      ? [{ value: 'downscope' as const, label: 'Zdeeskaluj' }]
+      : []),
+    { value: 'revoke', label: 'Odbierz' },
+  ];
 
-  function handleReject(): void {
-    const trimmed: string = justification.trim();
-    if (trimmed.length === 0) {
-      setValidationError(JUSTIFICATION_REQUIRED);
-      return;
-    }
-
+  function changeKind(next: AppealDecisionKind): void {
+    setKind(next);
     setValidationError(null);
-    rejection.mutate(
-      { appeal_id: appeal.id, justification: trimmed },
-      {
-        onSuccess: (): void => {
-          toast.success(REJECTION_SUCCESS);
-          onOpenChange(false);
-        },
-      },
-    );
+    setIsConfirmingRevoke(false);
+    setFailure(null);
+  }
+
+  function selectChoice(next: ExtensionChoice): void {
+    setChoice(next);
+    setFailure(null);
+  }
+
+  function handleCustomDaysChange(value: string): void {
+    setCustomDays(value);
+    selectChoice({ kind: 'custom' });
   }
 
   function sendDecision(request: DecisionRequest, successMessage: string): void {
@@ -147,8 +153,8 @@ export function DecisionModalAppeal({
     );
   }
 
-  function handleApprove(): void {
-    if (choice === null || decision.isPending) {
+  function submitApproval(): void {
+    if (choice === null) {
       return;
     }
     if (choice.kind === 'date' && (now === null || daysRemaining(choice.date, now) <= 0)) {
@@ -165,138 +171,178 @@ export function DecisionModalAppeal({
     sendDecision({ action: 'EXTEND', extension }, APPROVAL_SUCCESS);
   }
 
-  function selectChoice(next: ExtensionChoice): void {
-    setChoice(next);
-    setFailure(null);
+  function submitRejection(): void {
+    const trimmed: string = rejectionText.trim();
+    if (trimmed.length === 0) {
+      setValidationError(REJECTION_REQUIRED);
+      return;
+    }
+
+    setValidationError(null);
+    rejection.mutate(
+      { appeal_id: appeal.id, justification: trimmed },
+      {
+        onSuccess: (): void => {
+          toast.success(REJECTION_SUCCESS);
+          onOpenChange(false);
+        },
+      },
+    );
   }
 
-  function handleCustomDaysChange(value: string): void {
-    setCustomDays(value);
-    selectChoice({ kind: 'custom' });
+  function submitLeaseChange(): void {
+    const trimmed: string = decisionText.trim();
+    if (trimmed.length === 0) {
+      setValidationError(DECISION_REQUIRED);
+      return;
+    }
+
+    setValidationError(null);
+    sendDecision(
+      { action: kind === 'revoke' ? 'REVOKE' : 'DOWNSCOPE', justification: trimmed },
+      DECISION_SUCCESS,
+    );
   }
+
+  function handleSubmit(): void {
+    if (isPending) {
+      return;
+    }
+    switch (kind) {
+      case 'approve':
+        submitApproval();
+        return;
+      case 'reject':
+        submitRejection();
+        return;
+      case 'revoke':
+        // Odebranie jest jedyną akcją nieodwracalną — pierwszy klik tylko prosi o potwierdzenie.
+        if (!isConfirmingRevoke) {
+          setIsConfirmingRevoke(true);
+          return;
+        }
+        submitLeaseChange();
+        return;
+      case 'downscope':
+        submitLeaseChange();
+        return;
+    }
+  }
+
+  const isSubmitDisabled: boolean = isPending || (kind === 'approve' && choice === null);
 
   return (
-    <DialogContent className="sm:max-w-lg">
+    <DialogContent className="max-h-[90vh] gap-5 overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Rozpatrzenie odwołania</DialogTitle>
-        <DialogDescription>{`${appeal.user.name} (${appeal.user.login})`}</DialogDescription>
+        <DialogDescription>
+          <DecisionSubject user={appeal.user} repository={appeal.repository} />
+        </DialogDescription>
       </DialogHeader>
+
+      {/* Stan wniosku w jednym rzędzie: co osoba ma, o co prosi, status i termin dostępu. */}
+      <div
+        className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm"
+        data-testid="appeal-lease-context"
+      >
+        <span className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Ma</span>
+          <RoleBadge role={appeal.lease_role} />
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Prosi o</span>
+          <RoleBadge role={appeal.requested_role} />
+        </span>
+        <AppealStatusBadge status={appeal.status} />
+        <span className="text-muted-foreground">
+          {appeal.lease_is_active
+            ? formatDaysRemaining(appeal.days_remaining)
+            : 'Dostęp nieaktywny'}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {`Poprzednie odwołania: ${String(appeal.previous_appeals)}`}
+        </span>
+      </div>
 
       <AppealContextPanel appeal={appeal} />
 
-      <dl
-        className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 text-sm"
-        data-testid="appeal-lease-context"
-      >
-        <dt className="text-muted-foreground">Repozytorium</dt>
-        <dd className="font-medium">{context.repository}</dd>
-        <dt className="text-muted-foreground">Wnioskowana rola</dt>
-        <dd className="font-medium">{context.requested_role}</dd>
-        <dt className="text-muted-foreground">Rola w dostępie</dt>
-        <dd className="font-medium">{context.lease_role}</dd>
-        <dt className="text-muted-foreground">Status wniosku</dt>
-        <dd className="font-medium">{context.status}</dd>
-        <dt className="text-muted-foreground">Czas do wygaśnięcia</dt>
-        <dd>{context.days}</dd>
-        <dt className="text-muted-foreground">Poprzednie odwołania</dt>
-        <dd className="font-mono tabular-nums">{context.previous_appeals}</dd>
-      </dl>
+      <div className="flex flex-col gap-3 border-t pt-4">
+        <DecisionKindSwitch options={kinds} value={kind} onChange={changeKind} />
+        <p className="text-sm text-muted-foreground">{KIND_HINT[kind]}</p>
 
-      <ExtensionControls
-        choice={choice}
-        customDays={customDays}
-        simulatedNow={now}
-        onChoiceChange={selectChoice}
-        onCustomDaysChange={handleCustomDaysChange}
-      />
+        {kind === 'approve' ? (
+          <ExtensionControls
+            choice={choice}
+            customDays={customDays}
+            simulatedNow={now}
+            onChoiceChange={selectChoice}
+            onCustomDaysChange={handleCustomDaysChange}
+          />
+        ) : null}
+        {kind === 'reject' ? (
+          <JustificationField
+            id="appeal-rejection-justification"
+            label="Uzasadnienie odrzucenia"
+            value={rejectionText}
+            error={validationError}
+            disabled={isPending}
+            placeholder="Dlaczego wniosek nie zasługuje na przedłużenie dostępu."
+            onChange={(value: string): void => {
+              setRejectionText(value);
+              setValidationError(null);
+            }}
+          />
+        ) : null}
+        {kind === 'downscope' || kind === 'revoke' ? (
+          <JustificationField
+            id="decision-justification"
+            label="Uzasadnienie"
+            value={decisionText}
+            error={validationError}
+            disabled={isPending}
+            placeholder="Dlaczego — konkretnie i biznesowo."
+            onChange={(value: string): void => {
+              setDecisionText(value);
+              setValidationError(null);
+            }}
+          />
+        ) : null}
+      </div>
 
-      <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
-        <h3 className="text-sm font-medium">Zatwierdzenie odwołania</h3>
-        <p className="text-sm text-muted-foreground">
-          Zatwierdzenie przedłuża dzierżawę o wybrany okres i zamyka wniosek. Deeskalacja albo
-          odebranie dostępu idą przez decyzję o dzierżawie poniżej i wymagają uzasadnienia.
-        </p>
-        <Button
-          className="self-start"
-          disabled={choice === null || decision.isPending}
-          onClick={handleApprove}
-          type="button"
-          variant="secondary"
-        >
-          Zatwierdź odwołanie
-        </Button>
-      </section>
-
-      <DecisionActions
-        currentRole={appeal.lease_role}
-        isPending={decision.isPending}
-        onDownscope={(reason: string) =>
-          sendDecision({ action: 'DOWNSCOPE', justification: reason }, DECISION_SUCCESS)
-        }
-        onRevoke={(reason: string) =>
-          sendDecision({ action: 'REVOKE', justification: reason }, DECISION_SUCCESS)
-        }
-      />
-
-      {failure === null ? null : (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {failure.message}
-            {failure.detail === null ? null : (
-              <span className="mt-1 block text-xs text-muted-foreground">{failure.detail}</span>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
-        <h3 className="text-sm font-medium">Odrzuć odwołanie</h3>
-        <p className="text-sm text-muted-foreground">
-          Odrzucenie zamyka wniosek i zostawia dzierżawę bez zmian.
-        </p>
-        <Label htmlFor="appeal-rejection-justification">{REJECTION_LABEL}</Label>
-        <Textarea
-          aria-describedby={validationError === null ? undefined : REJECTION_ERROR_ID}
-          aria-invalid={validationError !== null}
-          id="appeal-rejection-justification"
-          onChange={(event: ChangeEvent<HTMLTextAreaElement>): void =>
-            setJustification(event.target.value)
-          }
-          placeholder="Dlaczego wniosek nie zasługuje na przedłużenie dostępu."
-          value={justification}
-        />
-        {validationError === null ? null : (
-          <p
-            className="text-xs text-status-expired-foreground"
-            id={REJECTION_ERROR_ID}
-            role="alert"
-          >
-            {validationError}
-          </p>
-        )}
-        <Button
-          className="self-start"
-          disabled={rejection.isPending}
-          onClick={handleReject}
-          type="button"
-          variant="destructive"
-        >
-          Odrzuć odwołanie
-        </Button>
-      </section>
-
+      {failure === null ? null : <FailureAlert failure={failure} />}
       {rejection.error === null ? null : (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {describeApiError(rejection.error, 'Nie udało się odrzucić odwołania.')}
-          </AlertDescription>
-        </Alert>
+        <FailureAlert
+          failure={{
+            message: describeApiError(rejection.error, 'Nie udało się odrzucić odwołania.'),
+            detail: null,
+          }}
+        />
       )}
 
       <DialogFooter>
-        <Button variant="outline" onClick={() => onOpenChange(false)}>
-          Zamknij
-        </Button>
+        {isConfirmingRevoke ? (
+          <>
+            <Button variant="outline" onClick={() => setIsConfirmingRevoke(false)}>
+              Zostaw dostęp
+            </Button>
+            <Button variant="destructive" disabled={isPending} onClick={handleSubmit}>
+              Potwierdzam odebranie
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Zamknij
+            </Button>
+            <Button
+              variant={kind === 'revoke' ? 'destructive' : 'default'}
+              disabled={isSubmitDisabled}
+              onClick={handleSubmit}
+            >
+              {SUBMIT_LABEL[kind]}
+            </Button>
+          </>
+        )}
       </DialogFooter>
     </DialogContent>
   );
