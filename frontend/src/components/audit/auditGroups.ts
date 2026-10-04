@@ -7,6 +7,8 @@ export interface AuditGroup {
   actorType: ActorType;
   /** Login, `#id` albo kreska (SYSTEM nie ma człowieka) — jak w komórce „Aktor”. */
   identity: string;
+  /** Login człowieka (do awatara); `null` dla SYSTEM i aktora bez rozwiązanego loginu. */
+  login: string | null;
   /** Jak nazwać grupę w etykiecie przełącznika: login, a bez niego typ aktora. */
   owner: string;
   /** Od najnowszego. */
@@ -45,6 +47,7 @@ export function groupAuditByActor(entries: AuditEntry[]): AuditGroup[] {
         key,
         actorType: sorted[0].actor_type,
         identity,
+        login: sorted[0].actor_login,
         owner: identity === '—' ? sorted[0].actor_type : identity,
         entries: sorted,
         latestAt: sorted[0].timestamp,

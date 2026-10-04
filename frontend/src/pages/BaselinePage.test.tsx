@@ -58,7 +58,8 @@ it('shows what the standard would grant the demo login and what is already grant
   renderBaselinePage();
 
   const card = await screen.findByRole('region', { name: ONBOARDING_SECTION });
-  expect(within(card).getByText('Nowy Developer (nowy-dev)')).toBeInTheDocument();
+  expect(within(card).getByText('Nowy Developer')).toBeInTheDocument();
+  expect(within(card).queryByText(/nowy-dev/)).not.toBeInTheDocument();
   expect(within(card).getByText(/zespołu DEV/)).toBeInTheDocument();
 
   const toGrant = within(card).getByRole('table', { name: 'Do nadania' });

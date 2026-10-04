@@ -1,9 +1,11 @@
 import type { AuditGroup } from '@/components/audit/auditGroups';
 import { ExpandToggle } from '@/components/common/ExpandToggle';
 import { CELL_CENTER, ColumnCaption } from '@/components/common/TableCells';
+import { UserAvatar } from '@/components/leases/UserAvatar';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { formatDateTimePl } from '@/lib/dateTime';
 import { formatCountPl } from '@/lib/grouping';
+import { initialsFrom } from '@/lib/userInitials';
 import { cn } from '@/lib/utils';
 import type { AuditEntry } from '@/types/api';
 
@@ -39,15 +41,25 @@ export function AuditGroupRows({
     <>
       <TableRow className="cursor-pointer" onClick={onToggle}>
         <TableCell className="whitespace-nowrap">
-          {/* Typ i tożsamość w jednej linii — stos dwóch `div`-ów rozdymał wiersz. */}
-          <ExpandToggle
-            expanded={expanded}
-            onToggle={onToggle}
-            subject="wpisy"
-            owner={group.owner}
-          />{' '}
-          {group.actorType}{' '}
-          <span className="font-mono text-xs text-muted-foreground">{group.identity}</span>
+          {/* Typ, tożsamość i awatar w jednej linii (`flex`, bo awatar jest blokiem) — stos dwóch
+              `div`-ów rozdymał wiersz. Spacje zostają w tekście komórki dla czytnika. */}
+          <div className="flex items-center gap-1.5">
+            <ExpandToggle
+              expanded={expanded}
+              onToggle={onToggle}
+              subject="wpisy"
+              owner={group.owner}
+            />{' '}
+            {group.actorType}{' '}
+            <span className="font-mono text-xs text-muted-foreground">{group.identity}</span>
+            {/* Awatar tylko dla człowieka z loginem — SYSTEM i `#id` nie mają twarzy do pokazania. */}
+            {group.login === null ? null : (
+              <UserAvatar
+                initials={initialsFrom({ name: group.login, login: group.login })}
+                login={group.login}
+              />
+            )}
+          </div>
         </TableCell>
         <TableCell className={cn(CELL_CENTER, 'font-mono whitespace-nowrap')}>
           {formatDateTimePl(group.latestAt)}

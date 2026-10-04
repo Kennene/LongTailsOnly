@@ -5,6 +5,7 @@ import { ExpandAllButton, ExpandToggle } from '@/components/common/ExpandToggle'
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import { formatRepositoryCount, groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
+import { UserAvatar } from '@/components/leases/UserAvatar';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import { useLeases } from '@/hooks/useLeases';
 import { formatDaysRemaining } from '@/lib/dateTime';
+import { initialsFrom } from '@/lib/userInitials';
 import type { LeaseOverview } from '@/types/api';
 
 const EMPTY_WARNING_WINDOW =
@@ -118,6 +120,7 @@ function WarningGroup({ group, expanded, onToggle }: WarningGroupProps): React.J
           owner={group.user.name}
         />
         <span className="truncate font-medium">{group.user.name}</span>
+        <UserAvatar initials={initialsFrom(group.user)} login={group.user.login} />
         <span className="truncate text-muted-foreground">
           {formatRepositoryCount(group.leases.length)}
         </span>
