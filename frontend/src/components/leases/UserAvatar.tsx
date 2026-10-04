@@ -7,13 +7,14 @@ export interface UserAvatarProps {
   initials: string;
   /** Login użytkownika; brak loginu zostawia sam krąg z inicjałami. */
   login?: string;
-  /** Rozmiar kręgu — w tabelach domyślne `size-6`, w nagłówku modala decyzji większy. */
-  size?: 'default' | 'lg';
+  /** Rozmiar kręgu — w tabelach domyślne `size-6`, w nagłówku modala decyzji większy (`xl`). */
+  size?: 'default' | 'lg' | 'xl';
 }
 
 const AVATAR_SIZE: Record<NonNullable<UserAvatarProps['size']>, string> = {
   default: 'size-6 text-xs',
   lg: 'size-9 text-sm',
+  xl: 'size-12 text-lg',
 };
 
 /**
