@@ -1,4 +1,5 @@
-import { formatDateTimePl } from '@/lib/dateTime';
+import { useSimulatedNow } from '@/hooks/useSimulatedNow';
+import { daysSince, formatDateTimePl, formatDaysAgo } from '@/lib/dateTime';
 import type { LeaseActivityStats } from '@/types/api';
 
 export interface ActivityStatsProps {
@@ -32,6 +33,7 @@ const ACTIVITY_COUNTERS: ActivityCounter[] = [
  */
 export function ActivityStats({ stats }: ActivityStatsProps): React.JSX.Element {
   const isEmptyWindow: boolean = stats.push_count + stats.review_count + stats.comment_count === 0;
+  const now: string | null = useSimulatedNow();
 
   return (
     <div className="flex flex-col items-center gap-3 text-center">
@@ -47,7 +49,7 @@ export function ActivityStats({ stats }: ActivityStatsProps): React.JSX.Element 
         ))}
       </dl>
       <p className="text-xs text-muted-foreground" data-testid="activity-window">
-        {`${windowLabel(stats.window_days)} · ${lastActivityLabel(stats.last_activity_at)}`}
+        {`${windowLabel(stats.window_days)} · ${lastActivityLabel(stats.last_activity_at, now)}`}
       </p>
       {isEmptyWindow ? (
         <p className="text-xs text-muted-foreground" data-testid="activity-empty">
@@ -63,10 +65,14 @@ function windowLabel(window_days: number): string {
   return window_days === 1 ? 'Ostatni dzień' : `Ostatnie ${window_days} dni`;
 }
 
-function lastActivityLabel(last_activity_at: string | null): string {
-  return last_activity_at === null
-    ? 'brak jakiejkolwiek aktywności'
-    : `ostatnia aktywność ${formatDateTimePl(last_activity_at)}`;
+/** Dokładna data i — gdy zegar symulowany już jest — wiek, jak w tabelach („8 dni temu”). */
+function lastActivityLabel(last_activity_at: string | null, now: string | null): string {
+  if (last_activity_at === null) {
+    return 'brak jakiejkolwiek aktywności';
+  }
+  const age: string = now === null ? '' : ` (${formatDaysAgo(daysSince(last_activity_at, now))})`;
+
+  return `ostatnia aktywność ${formatDateTimePl(last_activity_at)}${age}`;
 }
 
 /**

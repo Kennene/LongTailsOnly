@@ -1,5 +1,6 @@
 import { ExpandAllButton, ExpandToggle } from '@/components/common/ExpandToggle';
 import { CELL_CENTER, ColumnCaption, HeadCell } from '@/components/common/TableCells';
+import { ExpiredCount, RemainingDays } from '@/components/common/TimeLabels';
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import { formatRepositoryCount, groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
@@ -7,7 +8,6 @@ import { RoleBadge } from '@/components/leases/RoleBadge';
 import { UserAvatar } from '@/components/leases/UserAvatar';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
-import { formatDaysRemaining } from '@/lib/dateTime';
 import { initialsFrom } from '@/lib/userInitials';
 import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
@@ -70,6 +70,10 @@ function CandidateGroupRows({
   expanded,
   onToggle,
 }: CandidateGroupRowsProps): React.JSX.Element {
+  const expiredCount: number = group.leases.filter(
+    (lease: LeaseOverview): boolean => lease.status === 'EXPIRED',
+  ).length;
+
   return (
     <>
       <TableRow className="cursor-pointer" onClick={onToggle}>
@@ -92,7 +96,11 @@ function CandidateGroupRows({
           {expanded ? <ColumnCaption>Poziom</ColumnCaption> : null}
         </TableCell>
         <TableCell className={CELL_CENTER}>
-          {formatDaysRemaining(group.mostUrgent.days_remaining)}
+          {expiredCount === 0 ? (
+            <RemainingDays days={group.mostUrgent.days_remaining} expired={false} />
+          ) : (
+            <ExpiredCount count={expiredCount} />
+          )}
         </TableCell>
         {/* Status należy do dostępu, nie do osoby — pokazują go dopiero wiersze repozytoriów. */}
         <TableCell className={CELL_CENTER}>
@@ -110,7 +118,7 @@ function CandidateGroupRows({
                 <RoleBadge role={lease.current_role} />
               </TableCell>
               <TableCell className={CELL_CENTER}>
-                {formatDaysRemaining(lease.days_remaining)}
+                <RemainingDays days={lease.days_remaining} expired={lease.status === 'EXPIRED'} />
               </TableCell>
               <TableCell className={CELL_CENTER}>
                 <LeaseStatusBadge status={lease.status} />

@@ -2,10 +2,10 @@ import type { AppealGroup } from '@/components/appeals/appealGroups';
 import { groupAppealsByUser } from '@/components/appeals/appealGroups';
 import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { ExpandAllButton, ExpandToggle } from '@/components/common/ExpandToggle';
+import { DaysAgo, RemainingDays, StampWithAge } from '@/components/common/TimeLabels';
 import { UserAvatar } from '@/components/leases/UserAvatar';
 import { Button } from '@/components/ui/button';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
-import { formatDateTimePl, formatDaysRemaining } from '@/lib/dateTime';
 import { formatCountPl } from '@/lib/grouping';
 import { getRoleLabel } from '@/lib/statusBadges';
 import { initialsFrom } from '@/lib/userInitials';
@@ -90,9 +90,7 @@ function AppealGroupItem({
             })}
           </span>
         )}
-        <span className="ml-auto font-mono text-xs text-muted-foreground">
-          {formatDateTimePl(group.latestAt)}
-        </span>
+        <DaysAgo stamp={group.latestAt} className="ml-auto text-xs text-muted-foreground" />
       </div>
       {expanded ? (
         <ul className="mt-1 flex flex-col border-l border-border pl-8">
@@ -114,13 +112,9 @@ interface AppealListItemProps {
  * `AppealOverview` niesie osobę, repozytorium i pozostałe dni, więc lista **nie** łączy się
  * z `useLeases()` — działa też, gdy dostępu spoza okna ostrzegawczego nie ma na liście.
  * Jedynym naprawdę zerowym polem jest `days_remaining` (dla nieaktywnego dostępu) i to ono
- * ma zapasową kreskę w `formatDaysRemaining`. Osobę pokazuje wiersz grupy wyżej.
+ * ma zapasową kreskę w `RemainingDays`. Osobę pokazuje wiersz grupy wyżej.
  */
 function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.Element {
-  const days: string = appeal.lease_is_active
-    ? formatDaysRemaining(appeal.days_remaining)
-    : 'Dostęp nieaktywny';
-
   return (
     <li className="flex flex-col gap-2 border-b border-border py-3 last:border-b-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -132,9 +126,18 @@ function AppealListItem({ appeal, onResolve }: AppealListItemProps): React.JSX.E
         <span className="text-xs text-muted-foreground">{`W dostępie: ${getRoleLabel(
           appeal.lease_role,
         )}`}</span>
-        <span className="text-xs text-muted-foreground">{days}</span>
-        <span className="ml-auto font-mono text-xs text-muted-foreground">
-          {formatDateTimePl(appeal.created_at)}
+        <span className="text-xs text-muted-foreground">
+          {appeal.lease_is_active ? (
+            <RemainingDays
+              days={appeal.days_remaining}
+              expired={appeal.days_remaining !== null && appeal.days_remaining < 0}
+            />
+          ) : (
+            'Dostęp nieaktywny'
+          )}
+        </span>
+        <span className="ml-auto text-xs text-muted-foreground">
+          <StampWithAge stamp={appeal.created_at} />
         </span>
       </div>
       <p className="max-w-prose text-sm break-words">{appeal.justification}</p>

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -6,6 +6,7 @@ import { appealsFixture, leasesFixture } from '@/api/fixtures';
 import { AppealCandidatesTable } from '@/components/appeals/AppealCandidatesTable';
 import { AppealList } from '@/components/appeals/AppealList';
 import { getAppealStatusBadge, getStatusBadge } from '@/lib/statusBadges';
+import { renderWithProviders } from '@/test/renderWithProviders';
 import type { AppealStatus, LeaseOverview, LeaseStatus } from '@/types/api';
 
 /** Kandydaci do odwołania — status widać dopiero po rozwinięciu wiersza osoby. */
@@ -45,7 +46,7 @@ describe('pigułki statusu w widoku odwołań', () => {
     const user = userEvent.setup();
     const statuses: LeaseStatus[] = uniqueStatuses(CANDIDATES);
     expect(statuses.length).toBeGreaterThan(0);
-    render(<AppealCandidatesTable leases={CANDIDATES} />);
+    renderWithProviders(<AppealCandidatesTable leases={CANDIDATES} />);
 
     await expandAll(user);
 
@@ -61,7 +62,7 @@ describe('pigułki statusu w widoku odwołań', () => {
     const user = userEvent.setup();
     const statuses: AppealStatus[] = uniqueStatuses(appealsFixture);
     expect(statuses.length).toBeGreaterThan(0);
-    render(
+    renderWithProviders(
       <AppealList
         appeals={appealsFixture}
         labelledBy="appeal-list-heading"

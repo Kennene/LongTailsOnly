@@ -1,9 +1,9 @@
 import type { AuditGroup } from '@/components/audit/auditGroups';
 import { ExpandToggle } from '@/components/common/ExpandToggle';
 import { CELL_CENTER, ColumnCaption } from '@/components/common/TableCells';
+import { DaysAgo, StampWithAge } from '@/components/common/TimeLabels';
 import { UserAvatar } from '@/components/leases/UserAvatar';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { formatDateTimePl } from '@/lib/dateTime';
 import { formatCountPl } from '@/lib/grouping';
 import { initialsFrom } from '@/lib/userInitials';
 import { cn } from '@/lib/utils';
@@ -61,8 +61,8 @@ export function AuditGroupRows({
             )}
           </div>
         </TableCell>
-        <TableCell className={cn(CELL_CENTER, 'font-mono whitespace-nowrap')}>
-          {formatDateTimePl(group.latestAt)}
+        <TableCell className={cn(CELL_CENTER, 'whitespace-nowrap')}>
+          <DaysAgo stamp={group.latestAt} />
         </TableCell>
         <TableCell className={cn(CELL_CENTER, 'text-muted-foreground')}>
           {formatCountPl(group.entries.length, { one: 'wpis', few: 'wpisy', many: 'wpisów' })}
@@ -90,8 +90,8 @@ function EntryRow({ entry }: { entry: AuditEntry }): React.JSX.Element {
   return (
     <TableRow className="bg-muted/20">
       <TableCell />
-      <TableCell className={cn(CELL_CENTER, 'font-mono whitespace-nowrap')}>
-        {formatDateTimePl(entry.timestamp)}
+      <TableCell className={cn(CELL_CENTER, 'whitespace-nowrap')}>
+        <StampWithAge stamp={entry.timestamp} />
       </TableCell>
       <TableCell className={cn(COLUMN_WIDTH.action, CELL_CENTER, 'break-words whitespace-normal')}>
         <div className="font-mono">{entry.action}</div>

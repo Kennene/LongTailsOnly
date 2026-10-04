@@ -77,9 +77,9 @@ it('renders audit entries with time, actor, action, target and a details preview
     within(approvedRow).getByText('lease_id: 3 · preset_days: 30 · requested_role: write'),
   ).toBeInTheDocument();
 
-  // Dwa wpisy SYSTEM dzielą znacznik czasu — oba renderują tę samą, pełną formę daty, a trzecią
-  // pokazuje wiersz aktora SYSTEM (czas jego ostatniego wpisu).
-  expect(table.getAllByText('3 października 2026, 02:05')).toHaveLength(3);
+  // Dwa wpisy SYSTEM dzielą znacznik czasu — oba renderują tę samą, pełną formę daty. Wiersz aktora
+  // SYSTEM pokazuje już tylko wiek ostatniego wpisu („X dni temu”), nie trzecią kopię daty.
+  expect(table.getAllByText('3 października 2026, 02:05')).toHaveLength(2);
   // Oba wpisy SYSTEM siedzą pod jednym wierszem aktora.
   expect(table.getAllByText('SYSTEM').length).toBe(1);
   // Kreska niesie brak: aktor SYSTEM nie ma człowieka, a wpisy SYSTEM nie mają uzasadnienia.
