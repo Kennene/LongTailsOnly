@@ -44,7 +44,7 @@ describe('TopBar', () => {
     renderWithProviders(<TopBar />);
 
     // Usługa jest widoczna w kontrolce obok (spec §5.7), więc tytuł zostaje nazwą produktu.
-    expect(await screen.findByText('Lease Governor')).toBeInTheDocument();
+    expect(await screen.findByText('TailCut')).toBeInTheDocument();
     expect(screen.getByText('Nadzór nad czasowym dostępem')).toBeInTheDocument();
   });
 });

@@ -22,6 +22,7 @@ Katalog i opis dostępnych skilli znajduje się w pliku `SKILLS.md`.
 | `docs/superpowers/specs/` | Specyfikacje architektoniczne i projektowe. |
 | `docs/superpowers/plans/` | Plany realizacji zadań. |
 | `docs/github-mock.md` | Dokumentacja mocka GitHuba, zdarzeń aktywności, time-travel i danych demo (uruchamianie, testy). |
+| `docs/brand/` | Oficjalne logo TailCut: oryginał (`logo.png`) i wersja z przezroczystym tłem (`logo-transparent.png`), z której pochodzą favicony i logo w panelu. |
 | `docs/jira-mock.md` | Dokumentacja mocka Jiry (role projektowe, JQL, zgłoszenia, scenariusze E–H, uruchamianie, testy). |
 
 ## Zasady
