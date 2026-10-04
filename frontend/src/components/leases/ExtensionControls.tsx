@@ -14,7 +14,11 @@ export interface ExtensionControlsProps {
   onDaysChange: (value: string) => void;
 }
 
-/** Przedłużenie: skróty +7 / +30 / +60, które wpisują liczbę do pola, i samo pole „Liczba dni”. */
+/**
+ * Przedłużenie w tym samym układzie co pole uzasadnienia przy „Zdeeskaluj” i „Odbierz”: etykieta
+ * nad polem, pod nią wąskie pole „Liczba dni” po lewej i skróty +7 / +30 / +60 po prawej, które
+ * wpisują liczbę do pola.
+ */
 export function ExtensionControls({
   days,
   disabledReason = null,
@@ -25,33 +29,35 @@ export function ExtensionControls({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      {QUICK_DAYS.map((quick: number) => (
-        <Button
-          key={quick}
-          type="button"
-          variant={days === String(quick) ? 'default' : 'outline'}
-          size="sm"
-          aria-pressed={days === String(quick)}
-          onClick={() => onDaysChange(String(quick))}
-        >
-          {`+${String(quick)}`}
-        </Button>
-      ))}
-      <Label htmlFor="decision-custom-days" className="ml-2 shrink-0 text-muted-foreground">
-        Liczba dni
-      </Label>
-      <Input
-        id="decision-custom-days"
-        type="number"
-        inputMode="numeric"
-        min={CUSTOM_DAYS_MIN}
-        max={CUSTOM_DAYS_MAX}
-        placeholder="1–365"
-        className="h-8 w-20"
-        value={days}
-        onChange={(event) => onDaysChange(event.target.value)}
-      />
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor="decision-custom-days">Liczba dni</Label>
+      {/* Wąskie pole przy lewej krawędzi, skróty dosunięte do prawej. */}
+      <div className="flex items-center justify-between gap-2">
+        <Input
+          id="decision-custom-days"
+          type="number"
+          inputMode="numeric"
+          min={CUSTOM_DAYS_MIN}
+          max={CUSTOM_DAYS_MAX}
+          placeholder="1–365"
+          className="w-28"
+          value={days}
+          onChange={(event) => onDaysChange(event.target.value)}
+        />
+        <div className="flex gap-2">
+          {QUICK_DAYS.map((quick: number) => (
+            <Button
+              key={quick}
+              type="button"
+              variant={days === String(quick) ? 'default' : 'outline'}
+              aria-pressed={days === String(quick)}
+              onClick={() => onDaysChange(String(quick))}
+            >
+              {`+${String(quick)}`}
+            </Button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

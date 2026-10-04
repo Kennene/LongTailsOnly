@@ -218,7 +218,7 @@ export function DecisionModalAppeal({
   return (
     <DialogContent className="max-h-[90vh] gap-6 overflow-y-auto sm:max-w-2xl">
       <DialogHeader className="items-center text-center">
-        <DialogTitle className="text-xl">Rozpatrzenie odwołania</DialogTitle>
+        <DialogTitle className="text-2xl">Rozpatrzenie odwołania</DialogTitle>
         <DialogDescription>
           <DecisionSubject user={appeal.user} repository={appeal.repository} />
         </DialogDescription>

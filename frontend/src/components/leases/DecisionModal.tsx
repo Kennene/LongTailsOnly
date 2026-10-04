@@ -218,7 +218,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   return (
     <DialogContent className="max-h-[90vh] gap-6 overflow-y-auto sm:max-w-2xl">
       <DialogHeader className="items-center text-center">
-        <DialogTitle className="text-xl">Decyzja o dostępie</DialogTitle>
+        <DialogTitle className="text-2xl">Decyzja o dostępie</DialogTitle>
         <DialogDescription>
           <DecisionSubject user={lease.user} repository={lease.repository} />
         </DialogDescription>

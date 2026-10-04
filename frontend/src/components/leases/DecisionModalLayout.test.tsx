@@ -132,3 +132,15 @@ it('keeps both footer buttons the same size on every tab and in the revoke confi
   await user.click(screen.getByRole('button', { name: 'Odbierz dostęp' }));
   expectFooter('Zostaw dostęp', 'Potwierdzam odebranie');
 });
+
+it('lays out the extension like the justification field: label on top, then the input and shortcuts', async () => {
+  await renderModal(activeLease);
+
+  const input: HTMLElement = screen.getByLabelText('Liczba dni');
+  const label: HTMLElement = screen.getByText('Liczba dni', { selector: 'label' });
+  const shortcut: HTMLElement = screen.getByRole('button', { name: '+7' });
+
+  // Etykieta nad polem (jak „Uzasadnienie”), skróty za polem — kolejność w dokumencie.
+  expect(label.compareDocumentPosition(input)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  expect(input.compareDocumentPosition(shortcut)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+});
