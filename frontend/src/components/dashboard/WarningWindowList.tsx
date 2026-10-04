@@ -49,7 +49,7 @@ export function WarningWindowList(): React.JSX.Element {
   return (
     <Card data-testid="warning-window" className="gap-0 pb-0">
       <CardHeader className="border-b">
-        <CardTitle>W oknie ostrzegawczym</CardTitle>
+        <CardTitle>Okno ostrzegawcze</CardTitle>
         <CardDescription>
           Dostępy wygasające w oknie ostrzegawczym — wymagają decyzji administratora.
         </CardDescription>
