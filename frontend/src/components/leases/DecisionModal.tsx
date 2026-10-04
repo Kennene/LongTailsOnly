@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { DecisionKindSwitch } from '@/components/leases/DecisionKindSwitch';
+import { DECISION_PANEL_HEIGHT, DecisionKindSwitch } from '@/components/leases/DecisionKindSwitch';
 import { DecisionModalAppeal } from '@/components/leases/DecisionModalAppeal';
 import { DecisionSubject } from '@/components/leases/DecisionSubject';
 import {
@@ -28,6 +28,7 @@ import {
 import { useLeaseDecision } from '@/hooks/useLeaseDecision';
 import { type ApiErrorDescription, describeEngineError } from '@/lib/apiErrors';
 import { formatDaysRemaining } from '@/lib/dateTime';
+import { cn } from '@/lib/utils';
 import type { AppealOverview, DecisionRequest, LeaseOverview } from '@/types/api';
 
 export interface DecisionModalProps {
@@ -55,6 +56,13 @@ const JUSTIFICATION_REQUIRED = 'Uzasadnienie jest wymagane';
 type LeaseDecisionKind = 'extend' | 'downscope' | 'revoke';
 
 /** Etykieta głównego przycisku w stopce — zawsze mówi, co dokładnie się stanie. */
+/** Jedno zdanie pod przełącznikiem: co wybrana akcja zrobi z dostępem. */
+const KIND_HINT: Record<LeaseDecisionKind, string> = {
+  extend: 'Przedłuża dostęp o podaną liczbę dni.',
+  downscope: 'Zapis zmieni się w odczyt (read) na nowy okres dostępu.',
+  revoke: 'Osoba straci dostęp do tego repozytorium.',
+};
+
 const SUBMIT_LABEL: Record<LeaseDecisionKind, string> = {
   extend: 'Przedłuż dostęp',
   downscope: 'Zdeeskaluj dostęp',
@@ -234,19 +242,18 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
         </p>
         <DecisionKindSwitch options={kinds} value={kind} onChange={changeKind} />
 
-        {kind === 'extend' ? (
-          <ExtensionControls
-            days={days}
-            disabledReason={extensionBlocked}
-            onDaysChange={handleDaysChange}
-          />
-        ) : (
-          <>
-            <p className="text-center text-sm text-muted-foreground">
-              {kind === 'revoke'
-                ? 'Osoba straci dostęp do tego repozytorium.'
-                : 'Zapis zmieni się w odczyt (read) na nowy okres dostępu.'}
-            </p>
+        <div
+          className={cn('flex flex-col gap-3', DECISION_PANEL_HEIGHT)}
+          data-testid="decision-panel"
+        >
+          <p className="text-center text-sm text-muted-foreground">{KIND_HINT[kind]}</p>
+          {kind === 'extend' ? (
+            <ExtensionControls
+              days={days}
+              disabledReason={extensionBlocked}
+              onDaysChange={handleDaysChange}
+            />
+          ) : (
             <JustificationField
               id="decision-justification"
               label="Uzasadnienie"
@@ -256,8 +263,8 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
               placeholder="Dlaczego — konkretnie i biznesowo."
               onChange={handleJustificationChange}
             />
-          </>
-        )}
+          )}
+        </div>
       </div>
 
       {failure === null ? null : <FailureAlert failure={failure} />}

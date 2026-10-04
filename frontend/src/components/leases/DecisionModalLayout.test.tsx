@@ -3,6 +3,7 @@ import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 
 import { leasesFixture } from '@/api/fixtures';
+import { DECISION_PANEL_HEIGHT } from '@/components/leases/DecisionKindSwitch';
 import { DecisionModal } from '@/components/leases/DecisionModal';
 import { formatDaysRemaining } from '@/lib/dateTime';
 import { getRecommendationBadge, getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
@@ -92,4 +93,19 @@ it('keeps the recommendation out of the state row, next to the action switch', a
 
   expect(within(screen.getByTestId('lease-state')).queryByText(label)).not.toBeInTheDocument();
   expect(within(screen.getByTestId('lease-recommendation')).getByText(label)).toBeInTheDocument();
+});
+
+it('keeps one action panel with a reserved height while switching actions', async () => {
+  const user = userEvent.setup();
+  await renderModal(activeLease);
+
+  const panel: HTMLElement = screen.getByTestId('decision-panel');
+  expect(panel).toHaveClass(DECISION_PANEL_HEIGHT);
+
+  for (const label of ['Zdeeskaluj', 'Odbierz', 'Przedłuż'] as const) {
+    await chooseKind(user, label);
+    // Ten sam węzeł z tą samą rezerwacją — okno nie rośnie ani nie maleje przy przełączaniu.
+    expect(screen.getByTestId('decision-panel')).toBe(panel);
+    expect(panel).toHaveClass(DECISION_PANEL_HEIGHT);
+  }
 });
