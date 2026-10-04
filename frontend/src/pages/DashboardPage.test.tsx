@@ -271,7 +271,7 @@ describe('DashboardPage', () => {
 
     const section: HTMLElement = await screen.findByTestId('warning-window');
 
-    expect(within(section).getByText('W oknie ostrzegawczym')).toBeInTheDocument();
+    expect(within(section).getByText('Okno ostrzegawcze')).toBeInTheDocument();
     await expectWarningWindow(section, getLeases());
   });
 
