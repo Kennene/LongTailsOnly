@@ -29,7 +29,8 @@ export function ExtensionControls({
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    // Blok węższy niż panel i wyśrodkowany — pole i skróty nie uciekają do krawędzi okna.
+    <div className="mx-auto flex w-full max-w-sm flex-col gap-1.5">
       <Label htmlFor="decision-custom-days">Liczba dni</Label>
       {/* Wąskie pole przy lewej krawędzi, skróty dosunięte do prawej. */}
       <div className="flex items-center justify-between gap-2">
