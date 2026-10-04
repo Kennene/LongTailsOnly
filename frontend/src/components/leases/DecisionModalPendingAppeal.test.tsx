@@ -55,7 +55,7 @@ async function renderModal(lease: LeaseOverview): Promise<void> {
 async function submitExtension(): Promise<void> {
   const user = userEvent.setup();
   await user.click(screen.getByRole('button', { name: '+30' }));
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 }
 
 describe('DecisionModal — 409 przy decyzji o dostępie', () => {
@@ -74,7 +74,7 @@ describe('DecisionModal — 409 przy decyzji o dostępie', () => {
     expect(screen.getByText(pendingAppealDetail)).toBeInTheDocument();
     // 409 to nie sukces: bez toastu i bez zamknięcia modala, wybór przedłużenia zostaje.
     expect(screen.queryByText('Decyzja zapisana')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Zatwierdź decyzję' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Przedłuż dostęp' })).toBeEnabled();
   });
 
   it('nazywa przyczynę po polsku, gdy 409 dotyczy dostępu już odebranego', async () => {

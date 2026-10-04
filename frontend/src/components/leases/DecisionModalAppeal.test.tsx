@@ -44,6 +44,20 @@ const HISTORY_TEST_ID = 'appeal-history';
 const ACTIVITY_TEST_ID = 'appeal-activity';
 const LEASE_CONTEXT_TEST_ID = 'appeal-lease-context';
 
+type AppealKind = 'Zatwierdź' | 'Odrzuć' | 'Zdeeskaluj' | 'Odbierz';
+
+/** Modal pokazuje kontrolki jednej drogi naraz — wybiera ją przełącznik nad formularzem. */
+async function chooseKind(
+  user: ReturnType<typeof userEvent.setup>,
+  label: AppealKind,
+): Promise<void> {
+  await user.click(
+    within(screen.getByRole('group', { name: 'Rodzaj decyzji' })).getByRole('button', {
+      name: label,
+    }),
+  );
+}
+
 /** `resetAppealsMswState()` nie jest wołany przez `setup.ts` — stan tej domeny czyścimy tutaj. */
 beforeEach(() => {
   resetAppealsMswState();
@@ -73,16 +87,17 @@ describe('DecisionModal w trybie odwołania', () => {
     await renderAppealModal();
 
     expect(screen.getByText('Rozpatrzenie odwołania')).toBeInTheDocument();
-    expect(screen.getByText('Marta (marta)')).toBeInTheDocument();
+    expect(screen.getByText('Marta')).toBeInTheDocument();
+    expect(screen.queryByText('marta')).not.toBeInTheDocument();
     expect(screen.getByTestId('appeal-justification')).toHaveTextContent(
       pendingAppeal.justification,
     );
 
     const context = screen.getByTestId(LEASE_CONTEXT_TEST_ID);
-    expect(context).toHaveTextContent('longtails/qa-automation');
+    expect(screen.getByText('longtails/qa-automation')).toBeInTheDocument();
     expect(context).toHaveTextContent('Odczyt (read)');
     expect(context).toHaveTextContent('Pozostało 2 dni');
-    expect(context).toHaveTextContent(/Poprzednie odwołania\s*0/);
+    expect(context).toHaveTextContent(/Poprzednie odwołania:\s*0/);
   });
 
   it('pokazuje historię odwołań tej dzierżawy i statystyki aktywności', async () => {
@@ -119,6 +134,7 @@ describe('DecisionModal w trybie odwołania', () => {
     const onOpenChange = vi.fn<(open: boolean) => void>();
     await renderAppealModal(onOpenChange);
 
+    await chooseKind(user, 'Odrzuć');
     await user.type(screen.getByLabelText('Uzasadnienie odrzucenia'), REJECTION_JUSTIFICATION);
     await user.click(screen.getByRole('button', { name: 'Odrzuć odwołanie' }));
 
@@ -143,6 +159,7 @@ describe('DecisionModal w trybie odwołania', () => {
     const user = userEvent.setup();
     await renderAppealModal();
 
+    await chooseKind(user, 'Odrzuć');
     await user.click(screen.getByRole('button', { name: 'Odrzuć odwołanie' }));
 
     expect(await screen.findByText(REJECTION_REQUIRED)).toBeInTheDocument();
@@ -157,6 +174,7 @@ describe('DecisionModal w trybie odwołania', () => {
     const user = userEvent.setup();
     await renderAppealModal();
 
+    await chooseKind(user, 'Odrzuć');
     await user.type(screen.getByLabelText('Uzasadnienie odrzucenia'), '   ');
     await user.click(screen.getByRole('button', { name: 'Odrzuć odwołanie' }));
 
@@ -206,15 +224,16 @@ describe('DecisionModal w trybie odwołania', () => {
     const user = userEvent.setup();
     await renderAppealModal();
 
-    await user.click(screen.getByRole('button', { name: 'Wyłącz' }));
-    await user.click(screen.getByRole('button', { name: 'Potwierdzam wyłączenie' }));
+    await chooseKind(user, 'Odbierz');
+    await user.click(screen.getByRole('button', { name: 'Odbierz dostęp' }));
+    await user.click(screen.getByRole('button', { name: 'Potwierdzam odebranie' }));
 
     // Silnik odrzuca `REVOKE` bez uzasadnienia (422), więc modal nie wysyła żądania.
     expect(await screen.findByText(DECISION_REQUIRED)).toBeInTheDocument();
     expect(getLastAppealDecision()).toBeNull();
 
     await user.type(screen.getByLabelText('Uzasadnienie'), DECISION_JUSTIFICATION);
-    await user.click(screen.getByRole('button', { name: 'Potwierdzam wyłączenie' }));
+    await user.click(screen.getByRole('button', { name: 'Potwierdzam odebranie' }));
 
     await waitFor(() => {
       expect(getLastAppealDecision()).toEqual({
@@ -232,8 +251,9 @@ describe('DecisionModal w trybie odwołania', () => {
       requested_role: 'write',
     });
 
+    await chooseKind(user, 'Zdeeskaluj');
     await user.type(screen.getByLabelText('Uzasadnienie'), DECISION_JUSTIFICATION);
-    await user.click(screen.getByRole('button', { name: 'Zdeeskaluj' }));
+    await user.click(screen.getByRole('button', { name: 'Zdeeskaluj dostęp' }));
 
     await waitFor(() => {
       expect(getLastAppealDecision()).toEqual({
@@ -253,9 +273,10 @@ describe('DecisionModal w trybie odwołania', () => {
     bindAppealToLease(pendingAppeal.id, adminLease?.id ?? 0);
 
     await renderAppealModal(onOpenChange);
-    await user.click(screen.getByRole('button', { name: 'Wyłącz' }));
+    await chooseKind(user, 'Odbierz');
+    await user.click(screen.getByRole('button', { name: 'Odbierz dostęp' }));
     await user.type(screen.getByLabelText('Uzasadnienie'), DECISION_JUSTIFICATION);
-    await user.click(screen.getByRole('button', { name: 'Potwierdzam wyłączenie' }));
+    await user.click(screen.getByRole('button', { name: 'Potwierdzam odebranie' }));
 
     expect(await screen.findByText(LAST_ADMIN_MESSAGE)).toBeInTheDocument();
     expect(getLastAppealDecision()).toBeNull();

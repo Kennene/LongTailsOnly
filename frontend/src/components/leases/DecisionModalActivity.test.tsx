@@ -113,7 +113,8 @@ describe('DecisionModal — dowód użycia w trybie dostępu', () => {
     await renderModalWithLease(revokeLease);
 
     const expected = getRecommendationBadge(revokeLease.recommendation);
-    const badge = screen.getByText(expected.label);
+    // „Odbierz” to też zakładka przełącznika akcji — pytamy wyłącznie o odznakę.
+    const badge = screen.getByText(expected.label, { selector: '[data-slot="badge"]' });
 
     expect(badge).toHaveAttribute('data-slot', 'badge');
     expect(badge).toHaveClass(expected.className);

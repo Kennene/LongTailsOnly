@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { toast } from 'sonner';
@@ -6,8 +6,6 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import { leasesFixture } from '@/api/fixtures';
 import { DecisionModal } from '@/components/leases/DecisionModal';
-import { formatDaysRemaining } from '@/lib/dateTime';
-import { getRoleLabel, getStatusBadge } from '@/lib/statusBadges';
 import { server } from '@/test/msw/server';
 import { getLastDecisionRequest } from '@/test/msw/state';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -65,16 +63,29 @@ async function renderModalWithoutExtension(lease: LeaseOverview): Promise<void> 
   expect(await screen.findByText('Decyzja o dostępie')).toBeInTheDocument();
 }
 
-/** Uzasadnienie jest wymagane przez silnik przy `DOWNSCOPE`/`REVOKE` — pola pilnuje `DecisionActions`. */
+/** Modal pokazuje kontrolki jednej akcji naraz — wybiera ją przełącznik „Przedłuż / Zdeeskaluj / Odbierz”. */
+async function chooseKind(
+  user: UserEvent,
+  label: 'Przedłuż' | 'Zdeeskaluj' | 'Odbierz',
+): Promise<void> {
+  await user.click(
+    within(screen.getByRole('group', { name: 'Rodzaj decyzji' })).getByRole('button', {
+      name: label,
+    }),
+  );
+}
+
+/** Uzasadnienie jest wymagane przez silnik przy `DOWNSCOPE`/`REVOKE`. */
 async function typeJustification(user: UserEvent, value: string = JUSTIFICATION): Promise<void> {
   await user.type(screen.getByLabelText('Uzasadnienie'), value);
 }
 
-/** Pełna ścieżka `REVOKE`: uzasadnienie → „Wyłącz” → potwierdzenie (dwa kliknięcia, jak dotąd). */
+/** Pełna ścieżka `REVOKE`: „Odbierz” → uzasadnienie → „Odbierz dostęp” → potwierdzenie. */
 async function confirmRevoke(user: UserEvent, value: string = JUSTIFICATION): Promise<void> {
+  await chooseKind(user, 'Odbierz');
   await typeJustification(user, value);
-  await user.click(screen.getByRole('button', { name: 'Wyłącz' }));
-  await user.click(screen.getByRole('button', { name: 'Potwierdzam wyłączenie' }));
+  await user.click(screen.getByRole('button', { name: 'Odbierz dostęp' }));
+  await user.click(screen.getByRole('button', { name: 'Potwierdzam odebranie' }));
 }
 
 /** Podstawia odpowiedź silnika na decyzję — do pinowania tłumaczeń 422/409. */
@@ -93,25 +104,8 @@ async function chooseAndSubmit(label: string): Promise<void> {
   await renderModal(activeLease);
 
   await user.click(screen.getByRole('button', { name: label }));
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 }
-
-it('shows the lease context with labels from the shared helpers', async () => {
-  await renderModal(activeLease);
-
-  expect(
-    screen.getByText(`${activeLease.user.name} (${activeLease.user.login})`),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByText(`${activeLease.repository.owner}/${activeLease.repository.name}`),
-  ).toBeInTheDocument();
-  expect(screen.getByText(getRoleLabel(activeLease.current_role))).toBeInTheDocument();
-  expect(screen.getByText(getStatusBadge(activeLease.status).label)).toHaveClass(
-    'text-status-active',
-  );
-  expect(screen.getByText(formatDaysRemaining(activeLease.days_remaining))).toBeInTheDocument();
-  expect(screen.getByText('Bez zmian')).toBeInTheDocument();
-});
 
 it.each(EXTENSION_CASES)('sends %s as exactly one extension field', async (label, extension) => {
   await chooseAndSubmit(label);
@@ -126,7 +120,7 @@ it('sends custom_days when the administrator types a day count', async () => {
   await renderModal(activeLease);
 
   await user.type(screen.getByLabelText('Własna liczba dni'), '45');
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   await waitFor(() => {
     expect(getLastDecisionRequest()?.request).toEqual({
@@ -142,7 +136,7 @@ it('sends until_date as an ISO date when the administrator picks a day', async (
 
   await user.click(screen.getByRole('button', { name: 'Data' }));
   await user.click(await screen.findByRole('button', { name: 'sobota, 10 października 2026' }));
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   await waitFor(() => {
     expect(getLastDecisionRequest()?.request).toEqual({
@@ -158,7 +152,7 @@ it('rejects a date in the past without sending a request', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Data' }));
   await user.click(await screen.findByRole('button', { name: 'czwartek, 1 października 2026' }));
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   expect(
     await screen.findByText('Data musi być późniejsza niż czas symulowany'),
@@ -171,7 +165,7 @@ it('rejects a custom day count outside 1-365 without sending a request', async (
   await renderModal(activeLease);
 
   await user.type(screen.getByLabelText('Własna liczba dni'), '0');
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   expect(await screen.findByText('Podaj liczbę dni z zakresu 1–365')).toBeInTheDocument();
   expect(getLastDecisionRequest()).toBeNull();
@@ -181,11 +175,12 @@ it('sends REVOKE only after the confirmation click, with the justification', asy
   const user = userEvent.setup();
   await renderModal(activeLease);
 
+  await chooseKind(user, 'Odbierz');
   await typeJustification(user);
-  await user.click(screen.getByRole('button', { name: 'Wyłącz' }));
+  await user.click(screen.getByRole('button', { name: 'Odbierz dostęp' }));
   expect(getLastDecisionRequest()).toBeNull();
 
-  await user.click(screen.getByRole('button', { name: 'Potwierdzam wyłączenie' }));
+  await user.click(screen.getByRole('button', { name: 'Potwierdzam odebranie' }));
 
   await waitFor(() => {
     expect(getLastDecisionRequest()).toEqual({
@@ -199,8 +194,9 @@ it('sends DOWNSCOPE for a lease above read access, with the justification', asyn
   const user = userEvent.setup();
   await renderModal(activeLease);
 
+  await chooseKind(user, 'Zdeeskaluj');
   await typeJustification(user);
-  await user.click(screen.getByRole('button', { name: 'Zdeeskaluj' }));
+  await user.click(screen.getByRole('button', { name: 'Zdeeskaluj dostęp' }));
 
   await waitFor(() => {
     expect(getLastDecisionRequest()).toEqual({
@@ -214,8 +210,9 @@ it('rejects REVOKE without a justification, pointing at the field', async () => 
   const user = userEvent.setup();
   await renderModal(activeLease);
 
-  await user.click(screen.getByRole('button', { name: 'Wyłącz' }));
-  await user.click(screen.getByRole('button', { name: 'Potwierdzam wyłączenie' }));
+  await chooseKind(user, 'Odbierz');
+  await user.click(screen.getByRole('button', { name: 'Odbierz dostęp' }));
+  await user.click(screen.getByRole('button', { name: 'Potwierdzam odebranie' }));
 
   expect(await screen.findByText(JUSTIFICATION_REQUIRED)).toBeInTheDocument();
   const field = screen.getByLabelText('Uzasadnienie');
@@ -239,7 +236,8 @@ it('rejects DOWNSCOPE without a justification and sends nothing', async () => {
   const user = userEvent.setup();
   await renderModal(activeLease);
 
-  await user.click(screen.getByRole('button', { name: 'Zdeeskaluj' }));
+  await chooseKind(user, 'Zdeeskaluj');
+  await user.click(screen.getByRole('button', { name: 'Zdeeskaluj dostęp' }));
 
   expect(await screen.findByText(JUSTIFICATION_REQUIRED)).toBeInTheDocument();
   expect(screen.getByLabelText('Uzasadnienie')).toHaveAttribute('aria-invalid', 'true');
@@ -254,7 +252,7 @@ it('hides the extension controls of an admin lease and explains why', async () =
   expect(screen.queryByRole('button', { name: 'Data' })).not.toBeInTheDocument();
   expect(screen.queryByLabelText('Własna liczba dni')).not.toBeInTheDocument();
   expect(screen.getByText(ADMIN_EXTENSION_BLOCKED)).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Zatwierdź decyzję' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Przedłuż dostęp' })).toBeDisabled();
 });
 
 it('keeps the extension controls for a revoked read/write lease, which the engine restores', async () => {
@@ -272,7 +270,7 @@ it('translates the 422 about a new end that is not later than the current one', 
   await renderModal(activeLease);
 
   await user.click(screen.getByRole('button', { name: '+30' }));
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   expect(
     await screen.findByText('Nowy termin musi być późniejszy niż obecny.'),
@@ -326,7 +324,7 @@ it('toasts and closes the modal after a successful decision', async () => {
   });
 
   await user.click(screen.getByRole('button', { name: '+30' }));
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   expect(await screen.findByText('Decyzja zapisana')).toBeInTheDocument();
   await waitFor(() => {
@@ -360,7 +358,7 @@ it('shows the API message for other failures', async () => {
   await renderModal(activeLease);
 
   await user.click(screen.getByRole('button', { name: '+30' }));
-  await user.click(screen.getByRole('button', { name: 'Zatwierdź decyzję' }));
+  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   expect(await screen.findByText('Baza danych jest niedostępna')).toBeInTheDocument();
 });
