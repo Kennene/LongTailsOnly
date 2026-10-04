@@ -8,7 +8,6 @@ import {
   buildExtension,
   CUSTOM_DAYS_ERROR,
   extensionBlockedReason,
-  type ExtensionChoice,
 } from '@/components/leases/extensionChoice';
 import { ExtensionControls } from '@/components/leases/ExtensionControls';
 import { FailureAlert } from '@/components/leases/FailureAlert';
@@ -27,9 +26,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useLeaseDecision } from '@/hooks/useLeaseDecision';
-import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import { type ApiErrorDescription, describeEngineError } from '@/lib/apiErrors';
-import { daysRemaining, formatDaysRemaining } from '@/lib/dateTime';
+import { formatDaysRemaining } from '@/lib/dateTime';
 import type { AppealOverview, DecisionRequest, LeaseOverview } from '@/types/api';
 
 export interface DecisionModalProps {
@@ -46,7 +44,6 @@ export interface DecisionModalProps {
   appeal?: AppealOverview | null;
 }
 
-const PAST_DATE_ERROR = 'Data musi być późniejsza niż czas symulowany';
 const DECISION_FALLBACK = 'Nie udało się zapisać decyzji.';
 const SUCCESS_MESSAGE = 'Decyzja zapisana';
 /**
@@ -108,17 +105,14 @@ interface LeaseDecisionFormProps {
  * nieodwracalna — wymaga jeszcze potwierdzenia drugim kliknięciem.
  */
 function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): React.JSX.Element {
-  const clock = useSimulatedClock();
   const decision = useLeaseDecision();
   const [kind, setKind] = useState<LeaseDecisionKind>('extend');
-  const [choice, setChoice] = useState<ExtensionChoice | null>(null);
-  const [customDays, setCustomDays] = useState<string>('');
+  const [days, setDays] = useState<string>('');
   const [justification, setJustification] = useState<string>('');
   const [justificationError, setJustificationError] = useState<string | null>(null);
   const [isConfirmingRevoke, setIsConfirmingRevoke] = useState<boolean>(false);
   const [failure, setFailure] = useState<ApiErrorDescription | null>(null);
 
-  const now: string | null = clock.data?.now ?? null;
   const isPending: boolean = decision.isPending;
   const extensionBlocked: string | null = extensionBlockedReason(lease);
   const kinds: { value: LeaseDecisionKind; label: string }[] = [
@@ -154,14 +148,9 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
     setFailure(null);
   }
 
-  function selectChoice(next: ExtensionChoice): void {
-    setChoice(next);
+  function handleDaysChange(value: string): void {
+    setDays(value);
     setFailure(null);
-  }
-
-  function handleCustomDaysChange(value: string): void {
-    setCustomDays(value);
-    selectChoice({ kind: 'custom' });
   }
 
   function handleJustificationChange(value: string): void {
@@ -182,15 +171,7 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   }
 
   function submitExtension(): void {
-    if (choice === null) {
-      return;
-    }
-    if (choice.kind === 'date' && (now === null || daysRemaining(choice.date, now) <= 0)) {
-      setFailure({ message: PAST_DATE_ERROR, detail: null });
-      return;
-    }
-
-    const extension = buildExtension(choice, customDays);
+    const extension = buildExtension(days);
     if (extension === null) {
       setFailure({ message: CUSTOM_DAYS_ERROR, detail: null });
       return;
@@ -219,10 +200,10 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
   }
 
   const isSubmitDisabled: boolean =
-    isPending || (kind === 'extend' && (choice === null || extensionBlocked !== null));
+    isPending || (kind === 'extend' && (days.trim() === '' || extensionBlocked !== null));
 
   return (
-    <DialogContent className="max-h-[90vh] gap-5 overflow-y-auto sm:max-w-lg">
+    <DialogContent className="max-h-[90vh] gap-6 overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>Decyzja o dostępie</DialogTitle>
         <DialogDescription>
@@ -231,11 +212,11 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
       </DialogHeader>
 
       {/* Stan dostępu w jednym rzędzie: poziom, status, termin i rada silnika. */}
-      <div className="flex flex-wrap items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
         <RoleBadge role={lease.current_role} />
         <LeaseStatusBadge status={lease.status} />
         <span className="text-muted-foreground">{formatDaysRemaining(lease.days_remaining)}</span>
-        <span className="ml-auto flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5">
           <span className="text-xs text-muted-foreground">Rekomendacja</span>
           <RecommendationBadge recommendation={lease.recommendation} />
         </span>
@@ -248,16 +229,13 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
 
         {kind === 'extend' ? (
           <ExtensionControls
-            choice={choice}
-            customDays={customDays}
+            days={days}
             disabledReason={extensionBlocked}
-            simulatedNow={now}
-            onChoiceChange={selectChoice}
-            onCustomDaysChange={handleCustomDaysChange}
+            onDaysChange={handleDaysChange}
           />
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-center text-sm text-muted-foreground">
               {kind === 'revoke'
                 ? 'Osoba straci dostęp do tego repozytorium.'
                 : 'Zapis zmieni się w odczyt (read) na nowy okres dzierżawy.'}

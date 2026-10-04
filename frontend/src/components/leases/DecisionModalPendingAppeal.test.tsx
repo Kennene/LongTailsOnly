@@ -46,9 +46,8 @@ const leaseWithAppeal: LeaseOverview = findLease(
 async function renderModal(lease: LeaseOverview): Promise<void> {
   renderWithProviders(<DecisionModal lease={lease} open onOpenChange={() => {}} />);
 
-  // Wybór daty wymaga czasu symulowanego z API — czekamy, aż modal będzie gotowy.
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
+    expect(screen.getByLabelText('Liczba dni')).toBeEnabled();
   });
 }
 
@@ -100,7 +99,7 @@ describe('DecisionModal — 409 przy decyzji o dostępie', () => {
     );
     renderWithProviders(<DecisionModal lease={leaseWithAppeal} open onOpenChange={onOpenChange} />);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
+      expect(screen.getByLabelText('Liczba dni')).toBeEnabled();
     });
 
     await submitExtension();

@@ -37,12 +37,9 @@ const ADMIN_EXTENSION_BLOCKED = 'Dostęp administratora nie wygasa — nie możn
 const DECISION_URL = '/api/v1/leases/:leaseId/decision';
 
 const EXTENSION_CASES: [string, Extension][] = [
-  ['+7', { preset_days: 7 }],
-  ['+14', { preset_days: 14 }],
-  ['+30', { preset_days: 30 }],
-  ['+90', { preset_days: 90 }],
-  ['1,5x', { multiplier: 1.5 }],
-  ['2x', { multiplier: 2 }],
+  ['+7', { custom_days: 7 }],
+  ['+30', { custom_days: 30 }],
+  ['+60', { custom_days: 60 }],
 ];
 
 async function renderModal(
@@ -51,13 +48,12 @@ async function renderModal(
 ): Promise<void> {
   renderWithProviders(<DecisionModal lease={lease} open onOpenChange={onOpenChange} />);
 
-  // Wybór daty wymaga czasu symulowanego z API — czekamy, aż modal będzie gotowy.
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Data' })).toBeEnabled();
+    expect(screen.getByLabelText('Liczba dni')).toBeEnabled();
   });
 }
 
-/** Dostępy bez sekcji przedłużania (admin) nie mają przycisku „Data”, więc czekamy na nagłówek. */
+/** Dostępy bez sekcji przedłużania (admin) nie mają pola „Liczba dni”, więc czekamy na nagłówek. */
 async function renderModalWithoutExtension(lease: LeaseOverview): Promise<void> {
   renderWithProviders(<DecisionModal lease={lease} open onOpenChange={() => {}} />);
   expect(await screen.findByText('Decyzja o dostępie')).toBeInTheDocument();
@@ -107,7 +103,7 @@ async function chooseAndSubmit(label: string): Promise<void> {
   await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 }
 
-it.each(EXTENSION_CASES)('sends %s as exactly one extension field', async (label, extension) => {
+it.each(EXTENSION_CASES)('sends the %s shortcut as a day count', async (label, extension) => {
   await chooseAndSubmit(label);
 
   await waitFor(() => {
@@ -115,11 +111,24 @@ it.each(EXTENSION_CASES)('sends %s as exactly one extension field', async (label
   });
 });
 
+it('fills the day field from a shortcut, so the number is always visible', async () => {
+  const user = userEvent.setup();
+  await renderModal(activeLease);
+
+  await user.click(screen.getByRole('button', { name: '+60' }));
+
+  expect(screen.getByLabelText('Liczba dni')).toHaveValue(60);
+  expect(screen.getByRole('button', { name: '+60' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.queryByRole('button', { name: '+14' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '2x' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Data' })).not.toBeInTheDocument();
+});
+
 it('sends custom_days when the administrator types a day count', async () => {
   const user = userEvent.setup();
   await renderModal(activeLease);
 
-  await user.type(screen.getByLabelText('Własna liczba dni'), '45');
+  await user.type(screen.getByLabelText('Liczba dni'), '45');
   await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   await waitFor(() => {
@@ -130,41 +139,11 @@ it('sends custom_days when the administrator types a day count', async () => {
   });
 });
 
-it('sends until_date as an ISO date when the administrator picks a day', async () => {
-  const user = userEvent.setup();
-  await renderModal(activeLease);
-
-  await user.click(screen.getByRole('button', { name: 'Data' }));
-  await user.click(await screen.findByRole('button', { name: 'sobota, 10 października 2026' }));
-  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
-
-  await waitFor(() => {
-    expect(getLastDecisionRequest()?.request).toEqual({
-      action: 'EXTEND',
-      extension: { until_date: '2026-10-10' },
-    });
-  });
-});
-
-it('rejects a date in the past without sending a request', async () => {
-  const user = userEvent.setup();
-  await renderModal(activeLease);
-
-  await user.click(screen.getByRole('button', { name: 'Data' }));
-  await user.click(await screen.findByRole('button', { name: 'czwartek, 1 października 2026' }));
-  await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
-
-  expect(
-    await screen.findByText('Data musi być późniejsza niż czas symulowany'),
-  ).toBeInTheDocument();
-  expect(getLastDecisionRequest()).toBeNull();
-});
-
 it('rejects a custom day count outside 1-365 without sending a request', async () => {
   const user = userEvent.setup();
   await renderModal(activeLease);
 
-  await user.type(screen.getByLabelText('Własna liczba dni'), '0');
+  await user.type(screen.getByLabelText('Liczba dni'), '0');
   await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   expect(await screen.findByText('Podaj liczbę dni z zakresu 1–365')).toBeInTheDocument();
@@ -249,8 +228,7 @@ it('hides the extension controls of an admin lease and explains why', async () =
 
   expect(screen.queryByRole('button', { name: '+7' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '+30' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Data' })).not.toBeInTheDocument();
-  expect(screen.queryByLabelText('Własna liczba dni')).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Liczba dni')).not.toBeInTheDocument();
   expect(screen.getByText(ADMIN_EXTENSION_BLOCKED)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Przedłuż dostęp' })).toBeDisabled();
 });
@@ -332,7 +310,7 @@ it('toasts and closes the modal after a successful decision', async () => {
   });
   expect(getLastDecisionRequest()).toEqual({
     lease_id: activeLease.id,
-    request: { action: 'EXTEND', extension: { preset_days: 30 } },
+    request: { action: 'EXTEND', extension: { custom_days: 30 } },
   });
 });
 
@@ -361,18 +339,6 @@ it('shows the API message for other failures', async () => {
   await user.click(screen.getByRole('button', { name: 'Przedłuż dostęp' }));
 
   expect(await screen.findByText('Baza danych jest niedostępna')).toBeInTheDocument();
-});
-
-it('explains the unavailable date picker while the simulated clock is missing', async () => {
-  server.use(
-    http.get('/api/v1/simulation/clock', () =>
-      HttpResponse.json({ detail: 'Zegar jest niedostępny' }, { status: 500 }),
-    ),
-  );
-  renderWithProviders(<DecisionModal lease={activeLease} open onOpenChange={() => {}} />);
-
-  expect(await screen.findByText('Czekam na czas symulowany…')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Data' })).toBeDisabled();
 });
 
 it('renders nothing when there is no lease', () => {
