@@ -29,6 +29,8 @@ docker compose up -d
 
 Panel: <http://localhost:5173>, API: <http://localhost:8000/docs>. Szczegóły uruchamiania i testów: [`backend/README.md`](backend/README.md), [`frontend/README.md`](frontend/README.md).
 
+Demo online: <https://tailcut.rwxd.pl>
+
 ---
 
 ## Problem
