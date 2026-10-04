@@ -2,11 +2,13 @@ import type { AppealGroup } from '@/components/appeals/appealGroups';
 import { groupAppealsByUser } from '@/components/appeals/appealGroups';
 import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
 import { ExpandAllButton, ExpandToggle } from '@/components/common/ExpandToggle';
+import { UserAvatar } from '@/components/leases/UserAvatar';
 import { Button } from '@/components/ui/button';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import { formatDateTimePl, formatDaysRemaining } from '@/lib/dateTime';
 import { formatCountPl } from '@/lib/grouping';
 import { getRoleLabel } from '@/lib/statusBadges';
+import { initialsFrom } from '@/lib/userInitials';
 import type { AppealOverview } from '@/types/api';
 
 export interface AppealListProps {
@@ -71,6 +73,7 @@ function AppealGroupItem({
           owner={group.user.name}
         />
         <span className="text-sm font-medium">{group.user.name}</span>
+        <UserAvatar initials={initialsFrom(group.user)} login={group.user.login} />
         <span className="text-xs text-muted-foreground">
           {formatCountPl(group.appeals.length, {
             one: 'odwołanie',

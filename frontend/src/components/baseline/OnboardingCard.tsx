@@ -2,12 +2,14 @@ import { toast } from 'sonner';
 
 import { CELL_CENTER, HeadCell } from '@/components/common/TableCells';
 import { RoleBadge } from '@/components/leases/RoleBadge';
+import { UserAvatar } from '@/components/leases/UserAvatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import { useApplyOnboarding } from '@/hooks/useApplyOnboarding';
+import { initialsFrom } from '@/lib/userInitials';
 import type { BaselineEntry, OnboardingProposal } from '@/types/api';
 
 export interface OnboardingCardProps {
@@ -74,8 +76,10 @@ export function OnboardingCard({ proposal }: OnboardingCardProps): React.JSX.Ele
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {proposal.user.name} ({proposal.user.login})
+        {/* Jak w tabeli Dostępów: nazwa i awatar, bez powtórzonego loginu („Ania ania”). */}
+        <CardTitle className="flex items-center gap-1.5">
+          <span>{proposal.user.name}</span>
+          <UserAvatar initials={initialsFrom(proposal.user)} login={proposal.user.login} />
         </CardTitle>
         <CardDescription>
           Nowy członek zespołu {proposal.team.name}. Zatwierdzenie standardu nada dostęp zgodny z

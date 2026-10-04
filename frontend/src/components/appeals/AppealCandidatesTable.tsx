@@ -4,9 +4,11 @@ import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import { formatRepositoryCount, groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusBadge';
 import { RoleBadge } from '@/components/leases/RoleBadge';
+import { UserAvatar } from '@/components/leases/UserAvatar';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import { type ExpandedSet, useExpandedSet } from '@/hooks/useExpandedSet';
 import { formatDaysRemaining } from '@/lib/dateTime';
+import { initialsFrom } from '@/lib/userInitials';
 import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
 
@@ -80,6 +82,7 @@ function CandidateGroupRows({
               owner={group.user.name}
             />
             <span className="font-medium">{group.user.name}</span>
+            <UserAvatar initials={initialsFrom(group.user)} login={group.user.login} />
           </div>
         </TableCell>
         <TableCell className={cn(CELL_CENTER, 'text-muted-foreground')}>

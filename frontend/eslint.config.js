@@ -177,6 +177,7 @@ export default [
             'expectBadgeIcon',
             'expectAlignment',
             'expectRoleBadge',
+            'expectAvatarAfter',
           ],
         },
       ],
