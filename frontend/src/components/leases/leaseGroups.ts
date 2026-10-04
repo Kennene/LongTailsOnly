@@ -63,6 +63,12 @@ export function groupLeasesByUser(leases: LeaseOverview[]): LeaseGroup[] {
 }
 
 /** „1 repozytorium”, „2 repozytoria”, „5 repozytoriów” — polska odmiana liczebnika. */
+/**
+ * Ile dni bez aktywności to już „dawno” — okno statystyk aktywności (30 dni, `ActivityStats`)
+ * i domyślna długość dostępu. Starsza aktywność przy wygasłym dostępie świeci na czerwono.
+ */
+export const ACTIVITY_STALE_DAYS = 30;
+
 export function formatRepositoryCount(count: number): string {
   return formatCountPl(count, { one: 'repozytorium', few: 'repozytoria', many: 'repozytoriów' });
 }

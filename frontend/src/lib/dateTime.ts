@@ -79,6 +79,21 @@ export function formatDaysRemaining(days: number | null): string {
   return `Wygasł ${-days} ${dayWord(-days)} temu`;
 }
 
+/** Pełne dni od `stamp` do czasu symulowanego `now` (zaokrąglone w dół, nigdy ujemne). */
+export function daysSince(stamp: string, now: string): number {
+  return Math.max(0, Math.floor((Date.parse(now) - Date.parse(stamp)) / DAY_MS));
+}
+
+/** „dziś”, „1 dzień temu”, „8 dni temu” — wiek ostatniej aktywności w tabeli dostępów. */
+export function formatDaysAgo(days: number): string {
+  return days === 0 ? 'dziś' : `${days} ${dayWord(days)} temu`;
+}
+
+/** Dni po terminie wygasłego dostępu (liczba dodatnia) → „Po terminie 61 dni”. */
+export function formatOverdueDays(days: number): string {
+  return `Po terminie ${days} ${dayWord(days)}`;
+}
+
 export function formatOffsetDays(offset_days: number): string {
   if (offset_days === 0) {
     return `0 ${dayWord(0)}`;

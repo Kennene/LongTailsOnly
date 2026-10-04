@@ -2,6 +2,7 @@ import { ExpandToggle } from '@/components/common/ExpandToggle';
 import { CELL_CENTER, ColumnCaption } from '@/components/common/TableCells';
 import type { LeaseGroup } from '@/components/leases/leaseGroups';
 import {
+  ACTIVITY_STALE_DAYS,
   countPendingRecommendations,
   formatRepositoryCount,
   latestActivityAt,
@@ -18,7 +19,19 @@ import { TeamChip } from '@/components/leases/TeamChip';
 import { UserAvatar } from '@/components/leases/UserAvatar';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { formatDateTimeShortPl, formatDaysRemaining } from '@/lib/dateTime';
+import {
+  daysSince,
+  formatDateTimeShortPl,
+  formatDaysAgo,
+  formatDaysRemaining,
+  formatOverdueDays,
+} from '@/lib/dateTime';
+import { formatCountPl } from '@/lib/grouping';
+import {
+  ACTIVITY_RECENT_TEXT_CLASS,
+  ACTIVITY_STALE_TEXT_CLASS,
+  OVERDUE_TEXT_CLASS,
+} from '@/lib/statusBadges';
 import { initialsFrom } from '@/lib/userInitials';
 import { cn } from '@/lib/utils';
 import type { LeaseOverview } from '@/types/api';
@@ -28,6 +41,8 @@ export interface LeaseGroupRowsProps {
   expanded: boolean;
   onToggle: () => void;
   onDecide?: (lease: LeaseOverview) => void;
+  /** Czas symulowany; `null`, dopóki zegar się nie wczyta — wtedy kolumna pokazuje samą datę. */
+  now: string | null;
 }
 
 /** Wiersz osoby i — po rozwinięciu — po jednym wierszu na każde jej repozytorium. */
@@ -36,6 +51,7 @@ export function LeaseGroupRows({
   expanded,
   onToggle,
   onDecide,
+  now,
 }: LeaseGroupRowsProps): React.JSX.Element {
   return (
     <>
@@ -44,10 +60,11 @@ export function LeaseGroupRows({
         expanded={expanded}
         onToggle={onToggle}
         withActions={onDecide !== undefined}
+        now={now}
       />
       {expanded
         ? group.leases.map((lease: LeaseOverview): React.JSX.Element => (
-            <LeaseRow key={lease.id} lease={lease} onDecide={onDecide} />
+            <LeaseRow key={lease.id} lease={lease} onDecide={onDecide} now={now} />
           ))
         : null}
     </>
@@ -59,6 +76,7 @@ interface GroupRowProps {
   expanded: boolean;
   onToggle: () => void;
   withActions: boolean;
+  now: string | null;
 }
 
 /**
@@ -66,9 +84,18 @@ interface GroupRowProps {
  * Termin pochodzi z **najpilniejszego** dostępu, bo to on decyduje, czy admin ma tu zajrzeć;
  * aktywność to najświeższa z wszystkich repozytoriów osoby. Statusu wiersz osoby nie pokazuje.
  */
-function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): React.JSX.Element {
+function GroupRow({
+  group,
+  expanded,
+  onToggle,
+  withActions,
+  now,
+}: GroupRowProps): React.JSX.Element {
   const pending: number = countPendingRecommendations(group.leases);
   const lastActivity: string | null = latestActivityAt(group.leases);
+  const expiredCount: number = group.leases.filter(
+    (lease: LeaseOverview): boolean => lease.status === 'EXPIRED',
+  ).length;
 
   return (
     <TableRow className="cursor-pointer" onClick={onToggle}>
@@ -95,11 +122,23 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
       <TableCell className={cn(SECONDARY_COLUMN, CELL_CENTER)}>
         {expanded ? <ColumnCaption>Poziom</ColumnCaption> : null}
       </TableCell>
-      <TableCell className={cn(CELL_CENTER, 'font-mono')}>
-        {lastActivity === null ? '—' : formatDateTimeShortPl(lastActivity)}
-      </TableCell>
+      {/* Wiersz osoby mówi tylko, ile dni temu była ostatnia aktywność; datę niosą repozytoria. */}
       <TableCell className={CELL_CENTER}>
-        {formatDaysRemaining(group.mostUrgent.days_remaining)}
+        {lastActivity === null
+          ? '—'
+          : now === null
+            ? formatDateTimeShortPl(lastActivity)
+            : formatDaysAgo(daysSince(lastActivity, now))}
+      </TableCell>
+      {/* Osoba z wygasłymi dostępami: ile ich wygasło — dni po terminie niosą wiersze repozytoriów. */}
+      <TableCell className={CELL_CENTER}>
+        {expiredCount === 0 ? (
+          formatDaysRemaining(group.mostUrgent.days_remaining)
+        ) : (
+          <span className={OVERDUE_TEXT_CLASS}>
+            {formatCountPl(expiredCount, { one: 'wygasły', few: 'wygasłe', many: 'wygasłych' })}
+          </span>
+        )}
       </TableCell>
       {/* Status należy do dostępu, nie do osoby — pokazują go dopiero wiersze repozytoriów,
           a wiersz osoby po rozwinięciu podpisuje tylko kolumnę nad nimi. */}
@@ -121,10 +160,26 @@ function GroupRow({ group, expanded, onToggle, withActions }: GroupRowProps): Re
 interface LeaseRowProps {
   lease: LeaseOverview;
   onDecide?: (lease: LeaseOverview) => void;
+  now: string | null;
+}
+
+/**
+ * Wiek ostatniej aktywności pod dokładną datą. Kolor tylko przy wygasłym dostępie: dawniej niż
+ * `ACTIVITY_STALE_DAYS` — czerwień (nikt go nie używa), w oknie — zieleń (dowód użycia).
+ */
+function activityAgeClass(lease: LeaseOverview, days: number): string | undefined {
+  if (lease.status !== 'EXPIRED') {
+    return undefined;
+  }
+
+  return days > ACTIVITY_STALE_DAYS ? ACTIVITY_STALE_TEXT_CLASS : ACTIVITY_RECENT_TEXT_CLASS;
 }
 
 /** Jedno repozytorium osoby — szczegóły i akcja `Decyzja`. Tożsamość niesie wiersz osoby wyżej. */
-function LeaseRow({ lease, onDecide }: LeaseRowProps): React.JSX.Element {
+function LeaseRow({ lease, onDecide, now }: LeaseRowProps): React.JSX.Element {
+  const activityAge: number | null =
+    lease.last_activity_at === null || now === null ? null : daysSince(lease.last_activity_at, now);
+
   return (
     <TableRow className="group bg-muted/20" data-lease-id={lease.id}>
       <TableCell className={COLUMN_WIDTH.user} />
@@ -135,10 +190,27 @@ function LeaseRow({ lease, onDecide }: LeaseRowProps): React.JSX.Element {
       <TableCell className={cn(SECONDARY_COLUMN, CELL_CENTER)}>
         <RoleBadge role={lease.current_role} />
       </TableCell>
-      <TableCell className={cn(CELL_CENTER, 'font-mono')}>
-        {lease.last_activity_at === null ? '—' : formatDateTimeShortPl(lease.last_activity_at)}
+      <TableCell className={CELL_CENTER}>
+        {lease.last_activity_at === null ? (
+          '—'
+        ) : (
+          <span className="flex flex-col items-center leading-tight">
+            <span className="font-mono">{formatDateTimeShortPl(lease.last_activity_at)}</span>
+            {activityAge === null ? null : (
+              <span className={cn('text-xs', activityAgeClass(lease, activityAge))}>
+                {formatDaysAgo(activityAge)}
+              </span>
+            )}
+          </span>
+        )}
       </TableCell>
-      <TableCell className={CELL_CENTER}>{formatDaysRemaining(lease.days_remaining)}</TableCell>
+      <TableCell className={CELL_CENTER}>
+        {lease.status === 'EXPIRED' && lease.days_remaining !== null ? (
+          <span className={OVERDUE_TEXT_CLASS}>{formatOverdueDays(-lease.days_remaining)}</span>
+        ) : (
+          formatDaysRemaining(lease.days_remaining)
+        )}
+      </TableCell>
       <TableCell className={CELL_CENTER}>
         <LeaseStatusBadge status={lease.status} />
       </TableCell>
