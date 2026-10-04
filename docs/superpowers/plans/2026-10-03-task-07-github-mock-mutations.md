@@ -16,7 +16,7 @@
 
 - Komunikat 403: `Cannot remove the last administrator of the repository` / `... of the organization` (ADR 0004).
 - `PUT` nowego kolaboratora → `201` z obiektem zaproszenia; istniejącego → `204` (zgodnie z GitHubem).
-- Nowa dzierżawa: `granted_at = now`; `expires_at = now + repo.default_lease_days`, a dla `admin` `None` (ADR 0007).
+- Nowy dostęp: `granted_at = now`; `expires_at = now + repo.default_lease_days`, a dla `admin` `None` (ADR 0007).
 - Mapowanie `permission` z GitHuba → MVP przez `from_github_permission` (Zadanie 5).
 
 ## Review Focus
@@ -24,7 +24,7 @@
 - **Degradacja ostatniego admina przez PUT:** `PUT permission=push` na jedynym adminie musi dać 403, nie tylko `DELETE` → test `test_put_downgrading_last_admin_returns_403`.
 - **Drugi admin istnieje:** usunięcie jednego z dwóch adminów jest dozwolone → test `test_delete_admin_when_another_admin_exists_returns_204`.
 - **Odebrany admin się nie liczy:** admin z `revoked_at` nie jest „drugim adminem” → test `test_revoked_admin_does_not_count`.
-- **Ponowne nadanie odebranego dostępu:** `PUT` na dzierżawie z `revoked_at` czyści `revoked_at` i liczy nowy okres → test `test_set_permission_restores_revoked_lease`.
+- **Ponowne nadanie odebranego dostępu:** `PUT` na dostępie z `revoked_at` czyści `revoked_at` i liczy nowy okres → test `test_set_permission_restores_revoked_lease`.
 - **Ostatni admin organizacji:** `DELETE /orgs/{org}/members/{username}` → 403 → test `test_delete_last_org_admin_returns_403`.
 
 ---

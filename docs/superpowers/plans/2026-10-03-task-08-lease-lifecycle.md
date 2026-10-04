@@ -1,4 +1,4 @@
-# Zadanie 8: Cykl życia dzierżawy i asymetryczne odnawianie — plan implementacji
+# Zadanie 8: Cykl życia dostępu i asymetryczne odnawianie — plan implementacji
 
 > **Dla agentów:** WYMAGANY SUB-SKILL: `superpowers:subagent-driven-development` (zalecany) lub `superpowers:executing-plans`. Kroki używają checkboxów (`- [ ]`).
 
@@ -16,16 +16,16 @@
 
 - `WARNING` ⇔ `0 < expires_at - now <= 7 dni`; `EXPIRED` ⇔ `expires_at - now <= 0` (ADR 0007 §1).
 - `days_remaining = ceil((expires_at - now) / 1 dzień)`, może być ujemne; `None` dla `PERMANENT` i `REVOKED`.
-- Zdarzenie `read` nie odnawia `write`; odnowienie nigdy nie skraca dzierżawy (`max`).
+- Zdarzenie `read` nie odnawia `write`; odnowienie nigdy nie skraca dostępu (`max`).
 - Brak `datetime.now()` — `now` i `occurred_at` są argumentami.
 
 ## Review Focus
 
 - **Granice 7 i 0 dni:** dokładnie 7 dni → `WARNING`, dokładnie 0 → `EXPIRED` → test `test_status_active_warning_expired_boundaries`.
-- **Skrócenie przedłużonej dzierżawy:** zdarzenie po decyzji admina „+90 dni” nie może cofnąć `expires_at` → test `test_renewal_never_shortens_extended_lease`.
+- **Skrócenie przedłużonego dostępu:** zdarzenie po decyzji admina „+90 dni” nie może cofnąć `expires_at` → test `test_renewal_never_shortens_extended_lease`.
 - **Zdarzenie spoza okna:** push sprzed 31 dni nie chroni `write` → test `test_no_recent_activity_recommends_revoke`.
 - **Zdarzenia „z przyszłości” po cofnięciu zegara:** ignorowane w rekomendacji i ostatniej aktywności → test `test_future_events_are_ignored`.
-- **Odebrana dzierżawa:** status `REVOKED`, rekomendacja `KEEP`, bez odnawiania → test `test_revoked_lease_is_inert`.
+- **Odebrany dostęp:** status `REVOKED`, rekomendacja `KEEP`, bez odnawiania → test `test_revoked_lease_is_inert`.
 
 ---
 
@@ -86,7 +86,7 @@ def test_days_remaining_rounds_up_and_goes_negative() -> None:
 - [ ] **A1.3: Zaimplementuj** `backend/app/domain/lease_rules.py`:
 
 ```python
-"""Reguły dzierżawy z ADR 0007 §1–3. Czyste funkcje: bez bazy i bez zegara systemowego."""
+"""Reguły dostępu z ADR 0007 §1–3. Czyste funkcje: bez bazy i bez zegara systemowego."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -354,7 +354,7 @@ async def test_list_lease_views_reports_status_recommendation_and_last_activity(
 - [ ] **B1.3: Zaimplementuj** `backend/app/services/lease_service.py` (oraz puste `app/services/__init__.py`, `tests/services/__init__.py`):
 
 ```python
-"""Serwis dzierżaw: zapis aktywności i budowa widoków (ADR 0007 §1–3)."""
+"""Serwis dostępów: zapis aktywności i budowa widoków (ADR 0007 §1–3)."""
 
 from collections import defaultdict
 from datetime import datetime

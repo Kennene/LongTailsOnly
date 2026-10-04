@@ -14,7 +14,7 @@
 
 ## Ograniczenia globalne
 
-- Hierarchia dzierżaw: `write > read`; `admin` stały (ADR 0002).
+- Hierarchia dostępów: `write > read`; `admin` stały (ADR 0002).
 - Mapowanie GitHub → MVP: `pull`, `triage` → `read`; `push`, `maintain` → `write`; `admin` → `admin`.
 - DTO dokładnie jak w ADR 0006 §7 — z tych samych nazw korzysta frontend (Zadanie 12).
 - Pydantic v2: `model_config = ConfigDict(from_attributes=True)` (`CODING_STANDARDS.md`).
@@ -23,7 +23,7 @@
 
 - **Białe znaki w uzasadnieniu:** `"   "` musi zostać odrzucone (tarcie z ADR 0005) → test `test_justification_is_stripped_and_required`.
 - **Przedłużenie bez długości / z dwiema długościami:** `EXTEND` wymaga dokładnie jednego z `multiplier`/`days`/`until` → test `test_extend_requires_exactly_one_duration`.
-- **`REJECT` na dzierżawie:** dozwolony tylko dla odwołań → test `test_lease_decision_rejects_reject_action`.
+- **`REJECT` na dostępie:** dozwolony tylko dla odwołań → test `test_lease_decision_rejects_reject_action`.
 - **Naiwna data w `until`:** dopuszczamy tylko daty ze strefą (`AwareDatetime`) → test `test_until_requires_timezone`.
 - **Format `created_at` GitHuba:** `"...Z"`, a nie `"+00:00"` → test `test_github_event_serializes_created_at_with_z`.
 
@@ -112,7 +112,7 @@ def rank(permission: Permission) -> int:
 
 
 def covers(event_permission: Permission, lease_role: Permission) -> bool:
-    """Czy aktywność o danym poziomie potwierdza (odnawia) rolę dzierżawy."""
+    """Czy aktywność o danym poziomie potwierdza (odnawia) rolę dostępu."""
     return rank(event_permission) >= rank(lease_role)
 
 

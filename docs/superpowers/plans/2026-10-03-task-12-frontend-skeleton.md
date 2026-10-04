@@ -23,7 +23,7 @@
 
 - **Błąd 422 FastAPI:** `detail` jest tablicą obiektów, nie stringiem — klient musi zbudować czytelny komunikat → test `apiClient > formats validation errors`.
 - **Błąd 403 (ostatni admin):** komunikat z `detail` trafia do UI → test `apiClient > throws ApiError with detail`.
-- **Wygasła dzierżawa:** `formatDaysRemaining(-4)` → „wygasła 4 dni temu”, `null` → „—” → testy `dateTime`.
+- **Wygasły dostęp:** `formatDaysRemaining(-4)` → „wygasła 4 dni temu”, `null` → „—” → testy `dateTime`.
 - **Brak backendu w dev:** `getClock` odrzucony → pasek pokazuje „Brak połączenia z API” zamiast się wysypać → test `TimeTravelBar > shows connection error`.
 - **Szybkie podwójne kliknięcie skoku:** przycisk zablokowany podczas żądania → test `TimeTravelBar > disables buttons while travelling`.
 

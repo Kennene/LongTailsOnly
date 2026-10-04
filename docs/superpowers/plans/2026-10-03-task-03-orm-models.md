@@ -23,7 +23,7 @@
 - **Naiwne daty z SQLite:** odczyt musi zwracać `tzinfo=UTC` → test `test_utc_datetime_roundtrip_is_aware`.
 - **Zapis naiwnej daty:** to błąd programisty, więc `ValueError` zamiast cichego założenia strefy → test `test_naive_datetime_is_rejected`.
 - **Enum w bazie jako wartość:** w kolumnie ma być `"write"`, a nie `"WRITE"` (seed i raw SQL) → test `test_enums_are_stored_as_values`.
-- **Duplikat dzierżawy:** druga dzierżawa dla pary `(user, repo)` → `IntegrityError` → test `test_lease_pair_is_unique`.
+- **Duplikat dostępu:** drugi dostęp dla pary `(user, repo)` → `IntegrityError` → test `test_lease_pair_is_unique`.
 - **In-memory SQLite i wiele sesji:** bez `StaticPool` każde połączenie widzi pustą bazę (testy API w Zadaniu 6) → test `test_memory_engine_shares_schema_between_sessions`.
 
 ---
