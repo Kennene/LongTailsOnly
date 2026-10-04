@@ -179,7 +179,7 @@ describe('AppealsPage', () => {
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Rozpatrzenie odwołania')).toBeInTheDocument();
-    expect(within(dialog).getByText('Marta (marta)')).toBeInTheDocument();
+    expect(within(dialog).getByText('Marta')).toBeInTheDocument();
     expect(within(dialog).getByText('longtails/qa-automation')).toBeInTheDocument();
     expect(within(dialog).getByText('Uzasadnienie odwołania')).toBeInTheDocument();
     expect(getLastAppealRejection()).toBeNull();
@@ -221,6 +221,7 @@ describe('AppealsPage', () => {
 
     await expandAll(user, SUBMITTED_LIST);
     await user.click(await screen.findByRole('button', { name: 'Rozpatrz' }));
+    await user.click(await screen.findByRole('button', { name: 'Odrzuć' }));
     await user.type(
       await screen.findByLabelText('Uzasadnienie odrzucenia'),
       REJECTION_JUSTIFICATION,

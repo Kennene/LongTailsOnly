@@ -54,17 +54,11 @@ export function ExtensionControls({
   }
 
   if (disabledReason !== null) {
-    return (
-      <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
-        <h3 className="text-sm font-medium">Przedłuż</h3>
-        <p className="text-xs text-muted-foreground">{disabledReason}</p>
-      </section>
-    );
+    return <p className="text-sm text-muted-foreground">{disabledReason}</p>;
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
-      <h3 className="text-sm font-medium">Przedłuż</h3>
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-1.5">
         {PRESET_DAYS.map((days: PresetDays) => (
           <Button
@@ -90,7 +84,8 @@ export function ExtensionControls({
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Własna liczba dni i data w jednym rzędzie — to dwie alternatywy dla presetów wyżej. */}
+      <div className="flex flex-wrap items-center gap-2">
         <Label htmlFor="decision-custom-days" className="shrink-0 text-muted-foreground">
           Własna liczba dni
         </Label>
@@ -101,13 +96,11 @@ export function ExtensionControls({
           min={CUSTOM_DAYS_MIN}
           max={CUSTOM_DAYS_MAX}
           placeholder="1–365"
-          className="w-24"
+          className="h-8 w-20"
           value={customDays}
           onChange={(event) => onCustomDaysChange(event.target.value)}
         />
-      </div>
-
-      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">albo</span>
         <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
           <PopoverTrigger asChild>
             {/* Bez czasu symulowanego nie da się zwalidować daty ani ustawić miesiąca kalendarza. */}
@@ -132,6 +125,6 @@ export function ExtensionControls({
           <span className="text-xs text-muted-foreground">Czekam na czas symulowany…</span>
         ) : null}
       </div>
-    </section>
+    </div>
   );
 }

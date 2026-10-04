@@ -27,24 +27,22 @@ const ACTIVITY_COUNTERS: ActivityCounter[] = [
  * Liczby i okno pochodzą wprost z `LeaseActivityStats`; frontend ich nie przelicza. Panel mówi
  * też, **w jakim oknie** je policzono i kiedy dostęp był ostatnio używany — bez tego trzy
  * liczby nie odpowiadają na pytanie, czy dowód użycia jest jeszcze aktualny. Kolorów stanu tu nie
- * ma (żadna z tych liczb nie jest statusem), więc kafelki zostają na tokenach neutralnych,
+ * ma (żadna z tych liczb nie jest statusem), więc liczniki zostają na tokenach neutralnych,
  * a liczba jest daną i idzie w `font-mono`.
  */
 export function ActivityStats({ stats }: ActivityStatsProps): React.JSX.Element {
   const isEmptyWindow: boolean = stats.push_count + stats.review_count + stats.comment_count === 0;
 
   return (
-    <div className="flex flex-col gap-2">
-      <dl className="grid grid-cols-3 gap-2">
+    <div className="flex flex-col gap-1">
+      {/* Jedna linia liczników zamiast trzech kafli — w modalu decyzji to dowód, nie bohater. */}
+      <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
         {ACTIVITY_COUNTERS.map((counter: ActivityCounter): React.JSX.Element => (
-          <div
-            className="flex flex-col gap-1 rounded-md border border-border bg-muted/30 px-3 py-2"
-            key={counter.key}
-          >
-            <dt className="text-xs text-muted-foreground">{counter.label}</dt>
-            <dd className="font-mono text-2xl tabular-nums" data-testid={counter.testId}>
+          <div className="flex items-baseline gap-1.5" key={counter.key}>
+            <dd className="font-mono font-medium tabular-nums" data-testid={counter.testId}>
               {stats[counter.key]}
             </dd>
+            <dt className="text-muted-foreground">{counter.label}</dt>
           </div>
         ))}
       </dl>
