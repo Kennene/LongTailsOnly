@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 
 import { ApiError } from '@/api/client';
 import { AppealStatusBadge } from '@/components/appeals/AppealStatusBadge';
+import { RemainingDays } from '@/components/common/TimeLabels';
 import { AppealContextPanel } from '@/components/leases/AppealContextPanel';
 import {
   DECISION_PANEL_HEIGHT,
@@ -27,7 +28,6 @@ import {
 import { useDecideAppeal } from '@/hooks/useDecideAppeal';
 import { useRejectAppeal } from '@/hooks/useRejectAppeal';
 import { type ApiErrorDescription, describeApiError, describeEngineError } from '@/lib/apiErrors';
-import { formatDaysRemaining } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import type { AppealOverview, DecisionRequest } from '@/types/api';
 
@@ -239,9 +239,14 @@ export function DecisionModalAppeal({
         </span>
         <AppealStatusBadge status={appeal.status} />
         <span className="text-muted-foreground">
-          {appeal.lease_is_active
-            ? formatDaysRemaining(appeal.days_remaining)
-            : 'Dostęp nieaktywny'}
+          {appeal.lease_is_active ? (
+            <RemainingDays
+              days={appeal.days_remaining}
+              expired={appeal.days_remaining !== null && appeal.days_remaining < 0}
+            />
+          ) : (
+            'Dostęp nieaktywny'
+          )}
         </span>
         <span className="text-xs text-muted-foreground">
           {`Poprzednie odwołania: ${String(appeal.previous_appeals)}`}

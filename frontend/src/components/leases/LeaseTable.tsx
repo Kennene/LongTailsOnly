@@ -6,7 +6,6 @@ import { groupLeasesByUser } from '@/components/leases/leaseGroups';
 import { ACTION_COLUMN, SECONDARY_COLUMN } from '@/components/leases/leaseTableLayout';
 import { Table, TableBody, TableHeader, TableRow } from '@/components/ui/table';
 import { useExpandedSet } from '@/hooks/useExpandedSet';
-import { useSimulatedClock } from '@/hooks/useSimulatedClock';
 import type { LeaseOverview } from '@/types/api';
 
 export interface LeaseTableProps {
@@ -22,8 +21,6 @@ export interface LeaseTableProps {
  */
 export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Element {
   const expanded = useExpandedSet<number>();
-  // „Ile dni temu” liczymy od czasu symulowanego; do jego wczytania kolumna pokazuje datę.
-  const now: string | null = useSimulatedClock().data?.now ?? null;
 
   if (leases.length === 0) {
     return <p className="text-sm text-muted-foreground">Brak dostępów do wyświetlenia</p>;
@@ -70,7 +67,6 @@ export function LeaseTable({ leases, onDecide }: LeaseTableProps): React.JSX.Ele
               expanded={expanded.isExpanded(group.user.id)}
               onToggle={() => expanded.toggle(group.user.id)}
               onDecide={onDecide}
-              now={now}
             />
           ))}
         </TableBody>

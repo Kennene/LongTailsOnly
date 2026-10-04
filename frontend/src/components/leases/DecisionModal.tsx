@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { RemainingDays } from '@/components/common/TimeLabels';
 import {
   DECISION_PANEL_HEIGHT,
   DecisionKindSwitch,
@@ -32,7 +33,6 @@ import {
 } from '@/components/ui/dialog';
 import { useLeaseDecision } from '@/hooks/useLeaseDecision';
 import { type ApiErrorDescription, describeEngineError } from '@/lib/apiErrors';
-import { formatDaysRemaining } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import type { AppealOverview, DecisionRequest, LeaseOverview } from '@/types/api';
 
@@ -231,7 +231,9 @@ function LeaseDecisionForm({ lease, onOpenChange }: LeaseDecisionFormProps): Rea
       >
         <RoleBadge role={lease.current_role} />
         <LeaseStatusBadge status={lease.status} />
-        <span className="text-muted-foreground">{formatDaysRemaining(lease.days_remaining)}</span>
+        <span className="text-muted-foreground">
+          <RemainingDays days={lease.days_remaining} expired={lease.status === 'EXPIRED'} />
+        </span>
       </div>
 
       <LeaseActivityPanel lease_id={lease.id} />
